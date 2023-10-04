@@ -1,5 +1,5 @@
 #! python3
-from openpype.hosts.resolve.startup import main
+from ayon_resolve.startup import main
 
 if __name__ == "__main__":
     main()

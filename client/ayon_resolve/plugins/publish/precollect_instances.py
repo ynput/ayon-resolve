@@ -2,7 +2,7 @@ from pprint import pformat
 
 import pyblish
 
-from openpype.hosts.resolve.api.lib import (
+from ayon_resolve.api.lib import (
     get_current_timeline_items,
     get_timeline_item_pype_tag,
     publish_clip_color,

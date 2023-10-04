@@ -11,7 +11,7 @@ This code runs in a separate process to the main Resolve process.
 """
 import os
 from openpype.lib import Logger
-import openpype.hosts.resolve.api
+import ayon_resolve.api
 
 log = Logger.get_logger(__name__)
 
@@ -27,14 +27,14 @@ def ensure_installed_host():
     if host:
         return host
 
-    install_host(openpype.hosts.resolve.api)
+    install_host(ayon_resolve.api)
     return registered_host()
 
 
 def launch_menu():
     print("Launching Resolve OpenPype menu..")
     ensure_installed_host()
-    openpype.hosts.resolve.api.launch_pype_menu()
+    ayon_resolve.api.launch_pype_menu()
 
 
 def open_file(path):

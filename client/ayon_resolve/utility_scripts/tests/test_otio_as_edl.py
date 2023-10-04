@@ -6,9 +6,9 @@ import opentimelineio as otio
 
 from openpype.pipeline import install_host
 
-import openpype.hosts.resolve.api as bmdvr
-from openpype.hosts.resolve.api.testing_utils import TestGUI
-from openpype.hosts.resolve.otio import davinci_export as otio_export
+import ayon_resolve.api as bmdvr
+from ayon_resolve.api.testing_utils import TestGUI
+from ayon_resolve.otio import davinci_export as otio_export
 
 
 class ThisTestGUI(TestGUI):

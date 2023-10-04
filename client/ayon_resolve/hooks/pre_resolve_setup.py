@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import platform
 from openpype.lib.applications import PreLaunchHook, LaunchTypes
-from openpype.hosts.resolve.utils import setup
+from ayon_resolve.utils import setup
 
 
 class PreLaunchResolveSetup(PreLaunchHook):

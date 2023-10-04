@@ -44,7 +44,7 @@ def install():
 
     """
 
-    log.info("openpype.hosts.resolve installed")
+    log.info("ayon_resolve installed")
 
     pyblish.register_host("resolve")
     pyblish.register_plugin_path(PUBLISH_PATH)
@@ -244,7 +244,7 @@ def on_pyblish_instance_toggled(instance, old_value, new_value):
     log.info("instance toggle: {}, old_value: {}, new_value:{} ".format(
         instance, old_value, new_value))
 
-    from openpype.hosts.resolve.api import (
+    from ayon_resolve.api import (
         set_publish_attribute
     )
 

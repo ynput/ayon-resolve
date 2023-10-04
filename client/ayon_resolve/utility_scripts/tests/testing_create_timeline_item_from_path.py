@@ -5,9 +5,9 @@ import sys
 import clique
 
 from openpype.pipeline import install_host
-from openpype.hosts.resolve.api.testing_utils import TestGUI
-import openpype.hosts.resolve.api as bmdvr
-from openpype.hosts.resolve.api.lib import (
+from ayon_resolve.api.testing_utils import TestGUI
+import ayon_resolve.api as bmdvr
+from ayon_resolve.api.lib import (
     create_media_pool_item,
     create_timeline_item,
 )

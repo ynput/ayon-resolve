@@ -13,7 +13,7 @@ log = Logger.get_logger(__name__)
 
 
 def get_resolve_module():
-    from openpype.hosts.resolve import api
+    from ayon_resolve import api
     # dont run if already loaded
     if api.bmdvr:
         log.info(("resolve module is assigned to "

@@ -8,7 +8,7 @@ log = Logger.get_logger(__name__)
 
 
 def main(env):
-    import openpype.hosts.resolve.api as bmdvr
+    import ayon_resolve.api as bmdvr
 
     # activate resolve from openpype
     install_host(bmdvr)

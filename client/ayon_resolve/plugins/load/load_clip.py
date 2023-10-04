@@ -9,8 +9,8 @@ from openpype.pipeline import (
     get_representation_path,
     get_current_project_name,
 )
-from openpype.hosts.resolve.api import lib, plugin
-from openpype.hosts.resolve.api.pipeline import (
+from ayon_resolve.api import lib, plugin
+from ayon_resolve.api.pipeline import (
     containerise,
     update_container,
 )

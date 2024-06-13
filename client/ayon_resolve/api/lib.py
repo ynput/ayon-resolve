@@ -291,8 +291,9 @@ def create_timeline_item(
     # get all variables
     resolve_project = get_current_resolve_project()
     media_pool = resolve_project.GetMediaPool()
-    _clip_property = media_pool_item.GetClipProperty
-    clip_name = _clip_property("File Name")
+    clip_name = media_pool_item.GetClipProperty("File Name")
+    timeline = timeline or get_current_timeline()
+
     timeline = timeline or get_current_timeline()
 
     # timing variables

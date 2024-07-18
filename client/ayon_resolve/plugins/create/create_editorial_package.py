@@ -15,16 +15,6 @@ class CreateEditorialPackage(LegacyCreator):
 
     def process(self):
         """Process the creation of the editorial package."""
-        if (self.options or {}).get("useSelection"):
-            # if selected is on then get only timeline from media pool
-            # selection
-            self.convert_timeline_to_editorial_package_instance()
-        else:
-            # if selected is on then get only active timeline
-            self.convert_timeline_to_editorial_package_instance()
-
-    def convert_timeline_to_editorial_package_instance(self):
-        """Convert timeline to editorial package instance."""
         current_timeline = lib.get_current_timeline()
         timeline_name = current_timeline.GetName()
 

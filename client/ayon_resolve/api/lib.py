@@ -3,6 +3,7 @@ import json
 import re
 import os
 import contextlib
+from typing import List, Dict, Any
 from opentimelineio import opentime
 
 from ayon_core.lib import Logger
@@ -101,8 +102,7 @@ def get_current_timeline(new=False):
             new timeline if none exists
 
     Returns:
-        TODO: will need to reflect future `None`
-        object: resolve.Timeline
+        object | None: resolve.Timeline
     """
     project = get_current_project()
     timeline = project.GetCurrentTimeline()
@@ -385,19 +385,17 @@ def get_current_timeline_items(
         filter: bool = False,
         track_type: str = None,
         track_name: str = None,
-        selecting_color: str = None) -> list:
-    """ Gets all available current timeline track items
-    """
+        selecting_color: str = None) -> List[Dict[str, Any]]:
+    """Get all available current timeline track items"""
     track_type = track_type or "video"
     selecting_color = selecting_color or "Chocolate"
     project = get_current_project()
 
     # get timeline anyhow
-    timeline = (
-        get_current_timeline() or
-        get_any_timeline() or
-        get_new_timeline()
-    )
+    timeline = get_current_timeline() or get_any_timeline()
+    if not timeline:
+        return []
+
     selected_clips = []
 
     # get all tracks count filtered by track type
@@ -412,8 +410,7 @@ def get_current_timeline_items(
         if track_name and _track_name not in track_name:
             continue
 
-        timeline_items = timeline.GetItemListInTrack(
-            track_type, track_index)
+        timeline_items = timeline.GetItemListInTrack(track_type, track_index)
         _clips[track_index] = timeline_items
 
         _data = {

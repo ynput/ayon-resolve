@@ -344,7 +344,9 @@ class ClipLoader:
                 loader_cls.timeline = self.active_timeline
 
         else:
-            self.active_timeline = lib.get_current_timeline()
+            self.active_timeline = (
+                    lib.get_current_timeline() or lib.get_new_timeline()
+            )
 
     def _populate_data(self):
         """ Gets context and convert it to self.data

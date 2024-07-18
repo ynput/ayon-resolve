@@ -5,6 +5,7 @@ import copy
 import qargparse
 from qtpy import QtWidgets, QtCore
 
+from ayon_core.pipeline.constants import AVALON_INSTANCE_ID
 from ayon_core.settings import get_current_project_settings
 from ayon_core.pipeline import (
     LegacyCreator,
@@ -899,6 +900,35 @@ class PublishClip:
         for key in par_split:
             parent = self._convert_to_entity(key)
             self.parents.append(parent)
+
+
+def get_editorial_publish_data(
+    folder_path,
+    product_name,
+    version=None
+) -> dict:
+    """Get editorial publish data from context.
+
+    Args:
+        folder_path (str): Folder path where editorial package is located.
+        product_name (str): Editorial product name.
+        version (Optional[str]): Editorial product version. Defaults to None.
+
+    Returns:
+        dict: Editorial publish data.
+    """
+    data = {
+        "id": AVALON_INSTANCE_ID,
+        "productType": "editorial_pkg",
+        "productName": product_name,
+        "folderPath": folder_path,
+        "active": True,
+    }
+
+    if version:
+        data["version"] = version
+
+    return data
 
 
 def get_representation_files(representation):

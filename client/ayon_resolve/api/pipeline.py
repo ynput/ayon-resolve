@@ -156,6 +156,10 @@ def ls():
             continue
         data = json.loads(data)
 
+        # treat data as container
+        if data.get("load"):
+            data = data["load"]
+
         # If not all required data, skip it
         required = ['schema', 'id', 'loader', 'representation']
         if not all(key in data for key in required):

@@ -960,9 +960,13 @@ def get_reformated_path(path, padded=False, first=False):
     return path
 
 
-def iter_all_media_pool_clips():
-    """Recursively iterate all media pool clips in current project"""
-    root = get_current_project().GetMediaPool().GetRootFolder()
+def iter_all_media_pool_clips(root=None):
+    """Recursively iterate all media pool clips in current project
+
+    Args:
+        root (resolve.Folder)[optional]: root folder / bin object
+    """
+    root = root or get_current_project().GetMediaPool().GetRootFolder()
     queue = [root]
     for folder in queue:
         for clip in folder.GetClipList():

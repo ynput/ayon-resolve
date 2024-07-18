@@ -1,4 +1,3 @@
-from pprint import pformat
 import json
 from ayon_core.pipeline.create.legacy_create import LegacyCreator
 

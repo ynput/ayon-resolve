@@ -172,7 +172,13 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             "productType": product_type,
             "family": product_type,
             "families": [product_type],
-            "publish": get_publish_attribute(timeline_item)
+            "publish": get_publish_attribute(timeline_item),
+
+            # Tell the integrator this instance does not publish products
+            # with versions and representation. This product is solely
+            # intended to created shot hierarchies via the 'Extract Hierarchy
+            # to AYON' plug-in in ayon-core.
+            "integrate": False
         })
 
         context.create_instance(**data)

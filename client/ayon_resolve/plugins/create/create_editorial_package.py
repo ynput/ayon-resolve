@@ -33,3 +33,5 @@ class CreateEditorialPackage(LegacyCreator):
             timeline_media_pool_item.SetMetadata(
                 lib.pype_tag_name, json.dumps(publish_data)
             )
+        else:
+            NameError("Timeline not found in media pool.")

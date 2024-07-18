@@ -961,7 +961,8 @@ def iter_all_media_pool_clips(root=None):
     """Recursively iterate all media pool clips in current project
 
     Args:
-        root (resolve.Folder)[optional]: root folder / bin object
+        root (Optional[resolve.Folder]): root folder / bin object.
+            When None, defaults to media pool root folder.
     """
     root = root or get_current_project().GetMediaPool().GetRootFolder()
     queue = [root]

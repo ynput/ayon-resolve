@@ -72,7 +72,6 @@ class LoadEditorialPackage(load.LoaderPlugin):
         clip_color = self.get_clip_color()
         timeline_media_pool_item.SetClipColor(clip_color)
 
-
         # TODO: there are two ways to import timeline resources (representation
         #   and resources folder) but Resolve seems to ignore any of this
         #   since it is importing sources automatically. But we might need

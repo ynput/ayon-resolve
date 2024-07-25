@@ -1,7 +1,8 @@
 import sys
-import json
 import re
 import os
+import json
+import uuid
 import contextlib
 from typing import List, Dict, Any
 from opentimelineio import opentime
@@ -38,6 +39,27 @@ self.temp_marker_frame = None
 
 # OpenPype default timeline
 self.pype_timeline_name = "OpenPypeTimeline"
+
+
+def get_timeline_media_pool_item(timeline, root=None):
+    """Return MediaPoolItem from Timeline"""
+
+    # Due to limitations in the Resolve API we can't get
+    # the media pool item directly from the timeline.
+    # We can find it by name, however names are not
+    # enforced to be unique across bins. So, we give it
+    # unique name.
+    original_name = timeline.GetName()
+    identifier = str(uuid.uuid4().hex)
+    try:
+        timeline.SetName(identifier)
+        for item in iter_all_media_pool_clips(root=root):
+            if item.GetName() != identifier:
+                continue
+            return item
+    finally:
+        # Revert to original name
+        timeline.SetName(original_name)
 
 
 @contextlib.contextmanager

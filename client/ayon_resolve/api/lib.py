@@ -41,8 +41,17 @@ self.temp_marker_frame = None
 self.pype_timeline_name = "OpenPypeTimeline"
 
 
-def get_timeline_media_pool_item(timeline, root=None):
-    """Return MediaPoolItem from Timeline"""
+def get_timeline_media_pool_item(timeline, root=None) -> object:
+    """Return MediaPoolItem from Timeline
+
+
+    Args:
+        timeline (resolve.Timeline): timeline object
+        root (resolve.Folder): root folder / bin object
+
+    Returns:
+        resolve.MediaPoolItem: media pool item from timeline
+    """
 
     # Due to limitations in the Resolve API we can't get
     # the media pool item directly from the timeline.

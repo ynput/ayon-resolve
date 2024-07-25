@@ -52,13 +52,9 @@ class LoadEditorialPackage(load.LoaderPlugin):
         timeline = media_pool.ImportTimelineFromFile(files, import_options)
 
         # get timeline media pool item for metadata update
-        timeline_media_pool_item = None
-        for item in lib.iter_all_media_pool_clips(root=loaded_bin):
-            item_name = item.GetName()
-            if item_name != loaded_timeline_name:
-                continue
-            timeline_media_pool_item = item
-            break
+        timeline_media_pool_item = lib.get_timeline_media_pool_item(
+            timeline, loaded_bin
+        )
 
         # Update the metadata
         clip_data = self._get_container_data(

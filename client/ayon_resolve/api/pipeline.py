@@ -157,6 +157,9 @@ def ls():
         data = json.loads(data)
 
         # treat data as container
+        # There might be cases where clip's metadata are having additional
+        # because it needs to store 'load' and 'publish' data. In that case
+        # we need to get only 'load' data
         if data.get("load"):
             data = data["load"]
 

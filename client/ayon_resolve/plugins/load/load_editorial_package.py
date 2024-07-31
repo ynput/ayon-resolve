@@ -52,27 +52,21 @@ class LoadEditorialPackage(load.LoaderPlugin):
         timeline = media_pool.ImportTimelineFromFile(files, import_options)
 
         # get timeline media pool item for metadata update
-        timeline_media_pool_item = None
-        for item in lib.iter_all_media_pool_clips(root=loaded_bin):
-            item_name = item.GetName()
-            if item_name != loaded_timeline_name:
-                continue
-            timeline_media_pool_item = item
-            break
+        timeline_media_pool_item = lib.get_timeline_media_pool_item(
+            timeline, loaded_bin
+        )
 
         # Update the metadata
-        if timeline_media_pool_item:
-            clip_data = self._get_container_data(
-                context, data)
+        clip_data = self._get_container_data(
+            context, data)
 
-            timeline_media_pool_item.SetMetadata(
-                lib.pype_tag_name, json.dumps(clip_data)
-            )
+        timeline_media_pool_item.SetMetadata(
+            lib.pype_tag_name, json.dumps(clip_data)
+        )
 
-            # set clip color based on random choice
-            clip_color = self.get_clip_color()
-            print("Clip color: ", clip_color)
-            timeline_media_pool_item.SetClipColor(clip_color)
+        # set clip color based on random choice
+        clip_color = self.get_clip_color()
+        timeline_media_pool_item.SetClipColor(clip_color)
 
         # TODO: there are two ways to import timeline resources (representation
         #   and resources folder) but Resolve seems to ignore any of this
@@ -135,7 +129,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
         return data
 
     def get_clip_color(self):
-        """Return clip color based on version data."""
+        """Return clip color."""
 
         # list of all available davinci resolve clip colors
         colors = [

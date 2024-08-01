@@ -20,9 +20,18 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
         for media_pool_item in lib.iter_all_media_pool_clips():
 
             data = media_pool_item.GetMetadata(lib.pype_tag_name)
+            self.log.debug(f"__ data: {pformat(data)}")
             if not data:
                 continue
-            data = json.loads(data)
+
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                self.log.warning(
+                    f"Failed to parse json data from media pool item: "
+                    f"{media_pool_item.GetName()}"
+                )
+                continue
 
             # Only collect Editorial Package instances
             if not data.get("publish"):

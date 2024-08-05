@@ -282,7 +282,11 @@ def create_timeline_item(
     timeline = timeline or get_current_timeline()
 
     # timing variables
-    if all([timeline_in, source_start, source_end]):
+    if all([
+        timeline_in is not None,
+        source_start is not None,
+        source_end is not None
+    ]):
         fps = timeline.GetSetting("timelineFrameRate")
         duration = source_end - source_start
         timecode_in = frames_to_timecode(timeline_in, fps)

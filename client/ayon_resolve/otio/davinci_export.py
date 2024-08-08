@@ -9,6 +9,9 @@ import opentimelineio as otio
 from . import utils
 import clique
 
+from ayon_resolve.api import lib
+
+
 self = sys.modules[__name__]
 self.track_types = {
     "video": otio.schema.TrackKind.Video,
@@ -179,6 +182,7 @@ def create_otio_gap(gap_start, clip_start, tl_start_frame, fps):
 
 def _create_otio_timeline(project, timeline, fps):
     metadata = _get_timeline_metadata(project, timeline)
+    print(f"metadata: {metadata}")
     start_time = create_otio_rational_time(
         timeline.GetStartFrame(), fps)
     otio_timeline = otio.schema.Timeline(
@@ -192,13 +196,12 @@ def _create_otio_timeline(project, timeline, fps):
 def _get_timeline_metadata(project, timeline):
     media_pool = project.GetMediaPool()
     root_folder = media_pool.GetRootFolder()
-    ls_folder = root_folder.GetClipList()
     timeline = project.GetCurrentTimeline()
     timeline_name = timeline.GetName()
-    for tl in ls_folder:
-        if tl.GetName() not in timeline_name:
-            continue
-        return _get_metadata_media_pool_item(tl)
+    print(f"timeline name: {timeline_name}")
+    #  get timeline media pool item for metadata update
+    timeline_media_pool_item = lib.get_timeline_media_pool_item(timeline)
+    return _get_metadata_media_pool_item(timeline_media_pool_item)
 
 
 def _get_metadata_media_pool_item(media_pool_item):
@@ -207,7 +210,9 @@ def _get_metadata_media_pool_item(media_pool_item):
     property = media_pool_item.GetClipProperty() or {}
     for name, value in property.items():
         if "Resolution" in name and "" != value:
+            print(f"property: {name} - {value}")
             width, height = value.split("x")
+            print(f"width: {width} - height: {height}")
             data.update({
                 "width": int(width),
                 "height": int(height)
@@ -220,7 +225,7 @@ def _get_metadata_media_pool_item(media_pool_item):
                     data.update({"pixelAspect": float(1)})
                 else:
                     data.update({"pixelAspect": float(1)})
-
+    print("_" * 100)
     return data
 
 

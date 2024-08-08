@@ -41,7 +41,11 @@ class LoadEditorialPackage(load.LoaderPlugin):
         # create versioned bin for editorial package
         version_name = context["version"]["name"]
         loaded_bin = lib.create_bin(f"{folder_path}/{name}/{version_name}")
-        loaded_timeline_name = f"{name}_{version_name}_timeline"
+
+        # make timeline unique name based on folder path
+        folder_path_name = folder_path.replace("/", "_").lstrip("_")
+        loaded_timeline_name = (
+            f"{folder_path_name}_{name}_{version_name}_timeline")
         import_options = {
             "timelineName": loaded_timeline_name,
             "importSourceClips": True,
@@ -75,6 +79,9 @@ class LoadEditorialPackage(load.LoaderPlugin):
         print("Timeline imported: ", timeline)
 
     def update(self, container, context):
+        timeline_mp_clip = container["_item"]
+        timeline_mp_clip.SetMetadata(lib.pype_tag_name, "")
+
         self.load(
             context,
             context["product"]["name"],

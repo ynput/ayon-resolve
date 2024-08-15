@@ -105,6 +105,33 @@ def maintain_current_timeline(to_timeline: object,
         project.SetCurrentTimeline(working_timeline)
 
 
+@contextlib.contextmanager
+def open_specific_page_by_name(page_name):
+    """Maintain current open specific page by name.
+
+    Args:
+        page_name (str): name of the page
+
+    Example:
+        >>> with open_specific_page_by_name("Deliver"):
+        ...     print("Deliver page is open")
+        Deliver page is open
+    """
+    from . import bmdvr
+    current_page = bmdvr.GetCurrentPage()
+    log.info(f"Current page: {current_page}")
+
+    log.info(f"Opening page: {page_name}")
+    bmdvr.OpenPage(page_name)
+
+    try:
+        yield
+    finally:
+        log.info(f"Closing page: {page_name}")
+        bmdvr.OpenPage(current_page)
+        log.info(f"Opening page: {current_page}")
+
+
 def get_project_manager():
     from . import bmdvr
     if not self.project_manager:

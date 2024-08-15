@@ -1,9 +1,10 @@
 import json
-from pprint import pformat
 
 import pyblish.api
 
 import ayon_api
+from ayon_api import get_task_by_id
+
 from ayon_resolve.api import lib
 
 
@@ -20,7 +21,6 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
         for media_pool_item in lib.iter_all_media_pool_clips():
 
             data = media_pool_item.GetMetadata(lib.pype_tag_name)
-            self.log.debug(f"__ data: {pformat(data)}")
             if not data:
                 continue
 
@@ -66,4 +66,14 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
 
             publish_data["mediaPoolItem"] = media_pool_item
 
+            if publish_data.get("taskId"):
+                task_entity = get_task_by_id(
+                    project_name=project_name,
+                    task_id=publish_data["taskId"],
+                )
+                publish_data["taskEntity"] = task_entity
+                publish_data["task"] = task_entity["name"]
+
             instance.data.update(publish_data)
+
+            self.log.info(f"Editorial Package: {instance.data}")

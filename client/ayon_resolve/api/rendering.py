@@ -82,6 +82,19 @@ def render_single_timeline(
     timeline,
     target_render_directory
 ):
+    """Render single timeline
+
+    Process is taking a defined timeline and render it to temporary
+    intermediate file which will be lately used by Extract Review plugin
+    for conversion to review file.
+
+    Args:
+        timeline (Timeline): Timeline object
+        target_render_directory (Path): Path to target render directory
+
+    Returns:
+        bool: True if rendering is successful, False otherwise
+    """
     bmr_project = get_current_project()
 
     job_id = None
@@ -224,4 +237,4 @@ def set_format_and_codec(render_format, render_codec):
         )
         return False
 
-    return True
+    return render_format_val

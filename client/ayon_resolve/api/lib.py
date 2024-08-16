@@ -84,8 +84,8 @@ def maintain_current_timeline(to_timeline: object,
         >>> print(to_timeline.GetName())
         timeline2
 
-        >>> with maintain_current_timeline(to_timeline):
-        ...     print(get_current_timeline().GetName())
+        >>> with maintain_current_timeline(to_timeline) as timeline:
+        ...     print(timeline.GetName())
         timeline2
 
         >>> print(get_current_timeline().GetName())
@@ -94,12 +94,28 @@ def maintain_current_timeline(to_timeline: object,
     project = get_current_project()
     working_timeline = from_timeline or project.GetCurrentTimeline()
 
-    # switch to the input timeline
-    project.SetCurrentTimeline(to_timeline)
+    # search timeline withing project timelines in case the
+    # to_timeline is MediaPoolItem
+    # Note: this is a hacky way of identifying if object is timeline since
+    #   mediapool item is not having AddTrack attribute. API is not providing
+    #   any other way to identify the object type. And hasattr is returning
+    #   false info.
+    if "AddTrack" not in dir(to_timeline):
+        tcount = project.GetTimelineCount()
+        for idx in range(0, int(tcount)):
+            timeline = project.GetTimelineByIndex(idx + 1)
+            if timeline.GetName() == to_timeline.GetName():
+                to_timeline = timeline
+                break
 
     try:
-        # do a work
-        yield
+        # switch to the input timeline
+        result = project.SetCurrentTimeline(to_timeline)
+        if not result:
+            raise ValueError(f"Failed to switch to timeline: {to_timeline}")
+
+        current_timeline = project.GetCurrentTimeline()
+        yield current_timeline
     finally:
         # put the original working timeline to context
         project.SetCurrentTimeline(working_timeline)
@@ -1028,3 +1044,38 @@ def iter_all_media_pool_clips(root=None):
         for clip in folder.GetClipList():
             yield clip
         queue.extend(folder.GetSubFolderList())
+
+
+def export_timeline_otio(timeline, filepath):
+    """Get timeline otio filepath.
+
+    Only supported from Resolve 19.5
+
+    Example:
+        # Native otio export is available from Resolve 18.5
+        # [major, minor, patch, build, suffix]
+        resolve_version = bmdvr.GetVersion()
+        if resolve_version[0] < 18 or resolve_version[1] < 5:
+            # if it is lower then use ayon's otio exporter
+            otio_timeline = davinci_export.create_otio_timeline(
+                resolve_project, timeline=timeline)
+            davinci_export.write_to_file(otio_timeline, filepath)
+        else:
+            # use native otio export
+            export_timeline_otio(timeline, filepath)
+
+    Args:
+        timeline (resolve.Timeline): resolve's object
+        filepath (str): otio file path
+
+    Returns:
+        bool: True if success
+    """
+    from . import bmdvr
+
+    try:
+        timeline.Export(filepath, bmdvr.EXPORT_OTIO)
+    except Exception as e:
+        log.error(f"Failed to export timeline otio: {e}")
+        return False
+    return True

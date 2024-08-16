@@ -12,7 +12,7 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
     """Collect all Track items selection."""
 
     order = pyblish.api.CollectorOrder - 0.49
-    label = "Editorial Package Instances"
+    label = "Collect Editorial Package Instances"
 
     def process(self, context):
         project_name = context.data["projectName"]
@@ -33,8 +33,11 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
                 )
                 continue
 
-            # Only collect Editorial Package instances
-            if not data.get("publish"):
+            # exclude all which are not productType editorial_pkg
+            if (
+                data.get("publish")
+                and data["publish"].get("productType") != "editorial_pkg"
+            ):
                 continue
 
             instance = context.create_instance(name=media_pool_item.GetName())

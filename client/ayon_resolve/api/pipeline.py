@@ -26,6 +26,7 @@ from ayon_core.host import (
     IPublishHost
 )
 
+from . import constants
 from . import lib
 from .utils import get_resolve_module
 from .workio import (
@@ -161,7 +162,7 @@ def ls():
 
     # Media Pool instances from Load Media loader
     for clip in lib.iter_all_media_pool_clips():
-        data = clip.GetMetadata(lib.pype_tag_name)
+        data = clip.GetMetadata(constants.ayon_tag_name)
         if not data:
             continue
         data = json.loads(data)

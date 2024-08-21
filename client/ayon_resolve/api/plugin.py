@@ -652,7 +652,7 @@ class PublishableClip:
 
         return {
             "folder_type": folder_type,
-            "entity_name": self.hierarchy_data[key]["value"].format(
+            "entity_name": self.hierarchy_data[key].format(
                 **self.timeline_item_default_data
             )
         }

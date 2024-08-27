@@ -13,6 +13,8 @@ from ayon_resolve.api.lib import (
     get_otio_clip_instance_data,
 )
 
+import disable_this_one
+
 
 class PrecollectInstances(pyblish.api.ContextPlugin):
     """Collect all Track items selection."""

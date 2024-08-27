@@ -4,13 +4,15 @@ import os
 import contextlib
 import tempfile
 from typing import List, Dict, Any
-from opentimelineio import opentime
+
+import opentimelineio as otio
 
 from ayon_core.lib import Logger
 from ayon_core.pipeline.editorial import (
     is_overlapping_otio_ranges,
     frames_to_timecode
 )
+from ayon_core.pipeline.context_tools import get_current_project_name
 from ayon_core.pipeline.tempdir import create_custom_tempdir
 
 from . import constants
@@ -680,12 +682,12 @@ def create_compound_clip(clip_data, name, folder):
     rate = float(_mp_props("FPS"))
 
     # source rational times
-    mp_in_rc = opentime.RationalTime((ci_l_offset), rate)
-    mp_out_rc = opentime.RationalTime((ci_l_offset + ci_duration - 1), rate)
+    mp_in_rc = otio.opentime.RationalTime((ci_l_offset), rate)
+    mp_out_rc = otio.opentime.RationalTime((ci_l_offset + ci_duration - 1), rate)
 
     # get frame in and out for clip swapping
-    in_frame = opentime.to_frames(mp_in_rc)
-    out_frame = opentime.to_frames(mp_out_rc)
+    in_frame = otio.opentime.to_frames(mp_in_rc)
+    out_frame = otio.opentime.to_frames(mp_out_rc)
 
     # keep original sequence
     tl_origin = timeline
@@ -939,7 +941,12 @@ def get_otio_clip_instance_data(otio_timeline, timeline_item_data):
     timeline_range = create_otio_time_range_from_timeline_item_data(
         timeline_item_data)
 
-    for otio_clip in otio_timeline.each_clip():
+    try:
+        all_clips = otio_timeline.each_clip()
+    except AttributeError: # OpenTimelineIO >= 0.16.0
+        all_clips = otio_timeline.find_clips()
+
+    for otio_clip in all_clips:
         track_name = otio_clip.parent().name
         parent_range = otio_clip.range_in_parent()
         if track_name not in track_name:
@@ -958,8 +965,8 @@ def get_otio_clip_instance_data(otio_timeline, timeline_item_data):
     return None
 
 
-def get_otio_temp_dir(project_name, anatomy=None, timeline=None) -> str:
-    """Get otio temporary directory.
+def _get_otio_temp_file(project_name=None, anatomy=None, timeline=None) -> str:
+    """Get otio temporary export file.
 
     Args:
         project_name (str): ayon project name
@@ -969,9 +976,10 @@ def get_otio_temp_dir(project_name, anatomy=None, timeline=None) -> str:
     Returns:
         str: temporary otio filepath
     """
-    resolve_project = get_current_resolve_project()
+    project_name = project_name or get_current_project_name()
 
     if timeline is None:
+        resolve_project = get_current_resolve_project()
         timeline = resolve_project.GetCurrentTimeline()
         if not timeline:
             raise RuntimeError("No current timeline")
@@ -988,34 +996,59 @@ def get_otio_temp_dir(project_name, anatomy=None, timeline=None) -> str:
     )
 
 
-def export_timeline_otio(timeline, filepath):
-    """Get timeline otio filepath.
-
-    Only supported from Resolve 19.5
-
-    Example:
-        # Native otio export is available from Resolve 18.5
-        # [major, minor, patch, build, suffix]
-        resolve_version = bmdvr.GetVersion()
-        if resolve_version[0] < 18 or resolve_version[1] < 5:
-            # if it is lower then use ayon's otio exporter
-            otio_timeline = otio_export.create_otio_timeline(
-                resolve_project, timeline=timeline)
-            otio_export.write_to_file(otio_timeline, filepath)
-        else:
-            # use native otio export
-            export_timeline_otio(timeline, filepath)
+def export_timeline_otio_to_file(timeline, filepath):
+    """Export timeline as otio filepath.
 
     Args:
-        timeline (resolve.Timeline): resolve's object
+        timeline (resolve.Timeline): resolve's timeline
         filepath (str): otio file path
 
     Returns:
         str: temporary otio filepath
     """
-    from . import bmdvr
+    try:
+        from . import bmdvr
+        raise AttributeError("TODO investigate export with metadata")
+        timeline.Export(filepath, bmdvr.EXPORT_OTIO)
 
-    timeline.Export(filepath, bmdvr.EXPORT_OTIO)
+    except Exception as error:
+        log.debug(
+            "Cannot use native OTIO export (%r)."
+            "Default to AYON own implementation.",
+            error
+        )
+        otio_timeline = otio_export.create_otio_timeline(
+            get_current_resolve_project(),
+            timeline=timeline
+        )
+        otio_export.write_to_file(otio_timeline, filepath)
+
+
+
+def export_timeline_otio(timeline):
+    """ Export timeline as otio.
+
+    Args:
+        timeline (resolve.Timeline): resolve's timeline
+
+    Returns:
+        otio_timeline (otio.Timeline): Otio timeline.
+    """
+    # DaVinci Resolve <= 18.5
+    # Legacy export (slower) through AYON.
+    if not hasattr(timeline, "Export"):
+        return otio_export.create_otio_timeline(
+            get_current_resolve_project(),
+            timeline=timeline
+        )
+
+    # DaVinci Resolve >= 18.5
+    # Force export through a temporary file (native)
+    temp_otio_file = _get_otio_temp_file(timeline=timeline)
+    export_timeline_otio_to_file(timeline, temp_otio_file)
+    otio_timeline = otio.adapters.read_from_file(temp_otio_file)
+
+    return otio_timeline
 
 
 def get_reformated_path(path, padded=False, first=False):

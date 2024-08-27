@@ -1,4 +1,5 @@
-# from pprint import pformat
+import copy
+
 from ayon_resolve.api import plugin, lib, constants
 from ayon_resolve.api.lib import (
     get_video_track_names,
@@ -8,16 +9,72 @@ from ayon_core.pipeline.create import CreatorError, CreatedInstance
 from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
 
 
+
+
+
+class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
+    """Wrapper class for shot product.
+    """
+
+    def create(self, instance_data, _):
+        """Return a new CreateInstance for new shot from Resolve.
+
+        Args:
+            instance_data (dict): global data from original instance
+
+        Return:
+            CreatedInstance: The created instance object for the new shot.
+        """
+        hierarchy_path = (
+            f'/{instance_data["hierarchy"]}/'
+            f'{instance_data["hierarchyData"]["shot"]}'
+        )
+        instance_data.update({
+            "productName": "shotMain",
+            "label": f"{hierarchy_path} {self.product_type}",
+            "productType": self.product_type,
+            "hierarchy_path": hierarchy_path,
+            "shotName": instance_data["hierarchyData"]["shot"]
+        })
+
+        new_instance = CreatedInstance(
+            self.product_type, instance_data["productName"], instance_data, self
+        )
+        self._store_new_instance(new_instance)
+        return new_instance        
+
+
+class ResolveShotInstanceCreator(_ResolveInstanceCreator):
+    """Shot product.
+    """
+    identifier = "io.ayon.creators.resolve.shot"
+    product_type = "shot"    
+    label = "Editorial Shot"
+
+
+class EditorialReviewInstanceCreator(_ResolveInstanceCreator):
+    """Review product type class
+
+    Review representation instance.
+    """
+    identifier = "io.ayon.creators.resolve.review"
+    product_type = "review"
+    label = "Editorial Review"
+
+
 class CreateShotClip(plugin.ResolveCreator):
     """Publishable clip"""
 
     identifier = "io.ayon.creators.resolve.clip"
     label = "Create Publishable Clip"
-    product_type = "clip"
+    product_type = "editorial"
     icon = "film"
     defaults = ["Main"]
 
-    create_allow_context_change = False
+#    create_allow_context_change = False  
+# TODO: explain consequence on folderPath
+# https://github.com/ynput/ayon-core/blob/6a07de6eb904c139f6d346fd6f2a7d5042274c71/client/ayon_core/tools/publisher/widgets/create_widget.py#L732
+
     create_allow_thumbnail = False
 
     def get_pre_create_attr_defs(self):
@@ -211,11 +268,6 @@ class CreateShotClip(plugin.ResolveCreator):
                                            instance_data,
                                            pre_create_data)
 
-        if len(self.selected) < 1:
-            return
-
-        self.log.info(self.selected)
-
         if not self.timeline:
             raise CreatorError(
                 "You must be in an active timeline to "
@@ -223,7 +275,22 @@ class CreateShotClip(plugin.ResolveCreator):
                 "Go into a timeline and then reset the publisher."
             )
 
-        self.log.debug(f"Selected: {self.selected}")
+        if not self.selected:
+            if pre_create_data.get("use_selection", False):
+                raise CreatorError(
+                    "No Chocolate-colored clips found from "
+                    "timeline.\n\n Try changing clip(s) color "
+                    "or disable clip color restriction."
+                )
+            else:
+                raise CreatorError(
+                    "No clips found on current timeline."
+                )
+
+        self.log.info(f"Selected: {self.selected}")
+
+        # Todo detect audio but no audio track.
+        # warning
 
         # sort selected trackItems by vSync track
         sorted_selected_track_items = []
@@ -246,6 +313,13 @@ class CreateShotClip(plugin.ResolveCreator):
                 "Processing track item data: {}".format(track_item_data)
             )
 
+            instance_data.update({
+                "clip_index": index,
+                "newHierarchyIntegration": True,
+                # Backwards compatible (Deprecated since 24/06/06)
+                "newAssetPublishing": True,
+            })
+
             # convert track item to timeline media pool item
             publish_clip = plugin.PublishableClip(
                 track_item_data,
@@ -267,20 +341,19 @@ class CreateShotClip(plugin.ResolveCreator):
             # TODO: here we need to replicate Traypublisher Editorial workflow
             #  and create shot, plate, review, and audio instances with own
             #  dedicated plugin
-
-            # Create the Publisher instance
-            instance = CreatedInstance(
-                product_type=self.product_type,
-                product_name=publish_clip.product_name,
-                data=instance_data,
-                creator=self
-            )
-            instance.transient_data["track_item"] = track_item
-            self._add_instance_to_context(instance)
+            for creator_id in (
+                "io.ayon.creators.resolve.shot",
+                "io.ayon.creators.resolve.review",
+            ): 
+                instance = self.create_context.creators[creator_id].create(
+                    instance_data, None
+                )
+                instance.transient_data["track_item"] = track_item            
+                self._add_instance_to_context(instance)
+                instances.append(instance)
 
             # self.imprint_instance_node(instance_node,
             #                            data=instance.data_to_store())
-            instances.append(instance)
         return instances
 
     def collect_instances(self):

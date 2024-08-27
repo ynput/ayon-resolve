@@ -30,7 +30,7 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
             f'{instance_data["hierarchyData"]["shot"]}'
         )
         instance_data.update({
-            "productName": "shotMain",
+            "productName": f"{self.product_type}Main",
             "label": f"{hierarchy_path} {self.product_type}",
             "productType": self.product_type,
             "hierarchy_path": hierarchy_path,
@@ -45,21 +45,31 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
 
 
 class ResolveShotInstanceCreator(_ResolveInstanceCreator):
-    """Shot product.
-    """
+    """Shot product type creator class"""
     identifier = "io.ayon.creators.resolve.shot"
     product_type = "shot"    
     label = "Editorial Shot"
 
 
 class EditorialReviewInstanceCreator(_ResolveInstanceCreator):
-    """Review product type class
-
-    Review representation instance.
-    """
+    """Review product type creator class"""
     identifier = "io.ayon.creators.resolve.review"
     product_type = "review"
     label = "Editorial Review"
+
+
+class EditorialPlateInstanceCreator(_ResolveInstanceCreator):
+    """Plate product type creator class"""
+    identifier = "io.ayon.creators.resolve.plate"
+    product_type = "plate"
+    label = "Editorial Plate"
+
+
+class EditorialAudioInstanceCreator(_ResolveInstanceCreator):
+    """Audio product type creator class"""
+    identifier = "io.ayon.creators.resolve.audio"
+    product_type = "audio"
+    label = "Editorial Audio"
 
 
 class CreateShotClip(plugin.ResolveCreator):
@@ -341,9 +351,12 @@ class CreateShotClip(plugin.ResolveCreator):
             # TODO: here we need to replicate Traypublisher Editorial workflow
             #  and create shot, plate, review, and audio instances with own
             #  dedicated plugin
+            # TODO: should that be choosable for the user ?
             for creator_id in (
                 "io.ayon.creators.resolve.shot",
                 "io.ayon.creators.resolve.review",
+                "io.ayon.creators.resolve.plate",
+                "io.ayon.creators.resolve.audio",                
             ): 
                 instance = self.create_context.creators[creator_id].create(
                     instance_data, None

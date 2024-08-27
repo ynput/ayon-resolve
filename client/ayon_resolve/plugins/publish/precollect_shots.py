@@ -1,11 +1,13 @@
 import pyblish
 
+from ayon_resolve.otio import utils
+
 
 class PrecollectShot(pyblish.api.InstancePlugin):
     """PreCollect new shots."""
 
     order = pyblish.api.CollectorOrder - 0.48
-    label = "Precollect Clips"
+    label = "Precollect Shots"
     hosts = ["resolve"]
     families = ["shot"]
 
@@ -40,30 +42,19 @@ class PrecollectShot(pyblish.api.InstancePlugin):
             }
         )
 
-        try:  # opentimelineio >= 0.16.0
-            all_clips = otio_timeline.find_clips()
-        except AttributeError:  # legacy
-            all_clips = otio_timeline.each_clips()
+        otio_clip, marker = utils.get_marker_from_clip_index(
+            otio_timeline, instance.data["clip_index"]
+        )
+        if not otio_clip:
+            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
 
-        # Retrieve otioClip from parent context otioTimeline
-        # See collect_current_project
-        for otio_clip in all_clips:
-            for marker in otio_clip.markers:
-                if (
-                    marker.metadata.get("clip_index") == 
-                    instance.data["clip_index"]
-                ):
-                    instance.data["otioClip"] = otio_clip
+        instance.data["otioClip"] = otio_clip
 
-                    # Overwrite settings with clip metadata is "sourceResolution"
-                    if marker.metadata["sourceResolution"]:
-                        clip_metadata = otio_clip.media_reference.metadata
-                        instance.data.update({
-                            "resolutionWidth": clip_metadata["width"],
-                            "resolutionHeight": clip_metadata["height"],
-                            "pixelAspect": clip_metadata["pixelAspect"]
-                        })
-
-                    return
-
-        raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+        # Overwrite settings with clip metadata is "sourceResolution"
+        if marker.metadata["sourceResolution"]:
+            clip_metadata = otio_clip.media_reference.metadata
+            instance.data.update({
+                "resolutionWidth": clip_metadata["width"],
+                "resolutionHeight": clip_metadata["height"],
+                "pixelAspect": clip_metadata["pixelAspect"]
+            })

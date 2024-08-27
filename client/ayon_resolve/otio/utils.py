@@ -68,3 +68,28 @@ def get_padding_from_path(path):
         return len(re.findall(padding_pattern, path).pop())
 
     return None
+
+
+def get_marker_from_clip_index(otio_timeline, clip_index):
+    """
+    Args:
+        otio_timeline (otio.Timeline): The otio timeline to inspect
+        clip_index (int): The clip index metadata to retrieve.
+
+    Returns:
+        tuple(otio.Clip, otio.Marker): The associated clip and marker
+            or (None, None)
+    """
+    try:  # opentimelineio >= 0.16.0
+        all_clips = otio_timeline.find_clips()
+    except AttributeError:  # legacy
+        all_clips = otio_timeline.each_clips()
+
+    # Retrieve otioClip from parent context otioTimeline
+    # See collect_current_project
+    for otio_clip in all_clips:
+        for marker in otio_clip.markers:
+            if (marker.metadata.get("clip_index") == clip_index):
+                return  otio_clip, marker  
+
+    return None, None

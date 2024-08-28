@@ -51,7 +51,10 @@ class PrecollectShot(pyblish.api.InstancePlugin):
         instance.data["otioClip"] = otio_clip
 
         # Overwrite settings with clip metadata is "sourceResolution"
-        if marker.metadata["sourceResolution"]:
+        creator_id = instance.data["creator_identifier"]
+        inst_data = marker.metadata["resolve_sub_products"].get(creator_id, {})
+        overwrite_clip_metadata = inst_data.get("sourceResolution", False)
+        if overwrite_clip_metadata:
             clip_metadata = otio_clip.media_reference.metadata
             instance.data.update({
                 "resolutionWidth": clip_metadata["width"],

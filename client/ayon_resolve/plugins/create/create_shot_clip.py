@@ -3,13 +3,16 @@ import copy
 from ayon_resolve.api import plugin, lib, constants
 from ayon_resolve.api.lib import (
     get_video_track_names,
+    get_current_timeline_items,
     create_bin,
 )
 from ayon_core.pipeline.create import CreatorError, CreatedInstance
 from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
 
 
-
+# Used as a key by the creators in order to 
+# retrieve the instances data into clip markers.
+_CONTENT_ID = "resolve_sub_products"
 
 
 class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
@@ -25,16 +28,20 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
+        instance_data = copy.deepcopy(instance_data)
         hierarchy_path = (
             f'/{instance_data["hierarchy"]}/'
             f'{instance_data["hierarchyData"]["shot"]}'
         )
         instance_data.update({
-            "productName": f"{self.product_type}Main",
+            "productName": f"{self.product_type}{instance_data['variant']}",
             "label": f"{hierarchy_path} {self.product_type}",
             "productType": self.product_type,
             "hierarchy_path": hierarchy_path,
-            "shotName": instance_data["hierarchyData"]["shot"]
+            "shotName": instance_data["hierarchyData"]["shot"],
+            "newHierarchyIntegration": True,
+            # Backwards compatible (Deprecated since 24/06/06)
+            "newAssetPublishing": True,            
         })
 
         new_instance = CreatedInstance(
@@ -42,6 +49,43 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
         )
         self._store_new_instance(new_instance)
         return new_instance        
+
+    def update_instances(self, update_list):
+        """Store changes of existing instances so they can be recollected.
+
+        Args:
+            update_list(List[UpdateData]): Gets list of tuples. Each item
+                contain changed instance and it's changes.
+        """
+        for created_inst, _changes in update_list:
+            track_item = created_inst.transient_data["track_item"]
+            tag_data = lib.get_timeline_item_ayon_tag(track_item)            
+            instances_data = tag_data[_CONTENT_ID]
+
+            instances_data[self.identifier] = created_inst.data_to_store()
+            lib.imprint(track_item, tag_data)
+
+    def remove_instances(self, instances):
+        """Remove instance marker from track item.
+
+        Args:
+            instance(List[CreatedInstance]): Instance objects which should be
+                removed.
+        """
+        for instance in instances:
+            track_item = instance.transient_data["track_item"]
+            tag_data = lib.get_timeline_item_ayon_tag(track_item)
+            instances_data = tag_data.get(_CONTENT_ID, {})
+            _ = instances_data.pop(self.identifier, None)
+            self._remove_instance_from_context(instance)
+
+            # Remove markers if deleted all of the instances
+            if not instances_data: 
+                track_item.DeleteMarkersByColor(constants.ayon_marker_color)
+                track_item.ClearClipColor()
+            # Push edited data in marker
+            else:
+                lib.imprint(track_item, tag_data)
 
 
 class ResolveShotInstanceCreator(_ResolveInstanceCreator):
@@ -115,42 +159,22 @@ class CreateShotClip(plugin.ResolveCreator):
                     ),
                     default=True),
 
-            # renameHierarchy
+            # export outputs
             UILabelDef(
-                label=header_label("Shot Hierarchy And Rename Settings")
+                label=header_label("Additional Export(s)")
             ),
-            TextDef(
-                "hierarchy",
-                label="Shot Parent Hierarchy",
-                tooltip="Parents folder for shot root folder, "
-                        "Template filled with *Hierarchy Data* section",
-                default=presets.get("hierarchy", "{folder}/{sequence}"),
-            ),
-            BoolDef(
-                "clipRename",
-                label="Rename clips",
-                tooltip="Renaming selected clips on fly",
-                default=presets.get("clipRename", False),
-            ),
-            TextDef(
-                "clipName",
-                label="Clip Name Template",
-                tooltip="template for creating shot names, used for "
-                        "renaming (use rename: on)",
-                default=presets.get("clipName", "{sequence}{shot}"),
-            ),
-            NumberDef(
-                "countFrom",
-                label="Count sequence from",
-                tooltip="Set where the sequence number starts from",
-                default=presets.get("countFrom", 10),
-            ),
-            NumberDef(
-                "countSteps",
-                label="Stepping number",
-                tooltip="What number is adding every new step",
-                default=presets.get("countSteps", 10),
-            ),
+            BoolDef("export_plate",
+                    label="Plate",
+                    tooltip="Export Plate output(s)",
+                    default=False),
+            BoolDef("export_review",
+                    label="Review",
+                    tooltip="Export Review output(s)",
+                    default=False),
+            BoolDef("export_audio",
+                    label="Audio",
+                    tooltip="Export Audio output(s)",
+                    default=False),
 
             # hierarchyData
             UILabelDef(
@@ -189,9 +213,46 @@ class CreateShotClip(plugin.ResolveCreator):
                 default=presets.get("shot", "sh###"),
             ),
 
+            # renameHierarchy
+            UILabelDef(
+                label=header_label("Shot Hierarchy and Rename Settings")
+            ),
+            TextDef(
+                "hierarchy",
+                label="Shot Parent Hierarchy",
+                tooltip="Parents folder for shot root folder, "
+                        "Template filled with *Hierarchy Data* section",
+                default=presets.get("hierarchy", "{folder}/{sequence}"),
+            ),
+            BoolDef(
+                "clipRename",
+                label="Rename Clips",
+                tooltip="Renaming selected clips on fly",
+                default=presets.get("clipRename", False),
+            ),
+            TextDef(
+                "clipName",
+                label="Clip Name Template",
+                tooltip="template for creating shot names, used for "
+                        "renaming (use rename: on)",
+                default=presets.get("clipName", "{sequence}{shot}"),
+            ),
+            NumberDef(
+                "countFrom",
+                label="Count Sequence from",
+                tooltip="Set where the sequence number starts from",
+                default=presets.get("countFrom", 10),
+            ),
+            NumberDef(
+                "countSteps",
+                label="Stepping Number",
+                tooltip="What number is adding every new step",
+                default=presets.get("countSteps", 10),
+            ),
+
             # verticalSync
             UILabelDef(
-                label=header_label("Vertical Synchronization Of Attributes")
+                label=header_label("Vertical Synchronization of Attributes")
             ),
             BoolDef(
                 "vSyncOn",
@@ -202,29 +263,10 @@ class CreateShotClip(plugin.ResolveCreator):
             ),
             EnumDef(
                 "vSyncTrack",
-                label="Hero track",
+                label="Hero Track",
                 tooltip="Select driving track name which should "
                         "be mastering all others",
                 items=gui_tracks or ["<nothing to select>"],
-            ),
-
-            # publishSettings
-            UILabelDef(
-                label=header_label("Publish Settings")
-            ),
-            EnumDef(
-                "variant",
-                label="Product Variant",
-                tooltip="Chose variant which will be then used for "
-                        "product name, if <track_name> "
-                        "is selected, name of track layer will be used",
-                items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],
-            ),
-            EnumDef(
-                "productType",
-                label="Product Type",
-                tooltip="How the product will be used",
-                items=['plate'],  # it is prepared for more types
             ),
             EnumDef(
                 "reviewTrack",
@@ -232,18 +274,6 @@ class CreateShotClip(plugin.ResolveCreator):
                 tooltip="Generate preview videos on fly, if "
                         "'< none >' is defined nothing will be generated.",
                 items=['< none >'] + gui_tracks,
-            ),
-            BoolDef(
-                "audio",
-                label="Include audio",
-                tooltip="Process subsets with corresponding audio",
-                default=False,
-            ),
-            BoolDef(
-                "sourceResolution",
-                label="Source resolution",
-                tooltip="Is resoloution taken from timeline or source?",
-                default=False,
             ),
 
             # shotAttr
@@ -258,16 +288,22 @@ class CreateShotClip(plugin.ResolveCreator):
             ),
             NumberDef(
                 "handleStart",
-                label="Handle start (head)",
+                label="Handle Start (head)",
                 tooltip="Handle at start of clip",
                 default=presets.get("handleStart", 0),
             ),
             NumberDef(
                 "handleEnd",
-                label="Handle end (tail)",
+                label="Handle End (tail)",
                 tooltip="Handle at end of clip",
                 default=presets.get("handleEnd", 0),
             ),
+            BoolDef(
+                "sourceResolution",
+                label="Use Source Resolution",
+                tooltip="Is resoloution/pixel aspect taken from timeline or source?",
+                default=False,
+            ),            
         ]
 
     presets = None
@@ -296,11 +332,14 @@ class CreateShotClip(plugin.ResolveCreator):
                 raise CreatorError(
                     "No clips found on current timeline."
                 )
-
         self.log.info(f"Selected: {self.selected}")
 
-        # Todo detect audio but no audio track.
-        # warning
+        audio_clips = get_current_timeline_items(track_type="audio")
+        if not audio_clips and pre_create_data.get("export_audio"):
+            raise CreatorError(
+                "You must have audio in your active "
+                "timeline in order to export audio."
+            )            
 
         # sort selected trackItems by vSync track
         sorted_selected_track_items = []
@@ -317,18 +356,24 @@ class CreateShotClip(plugin.ResolveCreator):
         # create media bin for compound clips (trackItems)
         media_pool_folder = create_bin(self.timeline.GetName())
 
+        # detecte enabled creators for review, plate and audio
+        all_creators = {
+            "io.ayon.creators.resolve.shot": True,
+            "io.ayon.creators.resolve.review": pre_create_data.get("export_review", False),
+            "io.ayon.creators.resolve.plate": pre_create_data.get("export_plate", False),
+            "io.ayon.creators.resolve.audio": pre_create_data.get("export_audio", False),
+        }
+        enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
+
         instances = []
         for index, track_item_data in enumerate(sorted_selected_track_items):
-            self.log.info(
-                "Processing track item data: {}".format(track_item_data)
-            )
 
-            instance_data.update({
-                "clip_index": index,
-                "newHierarchyIntegration": True,
-                # Backwards compatible (Deprecated since 24/06/06)
-                "newAssetPublishing": True,
-            })
+            clip_instances = {}
+            instance_data["clip_index"] = index
+            self.log.info(
+                "Processing track item data: {} (index: {})".format(
+                    track_item_data, index)
+            )
 
             # convert track item to timeline media pool item
             publish_clip = plugin.PublishableClip(
@@ -336,46 +381,55 @@ class CreateShotClip(plugin.ResolveCreator):
                 pre_create_data,
                 media_pool_folder,
                 rename_index=index,
-                data=instance_data
+                data=instance_data  # insert additional data in instance_data
             )
-
             track_item = publish_clip.convert()
             if track_item is None:
                 # Ignore input clips that do not convert into a track item
                 # from `PublishableClip.convert`
                 continue
 
-            track_item.SetClipColor(constants.publish_clip_color)
+            # Delete any existing instances previously generated for the clip.
+            prev_tag_data = lib.get_timeline_item_ayon_tag(track_item)            
+            if prev_tag_data:
+                for creator_id, inst_data in prev_tag_data[_CONTENT_ID].items():
+                    creator = self.create_context.creators[creator_id]
+                    prev_instances = [
+                        inst for inst_id, inst 
+                        in self.create_context.instances_by_id.items()
+                        if inst_id == inst_data["instance_id"] 
+                    ]
+                    creator.remove_instances(prev_instances)
 
-            instance_data = copy.deepcopy(instance_data)
-            # TODO: here we need to replicate Traypublisher Editorial workflow
-            #  and create shot, plate, review, and audio instances with own
-            #  dedicated plugin
-            # TODO: should that be choosable for the user ?
-            for creator_id in (
-                "io.ayon.creators.resolve.shot",
-                "io.ayon.creators.resolve.review",
-                "io.ayon.creators.resolve.plate",
-                "io.ayon.creators.resolve.audio",                
-            ): 
+            # Create new product(s) instances.
+            for creator_id in enabled_creators:
                 instance = self.create_context.creators[creator_id].create(
                     instance_data, None
                 )
                 instance.transient_data["track_item"] = track_item            
                 self._add_instance_to_context(instance)
-                instances.append(instance)
+                clip_instances[creator_id] = instance.data_to_store()
 
-            # self.imprint_instance_node(instance_node,
-            #                            data=instance.data_to_store())
+            # insert clip index and created instances
+            # data as track_item metadata, to retrieve those
+            # during collections and publishing phases
+            lib.imprint(
+                track_item,
+                data={
+                    _CONTENT_ID: clip_instances,
+                    "clip_index": index,
+                },
+            )
+            track_item.SetClipColor(constants.publish_clip_color)
+            instances.extend(list(clip_instances.values()))
+
         return instances
 
     def collect_instances(self):
         """Collect all created instances from current timeline."""
-        selected_timeline_items = lib.get_current_timeline_items(
-            filter=True, selecting_color=constants.publish_clip_color)
-
+        all_timeline_items = lib.get_current_timeline_items()
         instances = []
-        for timeline_item_data in selected_timeline_items:
+        for timeline_item_data in all_timeline_items:
             timeline_item = timeline_item_data["clip"]["item"]
 
             # get openpype tag data
@@ -383,38 +437,18 @@ class CreateShotClip(plugin.ResolveCreator):
             if not tag_data:
                 continue
 
-            instance = CreatedInstance.from_existing(tag_data, self)
-            instance.transient_data["track_item"] = timeline_item
-            self._add_instance_to_context(instance)
+            for creator_id, data in tag_data.get(_CONTENT_ID, {}).items():
+                creator = self.create_context.creators[creator_id]
+                instance = CreatedInstance.from_existing(data, creator)
+                instance.transient_data["track_item"] = timeline_item
+                self._add_instance_to_context(instance)
+                instances.append(instance)
 
         return instances
 
     def update_instances(self, update_list):
-        """Store changes of existing instances so they can be recollected.
-
-        Args:
-            update_list(List[UpdateData]): Gets list of tuples. Each item
-                contain changed instance and it's changes.
-        """
-        for created_inst, _changes in update_list:
-            track_item = created_inst.transient_data["track_item"]
-            data = created_inst.data_to_store()
-            self.log.info(f"Storing data: {data}")
-
-            lib.imprint(track_item, data)
+        """Never called, update is handled via _ResolveInstanceCreator."""
 
     def remove_instances(self, instances):
-        """Remove instance marker from track item.
-
-        Args:
-            instance(List[CreatedInstance]): Instance objects which should be
-                removed.
-        """
-        for instance in instances:
-            track_item = instance.transient_data["track_item"]
-
-            # removing instance by marker color
-            print(f"Removing instance: {track_item.GetName()}")
-            track_item.DeleteMarkersByColor(constants.ayon_marker_color)
-
-            self._remove_instance_from_context(instance)
+        """Never called, removal is handled via _ResolveInstanceCreator."""
+        

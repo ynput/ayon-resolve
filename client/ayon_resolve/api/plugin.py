@@ -467,9 +467,6 @@ class PublishableClip:
                 "track_data": self.timeline_item_data["track"]
             })
 
-        # create openpype tag on timeline_item and add data
-        lib.imprint(self.timeline_item, self.tag_data)
-
         return self.timeline_item
 
     def _populate_timeline_item_default_data(self):
@@ -678,15 +675,10 @@ class HiddenResolvePublishCreator(HiddenCreator):
     settings_category = "resolve"
 
     def collect_instances(self):
-        instances_by_identifier = cache_and_get_instances(
-            self, SHARED_DATA_KEY, list_instances
-        )
-        for instance_data in instances_by_identifier[self.identifier]:
-            instance = CreatedInstance.from_existing(instance_data, self)
-            self._add_instance_to_context(instance)
+        pass
 
     def update_instances(self, update_list):
-        update_instances(update_list)
+        pass
 
     def remove_instances(self, instances):
         remove_instances(instances)
@@ -723,12 +715,10 @@ class ResolvePublishCreator(Creator):
             self._add_instance_to_context(instance)
 
     def update_instances(self, update_list):
-        update_instances(update_list)
+        pass
 
     def remove_instances(self, instances):
-        remove_instances(instances)
-        for instance in instances:
-            self._remove_instance_from_context(instance)
+        pass
 
     def _store_new_instance(self, new_instance):
         """Resolve publisher specific method to store instance.

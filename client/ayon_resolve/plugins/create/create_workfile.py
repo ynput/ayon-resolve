@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 """Creator plugin for creating workfiles."""
+import json
+
 import ayon_api
 from ayon_core.pipeline import (
     AutoCreator,
     CreatedInstance,
 )
+
+from ayon_resolve.api import lib
+from ayon_resolve.api import constants
 
 
 class CreateWorkfile(AutoCreator):
@@ -17,8 +22,45 @@ class CreateWorkfile(AutoCreator):
 
     default_variant = "Main"
 
-    def collect_instances(self):
+    def _dumps_data_as_marker(self, data):
+        """Store workfile as timeline marker.
 
+        Args:
+            data (dict): The data to store on the timeline.
+        """
+        timeline = lib.get_current_timeline()
+        note = json.dumps(data)
+
+        timeline.AddMarker(
+            timeline.GetStartFrame(),
+            constants.ayon_marker_color,
+            constants.ayon_marker_name,
+            note,
+            constants.ayon_marker_duration
+        )
+
+    def _get_timeline_marker(self):
+        """Retrieve workfile marker from timeline."""
+        timeline = lib.get_current_timeline()
+        for idx, marker_info in timeline.GetMarkers().items():
+            if (
+                marker_info["name"] == constants.ayon_marker_name
+                and marker_info["color"] == constants.ayon_marker_color
+            ):
+                return idx, marker_info
+
+        return None, None
+
+    def _loads_data_from_marker(self):
+        """Retrieve workfile from timeline marker."""
+        _, marker_info = self._get_timeline_marker()
+        if not marker_info:
+            return {}
+
+        return json.loads(marker_info["note"])
+
+    def _create_new_instance(self):
+        """Create new instance."""
         variant = self.default_variant
         project_name = self.create_context.get_current_project_name()
         folder_path = self.create_context.get_current_folder_path()
@@ -41,6 +83,7 @@ class CreateWorkfile(AutoCreator):
             "folderPath": folder_path,
             "task": task_name,
             "variant": variant,
+            "productName": product_name,
         }
         data.update(
             self.get_dynamic_data(
@@ -52,9 +95,19 @@ class CreateWorkfile(AutoCreator):
                 False,
             )
         )
-        self.log.info("Auto-creating workfile instance...")
+
+        self._dumps_data_as_marker(data)
+        return data
+
+    def collect_instances(self):
+        """Collect from timeline marker or create a new one."""
+        data = self._loads_data_from_marker()
+        if not data:
+            self.log.info("Auto-creating workfile instance...")
+            data = self._create_new_instance()
+
         current_instance = CreatedInstance(
-            self.product_type, product_name, data, self)
+            self.product_type, data["productName"], data, self)
         self._add_instance_to_context(current_instance)
 
     def create(self, options=None):
@@ -63,8 +116,18 @@ class CreateWorkfile(AutoCreator):
         pass
 
     def update_instances(self, update_list):
-        # TODO: Implement
-        #   This needs to be implemented to allow persisting any instance
-        #   data on resets. We'll need to decide where to store workfile
-        #   instance data reliably. Likely metadata on the *current project*?
-        pass
+        """Store changes in project metadata so they can be recollected.
+
+        Args:
+            update_list(List[UpdateData]): Gets list of tuples. Each item
+                contain changed instance and it's changes.
+        """
+        timeline = lib.get_current_timeline()
+        frame_id, _ = self._get_timeline_marker()
+
+        if frame_id is not None:
+            timeline.DeleteMarkerAtFrame(frame_id)
+
+        for created_inst, _changes in update_list:
+            data = created_inst.data_to_store()
+            self._dumps_data_as_marker(data)

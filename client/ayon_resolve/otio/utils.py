@@ -1,3 +1,4 @@
+import json
 import re
 import opentimelineio as otio
 
@@ -70,6 +71,27 @@ def get_padding_from_path(path):
     return None
 
 
+def unwrap_resolve_otio_marker(marker):
+    """
+    Args:
+        marker (opentimelineio.schema.Marker): The marker to unwrap.
+
+    Returns:
+        marker (opentimelineio.schema.Marker): Conformed marker.
+    """
+    # Resolve native OTIO exporter messes up the marker
+    # dict metadata for some reasons.
+    # {dict_info} -> {"Resolve_OTIO": {"Note": "string_dict_info"}}
+    try:
+        marker_note = marker.metadata["Resolve_OTIO"]["Note"]
+    except KeyError:
+        return marker
+
+    marker_note_dict = json.loads(marker_note)
+    marker.metadata.update(marker_note_dict)  # prevent additional resolve keys
+    return marker
+
+
 def get_marker_from_clip_index(otio_timeline, clip_index):
     """
     Args:
@@ -89,7 +111,8 @@ def get_marker_from_clip_index(otio_timeline, clip_index):
     # See collect_current_project
     for otio_clip in all_clips:
         for marker in otio_clip.markers:
-            if (marker.metadata.get("clip_index") == clip_index):
-                return  otio_clip, marker  
+            marker = unwrap_resolve_otio_marker(marker)
+            if marker.metadata.get("clip_index") == clip_index:
+                return  otio_clip, marker
 
     return None, None

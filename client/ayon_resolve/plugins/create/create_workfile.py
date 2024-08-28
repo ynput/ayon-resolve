@@ -28,7 +28,23 @@ class CreateWorkfile(AutoCreator):
         Args:
             data (dict): The data to store on the timeline.
         """
+        # Append global project 
+        # (timeline metadata is not maintained by Resolve native OTIO)
         timeline = lib.get_current_timeline()
+        timeline_settings = timeline.GetSetting()
+
+        try:
+            pixel_aspect = int(timeline_settings["timelinePixelAspectRatio"])
+        except ValueError:
+            pixel_aspect = 1.0
+
+        data.update({
+            "width": timeline_settings["timelineResolutionWidth"],
+            "height": timeline_settings["timelineResolutionHeight"],
+            "pixelAspect": pixel_aspect
+        })
+
+        # Store as marker note data
         note = json.dumps(data)
 
         timeline.AddMarker(
@@ -105,6 +121,7 @@ class CreateWorkfile(AutoCreator):
         if not data:
             self.log.info("Auto-creating workfile instance...")
             data = self._create_new_instance()
+            self._dumps_data_as_marker(data)
 
         current_instance = CreatedInstance(
             self.product_type, data["productName"], data, self)

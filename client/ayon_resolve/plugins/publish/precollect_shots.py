@@ -33,31 +33,54 @@ class PrecollectShot(pyblish.api.InstancePlugin):
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
-        instance.data.update(
-            {
-                "fps": instance.context.data["fps"],
-                "resolutionWidth": otio_timeline.metadata["width"],
-                "resolutionHeight": otio_timeline.metadata["height"],
-                "pixelAspect": otio_timeline.metadata["pixelAspect"]                
-            }
-        )
-
         otio_clip, marker = utils.get_marker_from_clip_index(
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
             raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
 
+        # Retrieve AyonData marker for associated clip.
         instance.data["otioClip"] = otio_clip
-
-        # Overwrite settings with clip metadata is "sourceResolution"
         creator_id = instance.data["creator_identifier"]
         inst_data = marker.metadata["resolve_sub_products"].get(creator_id, {})
+
+        # Overwrite settings with clip metadata is "sourceResolution"
         overwrite_clip_metadata = inst_data.get("sourceResolution", False)
         if overwrite_clip_metadata:
-            clip_metadata = otio_clip.media_reference.metadata
-            instance.data.update({
-                "resolutionWidth": clip_metadata["width"],
-                "resolutionHeight": clip_metadata["height"],
-                "pixelAspect": clip_metadata["pixelAspect"]
-            })
+            clip_metadata = inst_data["clip_source_resolution"]
+            width = clip_metadata["width"]
+            height = clip_metadata["height"]
+            pixel_aspect = clip_metadata["pixelAspect"]
+
+        else:
+            # AYON's OTIO export = resolution from timeline metadata.
+            # This is metadata is inserted by ayon_resolve.otio.davinci_export.
+            width = height = None
+            try:
+                width = otio_timeline.metadata["width"]
+                height = otio_timeline.metadata["height"]
+                pixel_aspect = otio_timeline.metadata["pixelAspect"]
+
+            # Resolve native OTIO export trashes any timeline metadata
+            # so force re-compute it from track workfile metadata
+            except KeyError:
+                # Retrieve AyonData marker for timeline.
+                for marker in otio_timeline.tracks.markers:
+                    if marker.name == "AyonData":
+                        utils.unwrap_resolve_otio_marker(marker)
+                        width = marker.metadata["width"]
+                        height = marker.metadata["height"]
+                        pixel_aspect = marker.metadata["pixelAspect"]
+                        break
+                else:
+                    raise RuntimeError("Could not retrieve timeline "
+                        "resolution metdata from otio_timeline.")
+
+        instance.data.update(
+            {
+                "fps": instance.context.data["fps"],
+                "resolutionWidth": width,
+                "resolutionHeight": height,
+                "pixelAspect": pixel_aspect,
+            }
+        )

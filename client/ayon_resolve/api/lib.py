@@ -409,7 +409,7 @@ def get_current_timeline_items(
         selecting_color: str = None) -> List[Dict[str, Any]]:
     """Get all available current timeline track items"""
     track_type = track_type or "video"
-    selecting_color = selecting_color or "Chocolate"
+    selecting_color = selecting_color or constants.selected_clip_color
     resolve_project = get_current_resolve_project()
 
     # get timeline anyhow
@@ -908,6 +908,32 @@ def _convert_resolve_list_type(resolve_list):
     return [resolve_list[i] for i in sorted(resolve_list.keys())]
 
 
+def get_clip_resolution_from_media_pool(timeline_item_data):
+    """Return the clip resolution from media pool data.
+
+    Args:
+        timeline_item_data (dict): Timeline item to investigate.
+
+    Returns:
+        resolution_info (dict): The parsed resolution data.
+    """
+    clip_item = timeline_item_data["clip"]["item"]
+    media_pool_item = clip_item.GetMediaPoolItem()
+    clip_properties = media_pool_item.GetClipProperty()
+
+    try:
+        width, height = clip_properties["Resolution"].split("x")
+    except (KeyError, ValueError):
+        width = height = None
+
+    try:
+        pixel_aspect = int(clip_properties["PAR"]) # Pixel Aspect Resolution
+    except(KeyError, ValueError):
+        pixel_aspect = 1.0
+
+    return {"width": width, "height": height, "pixelAspect": pixel_aspect}
+
+
 def create_otio_time_range_from_timeline_item_data(timeline_item_data):
     timeline_item = timeline_item_data["clip"]["item"]
     resolve_project = timeline_item_data["project"]
@@ -1008,7 +1034,6 @@ def export_timeline_otio_to_file(timeline, filepath):
     """
     try:
         from . import bmdvr
-        raise AttributeError("TODO investigate export with metadata")
         timeline.Export(filepath, bmdvr.EXPORT_OTIO)
 
     except Exception as error:

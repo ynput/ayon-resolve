@@ -19,7 +19,7 @@ class PrecollectAudio(pyblish.api.InstancePlugin):
         instance.data["folderPath"] = instance.data.pop("hierarchy_path")
 
         otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, marker = utils.get_marker_from_clip_index(
+        otio_clip, _ = utils.get_marker_from_clip_index(
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:

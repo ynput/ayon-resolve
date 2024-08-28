@@ -2,6 +2,7 @@
 rename_index = 0
 rename_add = 0
 
+selected_clip_color = "Chocolate"
 publish_clip_color = "Pink"
 ayon_marker_workflow = True
 

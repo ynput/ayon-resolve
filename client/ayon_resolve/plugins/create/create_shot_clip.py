@@ -48,7 +48,7 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
             self.product_type, instance_data["productName"], instance_data, self
         )
         self._store_new_instance(new_instance)
-        return new_instance        
+        return new_instance
 
     def update_instances(self, update_list):
         """Store changes of existing instances so they can be recollected.
@@ -82,7 +82,9 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
             # Remove markers if deleted all of the instances
             if not instances_data: 
                 track_item.DeleteMarkersByColor(constants.ayon_marker_color)
-                track_item.ClearClipColor()
+                if track_item.GetClipColor() != constants.selected_clip_color:
+                    track_item.ClearClipColor()
+
             # Push edited data in marker
             else:
                 lib.imprint(track_item, tag_data)
@@ -368,12 +370,13 @@ class CreateShotClip(plugin.ResolveCreator):
         instances = []
         for index, track_item_data in enumerate(sorted_selected_track_items):
 
-            clip_instances = {}
-            instance_data["clip_index"] = index
-            self.log.info(
-                "Processing track item data: {} (index: {})".format(
-                    track_item_data, index)
-            )
+            # Compute and store resolution metadata from mediapool clip.
+            resolution_data = lib.get_clip_resolution_from_media_pool(track_item_data)
+            item_unique_id = track_item_data["clip"]["item"].GetUniqueId()
+            instance_data.update({
+                "clip_index": item_unique_id,
+                "clip_source_resolution": resolution_data,
+            })
 
             # convert track item to timeline media pool item
             publish_clip = plugin.PublishableClip(
@@ -389,6 +392,11 @@ class CreateShotClip(plugin.ResolveCreator):
                 # from `PublishableClip.convert`
                 continue
 
+            self.log.info(
+                "Processing track item data: {} (index: {})".format(
+                    track_item_data, index)
+            )
+
             # Delete any existing instances previously generated for the clip.
             prev_tag_data = lib.get_timeline_item_ayon_tag(track_item)            
             if prev_tag_data:
@@ -402,6 +410,7 @@ class CreateShotClip(plugin.ResolveCreator):
                     creator.remove_instances(prev_instances)
 
             # Create new product(s) instances.
+            clip_instances = {}
             for creator_id in enabled_creators:
                 instance = self.create_context.creators[creator_id].create(
                     instance_data, None
@@ -410,14 +419,14 @@ class CreateShotClip(plugin.ResolveCreator):
                 self._add_instance_to_context(instance)
                 clip_instances[creator_id] = instance.data_to_store()
 
-            # insert clip index and created instances
+            # insert clip unique ID and created instances
             # data as track_item metadata, to retrieve those
             # during collections and publishing phases
             lib.imprint(
                 track_item,
                 data={
                     _CONTENT_ID: clip_instances,
-                    "clip_index": index,
+                    "clip_index": item_unique_id,
                 },
             )
             track_item.SetClipColor(constants.publish_clip_color)

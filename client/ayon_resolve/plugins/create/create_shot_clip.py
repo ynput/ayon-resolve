@@ -28,6 +28,9 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
+        if instance_data.get("variant") == "<track_name>":
+            instance_data["variant"] = instance_data["hierarchyData"]["track"]
+
         instance_data = copy.deepcopy(instance_data)
         hierarchy_path = (
             f'/{instance_data["hierarchy"]}/'
@@ -97,13 +100,6 @@ class ResolveShotInstanceCreator(_ResolveInstanceCreator):
     label = "Editorial Shot"
 
 
-class EditorialReviewInstanceCreator(_ResolveInstanceCreator):
-    """Review product type creator class"""
-    identifier = "io.ayon.creators.resolve.review"
-    product_type = "review"
-    label = "Editorial Review"
-
-
 class EditorialPlateInstanceCreator(_ResolveInstanceCreator):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.resolve.plate"
@@ -160,23 +156,6 @@ class CreateShotClip(plugin.ResolveCreator):
                         "the currently selected timeline items."
                     ),
                     default=True),
-
-            # export outputs
-            UILabelDef(
-                label=header_label("Additional Export(s)")
-            ),
-            BoolDef("export_plate",
-                    label="Plate",
-                    tooltip="Export Plate output(s)",
-                    default=False),
-            BoolDef("export_review",
-                    label="Review",
-                    tooltip="Export Review output(s)",
-                    default=False),
-            BoolDef("export_audio",
-                    label="Audio",
-                    tooltip="Export Audio output(s)",
-                    default=False),
 
             # hierarchyData
             UILabelDef(
@@ -270,12 +249,43 @@ class CreateShotClip(plugin.ResolveCreator):
                         "be mastering all others",
                 items=gui_tracks or ["<nothing to select>"],
             ),
+
+            # publishSettings
+            UILabelDef(
+                label=header_label("Publish Settings")
+            ),
+            EnumDef(
+                "variant",
+                label="Product Variant",
+                tooltip="Chose variant which will be then used for "
+                        "product name, if <track_name> "
+                        "is selected, name of track layer will be used",
+                items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],
+            ),
+            EnumDef(
+                "productType",
+                label="Product Type",
+                tooltip="How the product will be used",
+                items=['plate'],  # it is prepared for more types
+            ),
             EnumDef(
                 "reviewTrack",
                 label="Use Review Track",
                 tooltip="Generate preview videos on fly, if "
                         "'< none >' is defined nothing will be generated.",
                 items=['< none >'] + gui_tracks,
+            ),
+            BoolDef(
+                "export_audio",
+                label="Include audio",
+                tooltip="Process subsets with corresponding audio",
+                default=False,
+            ),
+            BoolDef(
+                "sourceResolution",
+                label="Source resolution",
+                tooltip="Is resoloution taken from timeline or source?",
+                default=False,
             ),
 
             # shotAttr
@@ -299,13 +309,7 @@ class CreateShotClip(plugin.ResolveCreator):
                 label="Handle End (tail)",
                 tooltip="Handle at end of clip",
                 default=presets.get("handleEnd", 0),
-            ),
-            BoolDef(
-                "sourceResolution",
-                label="Use Source Resolution",
-                tooltip="Is resoloution/pixel aspect taken from timeline or source?",
-                default=False,
-            ),            
+            ),           
         ]
 
     presets = None
@@ -315,6 +319,8 @@ class CreateShotClip(plugin.ResolveCreator):
         super(CreateShotClip, self).create(subset_name,
                                            instance_data,
                                            pre_create_data)
+
+        instance_data["variant"] = pre_create_data["variant"]
 
         if not self.timeline:
             raise CreatorError(
@@ -361,8 +367,7 @@ class CreateShotClip(plugin.ResolveCreator):
         # detecte enabled creators for review, plate and audio
         all_creators = {
             "io.ayon.creators.resolve.shot": True,
-            "io.ayon.creators.resolve.review": pre_create_data.get("export_review", False),
-            "io.ayon.creators.resolve.plate": pre_create_data.get("export_plate", False),
+            "io.ayon.creators.resolve.plate": True,
             "io.ayon.creators.resolve.audio": pre_create_data.get("export_audio", False),
         }
         enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)

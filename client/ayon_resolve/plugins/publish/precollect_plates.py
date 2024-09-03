@@ -1,5 +1,7 @@
 import pyblish
 
+from ayon_resolve.otio import utils
+
 
 class PrecollectPlate(pyblish.api.InstancePlugin):
     """PreCollect new plates."""
@@ -17,4 +19,16 @@ class PrecollectPlate(pyblish.api.InstancePlugin):
         # Temporary disable no-representation failure.
         # TODO not sure what should happen for the plate.
         instance.data["folderPath"] = instance.data.pop("hierarchy_path")
-        instance.data["integrate"] = False 
+        instance.data["families"].append("clip")
+
+        # Adjust instance data from parent otio timeline.
+        otio_timeline = instance.context.data["otioTimeline"]
+        instance.data["fps"] = instance.context.data["fps"]
+
+        otio_clip, _ = utils.get_marker_from_clip_index(
+            otio_timeline, instance.data["clip_index"]
+        )
+        if not otio_clip:
+            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+
+        instance.data["otioClip"] = otio_clip

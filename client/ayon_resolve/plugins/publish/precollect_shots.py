@@ -21,7 +21,7 @@ class PrecollectShot(pyblish.api.InstancePlugin):
         traypublisher:
         https://github.com/ynput/ayon-traypublisher/blob/develop/client/ayon_traypublisher/plugins/publish/collect_shot_instances.py#L188
         """
-        instance.data["folderPath"] = instance.data.pop("hierarchy_path")
+        instance.data["folderPath"] = instance.data["folder_path"]
         instance.data["integrate"] = False  # no representation for shot
 
     def process(self, instance):

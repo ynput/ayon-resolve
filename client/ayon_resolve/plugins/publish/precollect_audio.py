@@ -16,7 +16,7 @@ class PrecollectAudio(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
-        instance.data["folderPath"] = instance.data.pop("hierarchy_path")
+        instance.data["folderPath"] = instance.data["folder_path"]
 
         otio_timeline = instance.context.data["otioTimeline"]
         otio_clip, _ = utils.get_marker_from_clip_index(

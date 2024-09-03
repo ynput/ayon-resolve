@@ -28,20 +28,11 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        if instance_data.get("variant") == "<track_name>":
-            instance_data["variant"] = instance_data["hierarchyData"]["track"]
-
         instance_data = copy.deepcopy(instance_data)
-        hierarchy_path = (
-            f'/{instance_data["hierarchy"]}/'
-            f'{instance_data["hierarchyData"]["shot"]}'
-        )
         instance_data.update({
             "productName": f"{self.product_type}{instance_data['variant']}",
-            "label": f"{hierarchy_path} {self.product_type}",
+            "label": f"{instance_data['folder_path']} {self.product_type}",
             "productType": self.product_type,
-            "hierarchy_path": hierarchy_path,
-            "shotName": instance_data["hierarchyData"]["shot"],
             "newHierarchyIntegration": True,
             # Backwards compatible (Deprecated since 24/06/06)
             "newAssetPublishing": True,            
@@ -106,8 +97,27 @@ class EditorialPlateInstanceCreator(_ResolveInstanceCreator):
     product_type = "plate"
     label = "Editorial Plate"
 
+    def create(self, instance_data, _):
+        """Return a new CreateInstance for new shot from Resolve.
 
-class EditorialAudioInstanceCreator(_ResolveInstanceCreator):
+        Args:
+            instance_data (dict): global data from original instance
+
+        Return:
+            CreatedInstance: The created instance object for the new shot.
+        """
+        instance_data = copy.deepcopy(instance_data)
+
+        if instance_data.get("clip_variant") == "<track_name>":
+            instance_data["variant"] = instance_data["hierarchyData"]["track"]
+
+        else:
+            instance_data["variant"] = instance_data["clip_variant"]
+
+        return super().create(instance_data, None)
+
+
+class EditorialAudioInstanceCreator(EditorialPlateInstanceCreator):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.resolve.audio"
     product_type = "audio"
@@ -207,13 +217,13 @@ class CreateShotClip(plugin.ResolveCreator):
             ),
             BoolDef(
                 "clipRename",
-                label="Rename Clips",
+                label="Rename Shots/Clips",
                 tooltip="Renaming selected clips on fly",
                 default=presets.get("clipRename", False),
             ),
             TextDef(
                 "clipName",
-                label="Clip Name Template",
+                label="Rename Template",
                 tooltip="template for creating shot names, used for "
                         "renaming (use rename: on)",
                 default=presets.get("clipName", "{sequence}{shot}"),
@@ -252,10 +262,10 @@ class CreateShotClip(plugin.ResolveCreator):
 
             # publishSettings
             UILabelDef(
-                label=header_label("Publish Settings")
+                label=header_label("Clip Publish Settings")
             ),
             EnumDef(
-                "variant",
+                "clip_variant",
                 label="Product Variant",
                 tooltip="Chose variant which will be then used for "
                         "product name, if <track_name> "
@@ -320,7 +330,7 @@ class CreateShotClip(plugin.ResolveCreator):
                                            instance_data,
                                            pre_create_data)
 
-        instance_data["variant"] = pre_create_data["variant"]
+        instance_data["clip_variant"] = pre_create_data["clip_variant"]
 
         if not self.timeline:
             raise CreatorError(

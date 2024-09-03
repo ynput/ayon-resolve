@@ -16,9 +16,7 @@ class PrecollectPlate(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
-        # Temporary disable no-representation failure.
-        # TODO not sure what should happen for the plate.
-        instance.data["folderPath"] = instance.data.pop("hierarchy_path")
+        instance.data["folderPath"] = instance.data["folder_path"]
         instance.data["families"].append("clip")
 
         # Adjust instance data from parent otio timeline.

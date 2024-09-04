@@ -22,58 +22,29 @@ class CreateWorkfile(AutoCreator):
 
     default_variant = "Main"
 
-    def _dumps_data_as_marker(self, data):
-        """Store workfile as timeline marker.
+    def _dumps_data_as_project_setting(self, data):
+        """Store workfile as project setting.
 
         Args:
             data (dict): The data to store on the timeline.
         """
-        # Append global project 
-        # (timeline metadata is not maintained by Resolve native OTIO)
-        timeline = lib.get_current_timeline()
-        timeline_settings = timeline.GetSetting()
-
-        try:
-            pixel_aspect = int(timeline_settings["timelinePixelAspectRatio"])
-        except ValueError:
-            pixel_aspect = 1.0
-
-        data.update({
-            "width": timeline_settings["timelineResolutionWidth"],
-            "height": timeline_settings["timelineResolutionHeight"],
-            "pixelAspect": pixel_aspect
-        })
-
-        # Store as marker note data
+        # Store info as project setting data.
+        # Use this hack instead: 
+        # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=
+        # 189685&hilit=python+database#p991541
         note = json.dumps(data)
+        proj = lib.get_current_project()
+        proj.SetSetting("colorVersion10Name", note)
 
-        timeline.AddMarker(
-            timeline.GetStartFrame(),
-            constants.ayon_marker_color,
-            constants.ayon_marker_name,
-            note,
-            constants.ayon_marker_duration
-        )
+    def _loads_data_from_project_setting(self):
+        """Retrieve workfile data from project setting."""
+        proj = lib.get_current_project()
+        setting_content = proj.GetSetting("colorVersion10Name")
 
-    def _get_timeline_marker(self):
-        """Retrieve workfile marker from timeline."""
-        timeline = lib.get_current_timeline()
-        for idx, marker_info in timeline.GetMarkers().items():
-            if (
-                marker_info["name"] == constants.ayon_marker_name
-                and marker_info["color"] == constants.ayon_marker_color
-            ):
-                return idx, marker_info
+        if setting_content:
+            return json.loads(setting_content)
 
-        return None, None
-
-    def _loads_data_from_marker(self):
-        """Retrieve workfile from timeline marker."""
-        _, marker_info = self._get_timeline_marker()
-        if not marker_info:
-            return {}
-
-        return json.loads(marker_info["note"])
+        return None
 
     def _create_new_instance(self):
         """Create new instance."""
@@ -112,16 +83,14 @@ class CreateWorkfile(AutoCreator):
             )
         )
 
-        self._dumps_data_as_marker(data)
         return data
 
     def collect_instances(self):
         """Collect from timeline marker or create a new one."""
-        data = self._loads_data_from_marker()
+        data = self._loads_data_from_project_setting()
         if not data:
             self.log.info("Auto-creating workfile instance...")
             data = self._create_new_instance()
-            self._dumps_data_as_marker(data)
 
         current_instance = CreatedInstance(
             self.product_type, data["productName"], data, self)
@@ -139,12 +108,6 @@ class CreateWorkfile(AutoCreator):
             update_list(List[UpdateData]): Gets list of tuples. Each item
                 contain changed instance and it's changes.
         """
-        timeline = lib.get_current_timeline()
-        frame_id, _ = self._get_timeline_marker()
-
-        if frame_id is not None:
-            timeline.DeleteMarkerAtFrame(frame_id)
-
-        for created_inst, _changes in update_list:
+        for created_inst, _ in update_list:
             data = created_inst.data_to_store()
-            self._dumps_data_as_marker(data)
+            self._dumps_data_as_project_setting(data)

@@ -105,7 +105,7 @@ def get_marker_from_clip_index(otio_timeline, clip_index):
     try:  # opentimelineio >= 0.16.0
         all_clips = otio_timeline.find_clips()
     except AttributeError:  # legacy
-        all_clips = otio_timeline.each_clips()
+        all_clips = otio_timeline.each_clip()
 
     # Retrieve otioClip from parent context otioTimeline
     # See collect_current_project

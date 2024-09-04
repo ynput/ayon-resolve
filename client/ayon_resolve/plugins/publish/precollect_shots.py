@@ -1,5 +1,6 @@
 import pyblish
 
+from ayon_resolve.api import lib
 from ayon_resolve.otio import utils
 
 
@@ -61,20 +62,17 @@ class PrecollectShot(pyblish.api.InstancePlugin):
                 height = otio_timeline.metadata["height"]
                 pixel_aspect = otio_timeline.metadata["pixelAspect"]
 
-            # Resolve native OTIO export trashes any timeline metadata
-            # so force re-compute it from track workfile metadata
             except KeyError:
-                # Retrieve AyonData marker for timeline.
-                for marker in otio_timeline.tracks.markers:
-                    if marker.name == "AyonData":
-                        utils.unwrap_resolve_otio_marker(marker)
-                        width = marker.metadata["width"]
-                        height = marker.metadata["height"]
-                        pixel_aspect = marker.metadata["pixelAspect"]
-                        break
-                else:
-                    raise RuntimeError("Could not retrieve timeline "
-                        "resolution metdata from otio_timeline.")
+                # Retrieve resolution for project.
+                project = lib.get_current_project()
+                project_settings = project.GetSetting()
+                try:
+                    pixel_aspect = int(project_settings["timelinePixelAspectRatio"])
+                except ValueError:
+                    pixel_aspect = 1.0
+
+                width = int(project_settings["timelineResolutionWidth"])
+                height = int(project_settings["timelineResolutionHeight"])
 
         instance.data.update(
             {

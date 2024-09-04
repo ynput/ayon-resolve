@@ -967,10 +967,10 @@ def get_otio_clip_instance_data(otio_timeline, timeline_item_data):
     timeline_range = create_otio_time_range_from_timeline_item_data(
         timeline_item_data)
 
-    try:
-        all_clips = otio_timeline.each_clip()
-    except AttributeError: # OpenTimelineIO >= 0.16.0
+    try:  # opentimelineio >= 0.16.0
         all_clips = otio_timeline.find_clips()
+    except AttributeError:  # legacy
+        all_clips = otio_timeline.each_clip()
 
     for otio_clip in all_clips:
         track_name = otio_clip.parent().name

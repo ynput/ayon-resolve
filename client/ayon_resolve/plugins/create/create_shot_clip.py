@@ -117,7 +117,7 @@ class EditorialPlateInstanceCreator(_ResolveInstanceCreator):
         return super().create(instance_data, None)
 
 
-class EditorialAudioInstanceCreator(EditorialPlateInstanceCreator):
+class EditorialAudioInstanceCreator(_ResolveInstanceCreator):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.resolve.audio"
     product_type = "audio"

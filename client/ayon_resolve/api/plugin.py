@@ -1,3 +1,4 @@
+import copy
 import re
 import uuid
 
@@ -7,7 +8,8 @@ from ayon_core.lib import BoolDef
 
 from ayon_core.pipeline import (
     LoaderPlugin,
-    Creator as NewCreator
+    Creator as NewCreator,
+    Anatomy
 )
 
 from ayon_core.pipeline.create import (
@@ -148,7 +150,7 @@ class ClipLoader:
         # create mediaItem in active project bin
         # create clip media
         media_pool_item = lib.create_media_pool_item(
-            files,
+            files[0],
             self.active_bin
         )
         _clip_property = media_pool_item.GetClipProperty
@@ -743,3 +745,13 @@ class ResolvePublishCreator(Creator):
 
         # Add instance to current context
         self._add_instance_to_context(new_instance)
+
+
+def get_representation_files(representation):
+    anatomy = Anatomy()
+    files = []
+    for file_data in representation["files"]:
+        path = anatomy.fill_root(file_data["path"])
+        files.append(path)
+    return files
+

@@ -70,7 +70,7 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
             track_item = instance.transient_data["track_item"]
             tag_data = lib.get_timeline_item_ayon_tag(track_item)
             instances_data = tag_data.get(_CONTENT_ID, {})
-            _ = instances_data.pop(self.identifier, None)
+            instances_data.pop(self.identifier, None)
             self._remove_instance_from_context(instance)
 
             # Remove markers if deleted all of the instances
@@ -343,7 +343,7 @@ class CreateShotClip(plugin.ResolveCreator):
             if pre_create_data.get("use_selection", False):
                 raise CreatorError(
                     "No Chocolate-colored clips found from "
-                    "timeline.\n\n Try changing clip(s) color "
+                    "timeline.\n\nTry changing clip(s) color "
                     "or disable clip color restriction."
                 )
             else:
@@ -374,7 +374,7 @@ class CreateShotClip(plugin.ResolveCreator):
         # create media bin for compound clips (trackItems)
         media_pool_folder = create_bin(self.timeline.GetName())
 
-        # detecte enabled creators for review, plate and audio
+        # detect enabled creators for review, plate and audio
         all_creators = {
             "io.ayon.creators.resolve.shot": True,
             "io.ayon.creators.resolve.plate": True,

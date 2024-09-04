@@ -133,10 +133,11 @@ class CreateShotClip(plugin.ResolveCreator):
     icon = "film"
     defaults = ["Main"]
 
-#    create_allow_context_change = False  
-# TODO: explain consequence on folderPath
-# https://github.com/ynput/ayon-core/blob/6a07de6eb904c139f6d346fd6f2a7d5042274c71/client/ayon_core/tools/publisher/widgets/create_widget.py#L732
-
+    detailed_description = """
+Publishing clips/plate, audio for new shots to project
+or updating already created from Resolve. Publishing will create 
+OTIO file.
+"""
     create_allow_thumbnail = False
 
     def get_pre_create_attr_defs(self):

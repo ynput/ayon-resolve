@@ -1,7 +1,7 @@
+import pprint
 import pyblish
 
-from ayon_resolve.otio import utils
-
+#from ayon_resolve.otio import utils
 
 class CollectAudio(pyblish.api.InstancePlugin):
     """Collect new audio."""
@@ -16,20 +16,19 @@ class CollectAudio(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
-        instance.data["folderPath"] = instance.data["folder_path"]
-
-        otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, _ = utils.get_marker_from_clip_index(
-            otio_timeline, instance.data["clip_index"]
+        # Retrieve instance data from parent instance shot instance.
+        parent_instance_id = instance.data["parent_instance_id"]
+        edit_shared_data = instance.context.data["editorialSharedData"]
+        instance.data.update(
+            edit_shared_data[parent_instance_id]
         )
-        if not otio_clip:
-            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
 
-        clip_src = otio_clip.source_range
+        clip_src = instance.data["otioClip"].source_range
         clip_src_in = clip_src.start_time.to_frames()
         clip_src_out = clip_src_in + clip_src.duration.to_frames()
         instance.data.update({
-            "fps": instance.context.data["fps"],
             "clipInH": clip_src_in,
-            "clipOutH": clip_src_out,
+            "clipOutH": clip_src_out
         })
+
+        self.log.debug(pprint.pformat(instance.data))

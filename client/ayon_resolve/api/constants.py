@@ -1,7 +1,4 @@
 # Ayon sequential rename variables
-#rename_index = 0
-#rename_add = 0
-
 SELECTED_CLIP_COLOR = "Chocolate"
 PUBLISH_CLIP_COLOR = "Pink"
 AYON_MARKER_WORKFLOW = True

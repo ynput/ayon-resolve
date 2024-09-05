@@ -1,6 +1,5 @@
+import pprint
 import pyblish
-
-from ayon_resolve.otio import utils
 
 
 class CollectPlate(pyblish.api.InstancePlugin):
@@ -16,17 +15,13 @@ class CollectPlate(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
-        instance.data["folderPath"] = instance.data["folder_path"]
         instance.data["families"].append("clip")
 
-        # Adjust instance data from parent otio timeline.
-        otio_timeline = instance.context.data["otioTimeline"]
-        instance.data["fps"] = instance.context.data["fps"]
-
-        otio_clip, _ = utils.get_marker_from_clip_index(
-            otio_timeline, instance.data["clip_index"]
+        # Retrieve instance data from parent instance shot instance.
+        parent_instance_id = instance.data["parent_instance_id"]
+        edit_shared_data = instance.context.data["editorialSharedData"]
+        instance.data.update(
+            edit_shared_data[parent_instance_id]
         )
-        if not otio_clip:
-            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
 
-        instance.data["otioClip"] = otio_clip
+        self.log.debug(pprint.pformat(instance.data))

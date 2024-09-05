@@ -1,3 +1,4 @@
+import pprint
 import pyblish
 
 from ayon_resolve.api import lib
@@ -7,30 +8,59 @@ from ayon_resolve.otio import utils
 class CollectShot(pyblish.api.InstancePlugin):
     """Collect new shots."""
 
-    order = pyblish.api.CollectorOrder - 0.48
+    order = pyblish.api.CollectorOrder - 0.49
     label = "Collect Shots"
     hosts = ["resolve"]
     families = ["shot"]
 
-    @staticmethod
-    def _prepare_context_hierarchy(instance):
-        """
-        TODO: explain
-        resolve:
-        https://github.com/ynput/ayon-core/blob/6a07de6eb904c139f6d346fd6f2a7d5042274c71/client/ayon_core/plugins/publish/collect_hierarchy.py#L65
+    SHARED_KEYS = (
+        "folderPath",
+        "fps",
+        "otioClip",
+    )
 
-        traypublisher:
-        https://github.com/ynput/ayon-traypublisher/blob/develop/client/ayon_traypublisher/plugins/publish/collect_shot_instances.py#L188
+    @classmethod
+    def _inject_editorial_shared_data(cls, instance):
         """
-        instance.data["folderPath"] = instance.data["folder_path"]
-        instance.data["integrate"] = False  # no representation for shot
+        Args:
+            instance (obj): The publishing instance.
+        """
+        context = instance.context
+        instance_id = instance.data["instance_id"]
+
+        # Restore folderPath from creator_attributes to ensure
+        # new shots/hierarchy are properly handled.
+        creator_attributes = instance.data['creator_attributes']
+        instance.data["folderPath"] = creator_attributes['folderPath']
+
+        if not context.data.get("editorialSharedData"):
+            context.data["editorialSharedData"] = {}
+
+        # Inject/Distribute instance shot data as editorialSharedData
+        # to make it available for clip/plate/audio products
+        # in sub-collectors.
+        context.data["editorialSharedData"][instance_id] = {
+            key: value for key, value in instance.data.items()
+            if key in cls.SHARED_KEYS
+        }
+
+    @classmethod
+    def _compute_resolution_data(cls, instance):
+        """
+        Args:
+            instance (pyblish.Instance): The shot instance to update.
+
+        Returns:
+            dict. The resolution data.
+        """
+
 
     def process(self, instance):
         """
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
-        self._prepare_context_hierarchy(instance)
+        instance.data["integrate"] = False  # no representation for shot
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
@@ -82,3 +112,6 @@ class CollectShot(pyblish.api.InstancePlugin):
                 "pixelAspect": pixel_aspect,
             }
         )
+
+        self._inject_editorial_shared_data(instance)
+        self.log.debug(pprint.pformat(instance.data))

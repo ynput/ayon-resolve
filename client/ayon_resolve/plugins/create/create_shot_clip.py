@@ -28,10 +28,12 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        instance_data = copy.deepcopy(instance_data)
         instance_data.update({
             "productName": f"{self.product_type}{instance_data['variant']}",
-            "label": f"{instance_data['folder_path']} {self.product_type}",
+            "label": (
+                f"{instance_data['creator_attributes']['folderPath']} "
+                f"{self.product_type}"
+            ),
             "productType": self.product_type,
             "newHierarchyIntegration": True,
             # Backwards compatible (Deprecated since 24/06/06)
@@ -106,8 +108,6 @@ class EditorialPlateInstanceCreator(_ResolveInstanceCreator):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        instance_data = copy.deepcopy(instance_data)
-
         if instance_data.get("clip_variant") == "<track_name>":
             instance_data["variant"] = instance_data["hierarchyData"]["track"]
 
@@ -427,9 +427,38 @@ OTIO file.
 
             # Create new product(s) instances.
             clip_instances = {}
+            shot_creator_id = "io.ayon.creators.resolve.shot"
             for creator_id in enabled_creators:
+                sub_instance_data = copy.deepcopy(instance_data)
+                shot_folder_path = sub_instance_data.pop("target_folder_path")
+
+                # Shot creation
+                if creator_id == shot_creator_id:
+                    sub_instance_data.update({
+                        "creator_attributes": {
+                            "folderPath": shot_folder_path,
+                            "workfile_start_frame": \
+                                sub_instance_data["workfileFrameStart"],
+                            "handle_start": sub_instance_data["handleStart"],
+                            "handle_end": sub_instance_data["handleEnd"]
+                        }
+                    })
+
+                # Plate, Audio
+                # insert parent instance data to allow
+                # metadata recollection as publish time.
+                else:
+                    parenting_data = clip_instances[shot_creator_id]
+                    sub_instance_data.update({
+                        "parent_instance_id": parenting_data["instance_id"],
+                        "creator_attributes": {
+                            "folderPath": shot_folder_path,
+                            "parent_instance": parenting_data["label"],
+                        }
+                    })
+
                 instance = self.create_context.creators[creator_id].create(
-                    instance_data, None
+                    sub_instance_data, None
                 )
                 instance.transient_data["track_item"] = track_item            
                 self._add_instance_to_context(instance)

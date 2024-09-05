@@ -1,4 +1,5 @@
 import copy
+import os
 import re
 import uuid
 
@@ -148,9 +149,15 @@ class ClipLoader:
         self.active_bin = lib.create_bin(self.data["binPath"])
 
         # create mediaItem in active project bin
+
+        # make sure files list is not empty and first available file exists
+        filepath = next((f for f in files if os.path.isfile(f)), None)
+        if not filepath:
+            raise FileNotFoundError("No file found in input files list")
+
         # create clip media
         media_pool_item = lib.create_media_pool_item(
-            files[0],
+            filepath,
             self.active_bin
         )
         _clip_property = media_pool_item.GetClipProperty

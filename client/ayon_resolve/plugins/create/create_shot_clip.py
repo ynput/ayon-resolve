@@ -56,7 +56,14 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
         for created_inst, _changes in update_list:
             track_item = created_inst.transient_data["track_item"]
             tag_data = lib.get_timeline_item_ayon_tag(track_item)            
-            instances_data = tag_data[_CONTENT_ID]
+
+            try:
+                instances_data = tag_data[_CONTENT_ID]
+
+            # Backwards compatible (Deprecated since 24/09/05)
+            except KeyError:
+                tag_data[_CONTENT_ID] = {}
+                instances_data = tag_data[_CONTENT_ID]
 
             instances_data[self.identifier] = created_inst.data_to_store()
             lib.imprint(track_item, tag_data)
@@ -479,6 +486,75 @@ OTIO file.
 
         return instances
 
+    def _create_and_add_instance(self, data, creator_id, 
+            timeline_item, instances):
+        """
+        Args:
+            data (dict): The data to re-recreate the instance from.
+            creator_id (str): The creator id to use.
+            timeline_item (obj): The associated timeline item.
+            instances (list): Result instance container.
+
+        Returns:
+            CreatedInstance: The newly created instance.
+        """
+        creator = self.create_context.creators[creator_id]
+        instance = creator.create(data, None)
+        instance.transient_data["track_item"] = timeline_item
+        self._add_instance_to_context(instance)
+        instances.append(instance)
+        return instance
+
+    def _handle_legacy_marker(self, tag_data, timeline_item, instances):
+        """ Convert OpenPypeData to AYON data.
+
+        Args:
+            tag_data (dict): The legacy marker data.
+            timline_item (obj): The associated Resolve item.
+            instances (list): Result instance container.
+        """
+        clip_instances = {}
+        item_unique_id = timeline_item.GetUniqueId()
+        tag_data.update({
+            "task": self.create_context.get_current_task_name(),
+            "clip_index": item_unique_id,
+            "creator_attributes": {
+                "folderPath": tag_data["folder_path"]
+            },
+        })
+
+        # create parent shot
+        creator_id = "io.ayon.creators.resolve.shot"
+        shot_data = tag_data.copy()
+        inst = self._create_and_add_instance(
+            shot_data, creator_id, timeline_item, instances) 
+        clip_instances[creator_id] = inst.data_to_store()
+
+        # create children plate
+        creator_id = "io.ayon.creators.resolve.plate"
+        plate_data = tag_data.copy()
+        plate_data.update({
+            "parent_instance_id": inst["instance_id"],
+            "clip_variant": tag_data["variant"],
+            "creator_attributes": {
+                "folderPath": tag_data["folder_path"],
+                "parent_instance": inst["label"],
+            }            
+        })
+        inst = self._create_and_add_instance(
+            plate_data, creator_id, timeline_item, instances) 
+        clip_instances[creator_id] = inst.data_to_store()
+
+        # Update marker with new version data.
+        timeline_item.DeleteMarkersByColor(constants.AYON_MARKER_COLOR)
+        lib.imprint(
+            timeline_item,
+            data={
+                _CONTENT_ID: clip_instances,
+                "clip_index": item_unique_id,
+            },
+        )
+
     def collect_instances(self):
         """Collect all created instances from current timeline."""
         all_timeline_items = lib.get_current_timeline_items()
@@ -486,17 +562,25 @@ OTIO file.
         for timeline_item_data in all_timeline_items:
             timeline_item = timeline_item_data["clip"]["item"]
 
-            # get openpype tag data
+            # get (legacy) openpype tag data
+            # Backwards compatible (Deprecated since 24/09/05)
+            tag_data = lib.get_ayon_marker(
+                timeline_item,
+                tag_name=constants.LEGACY_OPENPYPE_MARKER_NAME
+            )
+            if tag_data:
+                self._handle_legacy_marker(
+                    tag_data, timeline_item, instances)
+                continue
+
+            # get AyonData tag data 
             tag_data = lib.get_timeline_item_ayon_tag(timeline_item)
             if not tag_data:
                 continue
 
             for creator_id, data in tag_data.get(_CONTENT_ID, {}).items():
-                creator = self.create_context.creators[creator_id]
-                instance = CreatedInstance.from_existing(data, creator)
-                instance.transient_data["track_item"] = timeline_item
-                self._add_instance_to_context(instance)
-                instances.append(instance)
+                self._create_and_add_instance(
+                        data, creator_id, timeline_item, instances)
 
         return instances
 

@@ -8,7 +8,7 @@ from ayon_core.lib import BoolDef
 
 from ayon_core.pipeline import (
     LoaderPlugin,
-    Creator as NewCreator,
+    Creator,
     Anatomy
 )
 
@@ -302,7 +302,7 @@ class TimelineItemLoader(LoaderPlugin):
         pass
 
 
-class ResolveCreator(NewCreator):
+class ResolveCreator(Creator):
     """ Resolve Creator class wrapper"""
 
     marker_color = "Purple"
@@ -463,7 +463,7 @@ class PublishableClip:
         )
         self.tag_data["folder_path"] = folder_path
 
-        if not constants.ayon_marker_workflow:
+        if not constants.AYON_MARKER_WORKFLOW:
             # create compound clip workflow
             lib.create_compound_clip(
                 self.timeline_item_data,

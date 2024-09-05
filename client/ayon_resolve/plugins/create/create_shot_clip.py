@@ -75,8 +75,8 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
 
             # Remove markers if deleted all of the instances
             if not instances_data: 
-                track_item.DeleteMarkersByColor(constants.ayon_marker_color)
-                if track_item.GetClipColor() != constants.selected_clip_color:
+                track_item.DeleteMarkersByColor(constants.AYON_MARKER_COLOR)
+                if track_item.GetClipColor() != constants.SELECTED_CLIP_COLOR:
                     track_item.ClearClipColor()
 
             # Push edited data in marker
@@ -445,7 +445,7 @@ OTIO file.
                     "clip_index": item_unique_id,
                 },
             )
-            track_item.SetClipColor(constants.publish_clip_color)
+            track_item.SetClipColor(constants.PUBLISH_CLIP_COLOR)
             instances.extend(list(clip_instances.values()))
 
         return instances
@@ -473,7 +473,9 @@ OTIO file.
 
     def update_instances(self, update_list):
         """Never called, update is handled via _ResolveInstanceCreator."""
+        pass
 
     def remove_instances(self, instances):
         """Never called, removal is handled via _ResolveInstanceCreator."""
-        
+        pass
+

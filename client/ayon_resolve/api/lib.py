@@ -139,7 +139,7 @@ def get_new_timeline(timeline_name: str = None):
     resolve_project = get_current_resolve_project()
     media_pool = resolve_project.GetMediaPool()
     new_timeline = media_pool.CreateEmptyTimeline(
-        timeline_name or constants.ayon_timeline_name)
+        timeline_name or constants.AYON_TIMELINE_NAME)
     resolve_project.SetCurrentTimeline(new_timeline)
     return new_timeline
 
@@ -409,7 +409,7 @@ def get_current_timeline_items(
         selecting_color: str = None) -> List[Dict[str, Any]]:
     """Get all available current timeline track items"""
     track_type = track_type or "video"
-    selecting_color = selecting_color or constants.selected_clip_color
+    selecting_color = selecting_color or constants.SELECTED_CLIP_COLOR
     resolve_project = get_current_resolve_project()
 
     # get timeline anyhow
@@ -491,7 +491,7 @@ def get_timeline_item_ayon_tag(timeline_item):
     """
     return_tag = None
 
-    if constants.ayon_marker_workflow:
+    if constants.AYON_MARKER_WORKFLOW:
         return_tag = get_ayon_marker(timeline_item)
     else:
         media_pool_item = timeline_item.GetMediaPoolItem()
@@ -502,7 +502,7 @@ def get_timeline_item_ayon_tag(timeline_item):
             return None
         for key, data in _tags.items():
             # return only correct tag defined by global name
-            if key in constants.ayon_tag_name:
+            if key in constants.AYON_TAG_NAME:
                 return_tag = json.loads(data)
 
     return return_tag
@@ -526,7 +526,7 @@ def set_timeline_item_ayon_tag(timeline_item, data=None):
     # get available ayon tag if any
     tag_data = get_timeline_item_ayon_tag(timeline_item)
 
-    if constants.ayon_marker_workflow:
+    if constants.AYON_MARKER_WORKFLOW:
         # delete tag as it is not updatable
         if tag_data:
             delete_ayon_marker(timeline_item)
@@ -539,13 +539,13 @@ def set_timeline_item_ayon_tag(timeline_item, data=None):
             # it not tag then create one
             tag_data.update(data)
             media_pool_item.SetMetadata(
-                constants.ayon_tag_name, json.dumps(tag_data))
+                constants.AYON_TAG_NAME, json.dumps(tag_data))
         else:
             tag_data = data
             # if ayon tag available then update with input data
             # add it to the input track item
             timeline_item.SetMetadata(
-                constants.ayon_tag_name, json.dumps(tag_data))
+                constants.AYON_TAG_NAME, json.dumps(tag_data))
 
     return tag_data
 
@@ -608,10 +608,10 @@ def set_ayon_marker(timeline_item, tag_data):
 
     # marker attributes
     frameId = (frame / 10) * 10
-    color = constants.ayon_marker_color
-    name = constants.ayon_marker_name
+    color = constants.AYON_MARKER_COLOR
+    name = constants.AYON_MARKER_NAME
     note = json.dumps(tag_data)
-    duration = (constants.ayon_marker_duration / 10) * 10
+    duration = (constants.AYON_MARKER_DURATION / 10) * 10
 
     timeline_item.AddMarker(
         frameId,
@@ -630,18 +630,18 @@ def get_ayon_marker(timeline_item):
         name = timeline_item_markers[marker_frame]["name"]
         print(f"_ marker data: {marker_frame} | {name} | {color} | {note}")
         if (
-            name == constants.ayon_marker_name
-            and color == constants.ayon_marker_color
+            name == constants.AYON_MARKER_NAME
+            and color == constants.AYON_MARKER_COLOR
         ):
-            constants.temp_marker_frame = marker_frame
+            constants.TEMP_MARKER_FRAME = marker_frame
             return json.loads(note)
 
     return {}
 
 
 def delete_ayon_marker(timeline_item):
-    timeline_item.DeleteMarkerAtFrame(constants.temp_marker_frame)
-    constants.temp_marker_frame = None
+    timeline_item.DeleteMarkerAtFrame(constants.TEMP_MARKER_FRAME)
+    constants.TEMP_MARKER_FRAME = None
 
 
 def create_compound_clip(clip_data, name, folder):
@@ -721,9 +721,9 @@ def create_compound_clip(clip_data, name, folder):
             }])
 
     # Add collected metadata and attributes to the compound clip:
-    if mp_item.GetMetadata(constants.ayon_tag_name):
-        clip_attributes[constants.ayon_tag_name] = mp_item.GetMetadata(
-            constants.ayon_tag_name)[constants.ayon_tag_name]
+    if mp_item.GetMetadata(constants.AYON_TAG_NAME):
+        clip_attributes[constants.AYON_TAG_NAME] = mp_item.GetMetadata(
+            constants.AYON_TAG_NAME)[constants.AYON_TAG_NAME]
 
     # stringify
     clip_attributes = json.dumps(clip_attributes)
@@ -733,7 +733,7 @@ def create_compound_clip(clip_data, name, folder):
         cct.SetMetadata(k, v)
 
     # add metadata to cct
-    cct.SetMetadata(constants.ayon_tag_name, clip_attributes)
+    cct.SetMetadata(constants.AYON_TAG_NAME, clip_attributes)
 
     # reset start timecode of the compound clip
     cct.SetClipProperty("Start TC", _mp_props("Start TC"))
@@ -818,7 +818,7 @@ def get_pype_clip_metadata(clip):
     mp_item = clip.GetMediaPoolItem()
     metadata = mp_item.GetMetadata()
 
-    return metadata.get(constants.ayon_tag_name)
+    return metadata.get(constants.AYON_TAG_NAME)
 
 
 def get_clip_attributes(clip):
@@ -984,25 +984,23 @@ def get_otio_clip_instance_data(otio_timeline, timeline_item_data):
 
             # add pypedata marker to otio_clip metadata
             for marker in otio_clip.markers:
-                if constants.ayon_marker_name in marker.name:
+                if constants.AYON_MARKER_NAME in marker.name:
                     otio_clip.metadata.update(marker.metadata)
             return {"otioClip": otio_clip}
 
     return None
 
 
-def _get_otio_temp_file(project_name=None, anatomy=None, timeline=None) -> str:
+def _get_otio_temp_file(timeline=None) -> str:
     """Get otio temporary export file.
 
     Args:
-        project_name (str): ayon project name
-        anatomy (ayon_core.pipeline.Anatomy)[optional]: Anatomy object
         timeline (resolve.Timeline)[optional]: resolve's object
 
     Returns:
         str: temporary otio filepath
     """
-    project_name = project_name or get_current_project_name()
+    project_name = get_current_project_name()
 
     if timeline is None:
         resolve_project = get_current_resolve_project()
@@ -1013,7 +1011,7 @@ def _get_otio_temp_file(project_name=None, anatomy=None, timeline=None) -> str:
     timeline_name = timeline.GetName()
 
     # get custom staging dir
-    custom_temp_dir = create_custom_tempdir(project_name, anatomy)
+    custom_temp_dir = create_custom_tempdir(project_name, None)
     staging_dir = os.path.normpath(
         tempfile.mkdtemp(prefix="resolve_otio_tmp_", dir=custom_temp_dir)
     )

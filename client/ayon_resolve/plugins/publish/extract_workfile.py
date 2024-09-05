@@ -2,6 +2,8 @@ import os
 import pyblish.api
 
 from ayon_core.pipeline import publish
+from ayon_core.pipeline import registered_host
+
 from ayon_resolve.api.lib import get_project_manager
 
 
@@ -16,18 +18,11 @@ class ExtractWorkfile(publish.Extractor):
     hosts = ["resolve"]
 
     def process(self, instance):
-        # create representation data
-        if "representations" not in instance.data:
-            instance.data["representations"] = []
-
-        name = instance.data["name"]
         project = instance.context.data["activeProject"]
-        staging_dir = self.staging_dir(instance)
 
-        ext = ".drp"
-        drp_file_name = name + ext
-        drp_file_path = os.path.normpath(
-            os.path.join(staging_dir, drp_file_name))
+        host = registered_host()        
+        drp_file_path = host.get_current_workfile()
+        drp_file_name = os.path.basename(drp_file_path)
 
         # write out the drp workfile
         get_project_manager().ExportProject(
@@ -35,10 +30,10 @@ class ExtractWorkfile(publish.Extractor):
 
         # create drp workfile representation
         representation_drp = {
-            'name': ext.lstrip("."),
-            'ext': ext.lstrip("."),
+            'name': "drp",
+            'ext': "drp",
             'files': drp_file_name,
-            "stagingDir": staging_dir,
+            "stagingDir": os.path.dirname(drp_file_path),
         }
         representations = instance.data.setdefault("representations", [])
         representations.append(representation_drp)

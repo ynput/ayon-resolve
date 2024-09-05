@@ -1,19 +1,19 @@
 # Ayon sequential rename variables
-rename_index = 0
-rename_add = 0
+#rename_index = 0
+#rename_add = 0
 
-selected_clip_color = "Chocolate"
-publish_clip_color = "Pink"
-ayon_marker_workflow = True
+SELECTED_CLIP_COLOR = "Chocolate"
+PUBLISH_CLIP_COLOR = "Pink"
+AYON_MARKER_WORKFLOW = True
 
 # Ayon compound clip workflow variable
-ayon_tag_name = "VFX Notes"
+AYON_TAG_NAME = "VFX Notes"
 
 # Ayon marker workflow variables
-ayon_marker_name = "AyonData"
-ayon_marker_duration = 1
-ayon_marker_color = "Mint"
-temp_marker_frame = None
+AYON_MARKER_NAME = "AyonData"
+AYON_MARKER_DURATION = 1
+AYON_MARKER_COLOR = "Mint"
+TEMP_MARKER_FRAME = None
 
 # Ayon default timeline
-ayon_timeline_name = "AyonTimeline"
+AYON_TIMELINE_NAME = "AyonTimeline"

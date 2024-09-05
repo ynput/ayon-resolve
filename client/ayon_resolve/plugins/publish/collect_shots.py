@@ -4,11 +4,11 @@ from ayon_resolve.api import lib
 from ayon_resolve.otio import utils
 
 
-class PrecollectShot(pyblish.api.InstancePlugin):
-    """PreCollect new shots."""
+class CollectShot(pyblish.api.InstancePlugin):
+    """Collect new shots."""
 
     order = pyblish.api.CollectorOrder - 0.48
-    label = "Precollect Shots"
+    label = "Collect Shots"
     hosts = ["resolve"]
     families = ["shot"]
 

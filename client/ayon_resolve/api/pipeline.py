@@ -162,7 +162,7 @@ def ls():
 
     # Media Pool instances from Load Media loader
     for clip in lib.iter_all_media_pool_clips():
-        data = clip.GetMetadata(constants.ayon_tag_name)
+        data = clip.GetMetadata(constants.AYON_TAG_NAME)
         if not data:
             continue
         data = json.loads(data)

@@ -1,5 +1,7 @@
 import pyblish.api
 
+from ayon_core.pipeline import registered_host
+
 from ayon_resolve import api
 
 
@@ -16,7 +18,9 @@ class CollectResolveProject(pyblish.api.ContextPlugin):
 
         video_tracks = api.get_video_track_names()
         otio_timeline = api.export_timeline_otio(timeline)
-        current_file = resolve_project.GetName()
+
+        host = registered_host()        
+        current_file = host.get_current_workfile()
         fps = timeline.GetSetting("timelineFrameRate")
 
         # update context with main project attributes

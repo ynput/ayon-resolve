@@ -33,6 +33,7 @@ class ExtractEditorialPackage(publish.Extractor):
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
+        anatomy = instance.context.data["anatomy"]
         folder_path = instance.data["folderPath"]
         timeline_mp_item = instance.data["mediaPoolItem"]
         timeline_name = timeline_mp_item.GetName()
@@ -61,6 +62,7 @@ class ExtractEditorialPackage(publish.Extractor):
                 f"Duration: {timeline_duration}, "
                 f"FPS: {timeline_fps}"
             )
+
             # export otio representation
             self.export_otio_representation(
                 get_current_project(), timeline, otio_file_path
@@ -92,8 +94,18 @@ class ExtractEditorialPackage(publish.Extractor):
                     continue
 
                 if hasattr(clip.media_reference, "target_url"):
+                    path_to_media = Path(published_file_path)
+                    # remove root from path
+                    success, rootless_path = anatomy.find_root_template_from_path(  # noqa
+                        path_to_media.as_posix()
+                    )
+                    if success:
+                        media_source_path = rootless_path
+                    else:
+                        media_source_path = path_to_media.as_posix()
+
                     new_media_reference = otio.schema.ExternalReference(
-                        target_url=Path(published_file_path).as_uri(),
+                        target_url=media_source_path,
                         available_range=otio.opentime.TimeRange(
                             start_time=otio.opentime.RationalTime(
                                 value=timeline_start_frame, rate=timeline_fps

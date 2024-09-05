@@ -33,6 +33,8 @@ class LoadEditorialPackage(load.LoaderPlugin):
         files = get_representation_path(context["representation"])
 
         search_folder_path = Path(files).parent / "resources"
+        if not search_folder_path.exists():
+            search_folder_path = Path(files).parent
 
         project = lib.get_current_project()
         media_pool = project.GetMediaPool()

@@ -927,7 +927,7 @@ def get_clip_resolution_from_media_pool(timeline_item_data):
         width = height = None
 
     try:
-        pixel_aspect = int(clip_properties["PAR"]) # Pixel Aspect Resolution
+        pixel_aspect = int(clip_properties["PAR"])  # Pixel Aspect Resolution
     except(KeyError, ValueError):
         pixel_aspect = 1.0
 

@@ -747,11 +747,18 @@ class ResolvePublishCreator(Creator):
         self._add_instance_to_context(new_instance)
 
 
-def get_representation_files(representation):
-    anatomy = Anatomy()
-    files = []
-    for file_data in representation["files"]:
-        path = anatomy.fill_root(file_data["path"])
-        files.append(path)
-    return files
+def get_representation_files(project_name, representation):
+    """
+    Args:
+        project_name (str): The name of the project.
+        representation (dict): The representation to inspect.
 
+    Returns:
+        list. The files associated to the representation.
+    """
+    anatomy = Anatomy(project_name)
+
+    return [
+        anatomy.fill_root(file_data["path"])
+        for file_data in representation["files"]
+    ]

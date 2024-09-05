@@ -40,7 +40,10 @@ class LoadClip(plugin.TimelineItemLoader):
     def load(self, context, name, namespace, options):
 
         # load clip to timeline and get main variables
-        files = plugin.get_representation_files(context["representation"])
+        files = plugin.get_representation_files(
+            context["project"]["name"],
+            context["representation"]
+        )
 
         timeline_item = plugin.ClipLoader(
             self, context, **options).load(files)
@@ -74,7 +77,10 @@ class LoadClip(plugin.TimelineItemLoader):
 
         media_pool_item = timeline_item.GetMediaPoolItem()
 
-        files = plugin.get_representation_files(repre_entity)
+        files = plugin.get_representation_files(
+            context["project"]["name"],
+            repre_entity
+        )
 
         loader = plugin.ClipLoader(self, context)
         timeline_item = loader.update(timeline_item, files)

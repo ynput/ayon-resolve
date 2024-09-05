@@ -106,7 +106,7 @@ class CreateWorkfile(AutoCreator):
 
         Args:
             update_list(List[UpdateData]): Gets list of tuples. Each item
-                contain changed instance and it's changes.
+                contain changed instance and its changes.
         """
         for created_inst, _ in update_list:
             data = created_inst.data_to_store()

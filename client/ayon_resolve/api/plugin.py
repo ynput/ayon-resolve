@@ -754,7 +754,7 @@ def get_representation_files(project_name, representation):
         representation (dict): The representation to inspect.
 
     Returns:
-        list. The files associated to the representation.
+        list: The files associated to the representation.
     """
     anatomy = Anatomy(project_name)
 

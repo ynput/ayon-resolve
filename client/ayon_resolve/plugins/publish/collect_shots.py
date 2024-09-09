@@ -28,32 +28,21 @@ class CollectShot(pyblish.api.InstancePlugin):
         context = instance.context
         instance_id = instance.data["instance_id"]
 
-        # Restore folderPath from creator_attributes to ensure
+        # Inject folderPath and other creator_attributes to ensure
         # new shots/hierarchy are properly handled.
         creator_attributes = instance.data['creator_attributes']
-        instance.data["folderPath"] = creator_attributes['folderPath']
-
-        if not context.data.get("editorialSharedData"):
-            context.data["editorialSharedData"] = {}
+        instance.data.update(creator_attributes)
 
         # Inject/Distribute instance shot data as editorialSharedData
         # to make it available for clip/plate/audio products
         # in sub-collectors.
+        if not context.data.get("editorialSharedData"):
+            context.data["editorialSharedData"] = {}
+
         context.data["editorialSharedData"][instance_id] = {
             key: value for key, value in instance.data.items()
             if key in cls.SHARED_KEYS
         }
-
-    @classmethod
-    def _compute_resolution_data(cls, instance):
-        """
-        Args:
-            instance (pyblish.Instance): The shot instance to update.
-
-        Returns:
-            dict. The resolution data.
-        """
-
 
     def process(self, instance):
         """
@@ -69,6 +58,10 @@ class CollectShot(pyblish.api.InstancePlugin):
         )
         if not otio_clip:
             raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+
+        # Compute fps from creator attribute.
+        if instance.data['creator_attributes']["fps"] == "from_selection":
+            instance.data['creator_attributes']["fps"] = instance.context.data["fps"]
 
         # Retrieve AyonData marker for associated clip.
         instance.data["otioClip"] = otio_clip
@@ -106,7 +99,6 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         instance.data.update(
             {
-                "fps": instance.context.data["fps"],
                 "resolutionWidth": width,
                 "resolutionHeight": height,
                 "pixelAspect": pixel_aspect,

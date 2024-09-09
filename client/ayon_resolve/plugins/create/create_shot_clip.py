@@ -15,8 +15,40 @@ from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
 _CONTENT_ID = "resolve_sub_products"
 
 
-class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
-    """Wrapper class for shot product.
+# Shot attributes
+CLIP_ATTR_DEFS = [
+    EnumDef(
+        "fps",
+        items=[
+            {"value": "from_selection", "label": "From selection"},
+            {"value": 23.997, "label": "23.976"},
+            {"value": 24, "label": "24"},
+            {"value": 25, "label": "25"},
+            {"value": 29.97, "label": "29.97"},
+            {"value": 30, "label": "30"}
+        ],
+        label="FPS"
+    ),
+    NumberDef(
+        "workfileFrameStart",
+        default=1001,
+        label="Workfile start frame"
+    ),
+    NumberDef(
+        "handleStart",
+        default=0,
+        label="Handle start"
+    ),
+    NumberDef(
+        "handleEnd",
+        default=0,
+        label="Handle end"
+    )
+]
+
+
+class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
+    """Wrapper class for clip types products.
     """
 
     def create(self, instance_data, _):
@@ -30,10 +62,6 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
         """
         instance_data.update({
             "productName": f"{self.product_type}{instance_data['variant']}",
-            "label": (
-                f"{instance_data['creator_attributes']['folderPath']} "
-                f"{self.product_type}"
-            ),
             "productType": self.product_type,
             "newHierarchyIntegration": True,
             # Backwards compatible (Deprecated since 24/06/06)
@@ -93,14 +121,40 @@ class _ResolveInstanceCreator(plugin.HiddenResolvePublishCreator):
                 lib.imprint(track_item, tag_data)
 
 
-class ResolveShotInstanceCreator(_ResolveInstanceCreator):
+class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.resolve.shot"
     product_type = "shot"    
     label = "Editorial Shot"
 
+    def get_instance_attr_defs(self):
+        instance_attributes = [
+            TextDef(
+                "folderPath",
+                label="Folder path",
+                disabled=True,
+            ),
+        ]
+        instance_attributes.extend(CLIP_ATTR_DEFS)
+        return instance_attributes
 
-class EditorialPlateInstanceCreator(_ResolveInstanceCreator):
+
+class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
+    """ Base clip product creator.
+    """
+
+    def get_instance_attr_defs(self):
+        instance_attributes = [
+            TextDef(
+                "parentInstance",
+                label="Linked to",
+                disabled=True,
+            ),
+        ]
+        return instance_attributes
+
+
+class EditorialPlateInstanceCreator(_ResolveInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.resolve.plate"
     product_type = "plate"
@@ -124,7 +178,7 @@ class EditorialPlateInstanceCreator(_ResolveInstanceCreator):
         return super().create(instance_data, None)
 
 
-class EditorialAudioInstanceCreator(_ResolveInstanceCreator):
+class EditorialAudioInstanceCreator(_ResolveInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.resolve.audio"
     product_type = "audio"
@@ -436,6 +490,7 @@ OTIO file.
             clip_instances = {}
             shot_creator_id = "io.ayon.creators.resolve.shot"
             for creator_id in enabled_creators:
+                creator = self.create_context.creators[creator_id]
                 sub_instance_data = copy.deepcopy(instance_data)
                 shot_folder_path = sub_instance_data.pop("target_folder_path")
 
@@ -444,11 +499,14 @@ OTIO file.
                     sub_instance_data.update({
                         "creator_attributes": {
                             "folderPath": shot_folder_path,
-                            "workfile_start_frame": \
+                            "workfileFrameStart": \
                                 sub_instance_data["workfileFrameStart"],
-                            "handle_start": sub_instance_data["handleStart"],
-                            "handle_end": sub_instance_data["handleEnd"]
-                        }
+                            "handleStart": sub_instance_data["handleStart"],
+                            "handleEnd": sub_instance_data["handleEnd"]
+                        },
+                        "label": (
+                            f"{shot_folder_path} shot"
+                        ),
                     })
 
                 # Plate, Audio
@@ -458,15 +516,16 @@ OTIO file.
                     parenting_data = clip_instances[shot_creator_id]
                     sub_instance_data.update({
                         "parent_instance_id": parenting_data["instance_id"],
+                        "label": (
+                            f"{shot_folder_path} "
+                            f"{creator.product_type}"
+                        ),                        
                         "creator_attributes": {
-                            "folderPath": shot_folder_path,
-                            "parent_instance": parenting_data["label"],
+                            "parentInstance": parenting_data["label"],
                         }
                     })
 
-                instance = self.create_context.creators[creator_id].create(
-                    sub_instance_data, None
-                )
+                instance = creator.create(sub_instance_data, None)
                 instance.transient_data["track_item"] = track_item            
                 self._add_instance_to_context(instance)
                 clip_instances[creator_id] = instance.data_to_store()
@@ -537,8 +596,7 @@ OTIO file.
             "parent_instance_id": inst["instance_id"],
             "clip_variant": tag_data["variant"],
             "creator_attributes": {
-                "folderPath": tag_data["folder_path"],
-                "parent_instance": inst["label"],
+                "parentInstance": inst["label"],
             }            
         })
         inst = self._create_and_add_instance(

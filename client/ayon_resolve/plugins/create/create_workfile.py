@@ -89,17 +89,23 @@ class CreateWorkfile(AutoCreator):
         """Collect from timeline marker or create a new one."""
         data = self._loads_data_from_project_setting()
         if not data:
-            self.log.info("Auto-creating workfile instance...")
-            data = self._create_new_instance()
+            return
 
         current_instance = CreatedInstance(
             self.product_type, data["productName"], data, self)
         self._add_instance_to_context(current_instance)
 
     def create(self, options=None):
-        # no need to create if it is created
-        # in `collect_instances`
-        pass
+        """Auto-create an instance by default."""
+        data = self._loads_data_from_project_setting()
+        if data:
+            return
+
+        self.log.info("Auto-creating workfile instance...")
+        data = self._create_new_instance()
+        current_instance = CreatedInstance(
+            self.product_type, data["productName"], data, self)
+        self._add_instance_to_context(current_instance)
 
     def update_instances(self, update_list):
         """Store changes in project metadata so they can be recollected.

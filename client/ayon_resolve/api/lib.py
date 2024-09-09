@@ -930,7 +930,7 @@ def get_clip_resolution_from_media_pool(timeline_item_data):
         clip_par = clip_properties["PAR"]  # Pixel Aspect Resolution
         pixel_aspect = constants.PAR_VALUES[clip_par]
 
-    except(KeyError, ValueError): # Unknown or undetected PAR
+    except (KeyError, ValueError):  # Unknown or undetected PAR
         pixel_aspect = 1.0
 
     return {"width": width, "height": height, "pixelAspect": pixel_aspect}

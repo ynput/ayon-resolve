@@ -43,7 +43,49 @@ CLIP_ATTR_DEFS = [
         "handleEnd",
         default=0,
         label="Handle end"
-    )
+    ),
+    NumberDef(
+        "frameStart",
+        default=0,
+        label="Frame start",
+        disabled=True,
+    ),
+    NumberDef(
+        "frameEnd",
+        default=0,
+        label="Frame end",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipIn",
+        default=0,
+        label="Clip in",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipOut",
+        default=0,
+        label="Clip out",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipDuration",
+        default=0,
+        label="Clip duration",
+        disabled=True,
+    ),
+    NumberDef(
+        "sourceIn",
+        default=0,
+        label="Media source in",
+        disabled=True,
+    ),
+    NumberDef(
+        "sourceOut",
+        default=0,
+        label="Media source out",
+        disabled=True,
+    )    
 ]
 
 
@@ -134,7 +176,7 @@ class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
                 "folderPath",
                 label="Folder path",
                 disabled=True,
-            ),
+            )           
         ]
         instance_attributes.extend(CLIP_ATTR_DEFS)
         return instance_attributes
@@ -145,12 +187,27 @@ class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
     """
 
     def get_instance_attr_defs(self):
+        gui_tracks = get_video_track_names()
         instance_attributes = [
             TextDef(
                 "parentInstance",
                 label="Linked to",
                 disabled=True,
             ),
+            BoolDef(
+                "vSyncOn",
+                label="Enable Vertical Sync",
+                tooltip="Switch on if you want clips above "
+                        "each other to share its attributes",
+                default=True,
+            ),            
+            EnumDef(
+                "vSyncTrack",
+                label="Hero Track",
+                tooltip="Select driving track name which should "
+                        "be mastering all others",
+                items=gui_tracks or ["<nothing to select>"],
+            ),            
         ]
         return instance_attributes
 
@@ -493,18 +550,28 @@ OTIO file.
             for creator_id in enabled_creators:
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = copy.deepcopy(instance_data)
-#                shot_folder_path = sub_instance_data.pop("target_folder_path")
-                shot_folder_path = sub_instance_data["folderPath"]
+                shot_folder_path = sub_instance_data.pop("target_folder_path")
 
                 # Shot creation
                 if creator_id == shot_creator_id:
+                    track_item_duration = track_item.GetDuration()
+                    workfileFrameStart = \
+                        sub_instance_data["workfileFrameStart"]
                     sub_instance_data.update({
                         "creator_attributes": {
                             "folderPath": shot_folder_path,
-                            "workfileFrameStart": \
-                                sub_instance_data["workfileFrameStart"],
+                            "workfileFrameStart": workfileFrameStart,
                             "handleStart": sub_instance_data["handleStart"],
-                            "handleEnd": sub_instance_data["handleEnd"]
+                            "handleEnd": sub_instance_data["handleEnd"],
+                            "frameStart": workfileFrameStart,
+                            "frameEnd": (workfileFrameStart + 
+                                track_item_duration),
+                            "clipIn": track_item.GetStart(),
+                            "clipOut": track_item.GetEnd(),
+                            "clipDuration": track_item_duration,
+                            "sourceIn": track_item.GetLeftOffset(), 
+                            "sourceOut": (track_item.GetLeftOffset() + 
+                                track_item_duration),
                         },
                         "label": (
                             f"{shot_folder_path} shot"
@@ -524,6 +591,8 @@ OTIO file.
                         ),                        
                         "creator_attributes": {
                             "parentInstance": parenting_data["label"],
+                            "vSyncOn": pre_create_data["vSyncOn"],
+                            "vSyncTrack": pre_create_data["vSyncTrack"],
                         }
                     })
 

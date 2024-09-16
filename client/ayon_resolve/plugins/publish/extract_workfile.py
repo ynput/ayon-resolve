@@ -19,7 +19,7 @@ class ExtractWorkfile(publish.Extractor):
     def process(self, instance):
         project = instance.context.data["activeProject"]
 
-        drp_file_path = instance.data["currentFile"]
+        drp_file_path = instance.context.data["currentFile"]
         drp_file_name = os.path.basename(drp_file_path)
 
         # write out the drp workfile

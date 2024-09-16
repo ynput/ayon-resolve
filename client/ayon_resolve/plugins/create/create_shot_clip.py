@@ -114,7 +114,7 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
         new_instance = CreatedInstance(
             self.product_type, instance_data["productName"], instance_data, self
         )
-        self._store_new_instance(new_instance)
+        self._add_instance_to_context(new_instance)
         return new_instance
 
     def update_instances(self, update_list):

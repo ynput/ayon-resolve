@@ -5,18 +5,15 @@ import uuid
 
 import qargparse
 
-from ayon_core.lib import BoolDef
-
 from ayon_core.pipeline import (
     LoaderPlugin,
     Creator,
+    HiddenCreator,    
+    CreatedInstance,
     Anatomy
 )
 
 from ayon_core.pipeline.create import (
-    Creator,
-    HiddenCreator,
-    CreatedInstance,
     cache_and_get_instances,
 )
 
@@ -333,14 +330,6 @@ class ResolveCreator(Creator):
         else:
             self.selected = lib.get_current_timeline_items(filter=False)
 
-        # TODO: Add a way to store/imprint data
-
-    def get_pre_create_attr_defs(self):
-        return [
-            BoolDef("use_selection",
-                    label="Use selection",
-                    default=True)
-        ]
 
 # alias for backward compatibility
 Creator = ResolveCreator  # noqa
@@ -712,12 +701,14 @@ class HiddenResolvePublishCreator(HiddenCreator):
         """
 
         # Host implementation of storing metadata about instance
+        # TODO investigate HostContext !!
         HostContext.add_instance(new_instance.data_to_store())
         # Add instance to current context
         self._add_instance_to_context(new_instance)
 
 
 class ResolvePublishCreator(Creator):
+    # TODO investigate
     create_allow_context_change = True
     host_name = "resolve"
     settings_category = "resolve"
@@ -747,6 +738,7 @@ class ResolvePublishCreator(Creator):
         """
 
         # Host implementation of storing metadata about instance
+        # TODO investigate HostContext !!
         HostContext.add_instance(new_instance.data_to_store())
         new_instance.mark_as_stored()
 

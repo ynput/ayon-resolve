@@ -442,9 +442,6 @@ OTIO file.
             ),           
         ]
 
-    presets = None
-    rename_index = 0
-
     def create(self, subset_name, instance_data, pre_create_data):
         super(CreateShotClip, self).create(subset_name,
                                            instance_data,
@@ -510,7 +507,7 @@ OTIO file.
             item_unique_id = track_item_data["clip"]["item"].GetUniqueId()
             instance_data.update({
                 "clip_index": item_unique_id,
-                "clip_source_resolution": resolution_data,
+                "clip_source_resolution": resolution_data,  # TODO investigate in collect
             })
 
             # convert track item to timeline media pool item

@@ -1,5 +1,5 @@
 import json
-
+from copy import deepcopy
 from ayon_core.tools.context_dialog.window import (
     ContextDialog,
     ContextDialogController
@@ -9,6 +9,7 @@ from ayon_api import get_folder_by_id, get_task_by_id, get_folder_by_path
 from ayon_core.pipeline.create.legacy_create import LegacyCreator
 
 from ayon_resolve.api import lib
+from ayon_resolve.api.plugin import get_editorial_publish_data
 
 
 class CreateEditorialPackage(LegacyCreator):
@@ -62,7 +63,12 @@ class CreateEditorialPackage(LegacyCreator):
             current_timeline
         )
 
-        publish_data = {"publish": self.data}
+        publish_data = deepcopy(self.data)
+        # add publish data for streamline publishing
+        publish_data["publish"] = get_editorial_publish_data(
+            folder_path=folder["path"],
+            product_name=self.data["productName"],
+        )
 
         timeline_media_pool_item.SetMetadata(
             lib.pype_tag_name, json.dumps(publish_data)

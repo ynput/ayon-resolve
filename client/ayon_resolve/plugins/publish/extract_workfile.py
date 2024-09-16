@@ -2,7 +2,6 @@ import os
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.pipeline import registered_host
 
 from ayon_resolve.api.lib import get_project_manager
 
@@ -20,8 +19,7 @@ class ExtractWorkfile(publish.Extractor):
     def process(self, instance):
         project = instance.context.data["activeProject"]
 
-        host = registered_host()        
-        drp_file_path = host.get_current_workfile()
+        drp_file_path = instance.data["currentFile"]
         drp_file_name = os.path.basename(drp_file_path)
 
         # write out the drp workfile

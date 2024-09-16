@@ -63,6 +63,7 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
         instance_data.update({
             "productName": f"{self.product_type}{instance_data['variant']}",
             "productType": self.product_type,
+            "has_promised_context": True,
             "newHierarchyIntegration": True,
             # Backwards compatible (Deprecated since 24/06/06)
             "newAssetPublishing": True,            
@@ -492,7 +493,8 @@ OTIO file.
             for creator_id in enabled_creators:
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = copy.deepcopy(instance_data)
-                shot_folder_path = sub_instance_data.pop("target_folder_path")
+#                shot_folder_path = sub_instance_data.pop("target_folder_path")
+                shot_folder_path = sub_instance_data["folderPath"]
 
                 # Shot creation
                 if creator_id == shot_creator_id:

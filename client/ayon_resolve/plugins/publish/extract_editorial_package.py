@@ -142,7 +142,7 @@ class ExtractEditorialPackage(publish.Extractor):
 
         # create drp workfile representation
         representation_otio = {
-            "name": "otio",
+            "name": "editorial_pkg",
             "ext": "otio",
             "files": f"{subfolder_name}_remap.otio",
             "stagingDir": staging_dir.as_posix(),

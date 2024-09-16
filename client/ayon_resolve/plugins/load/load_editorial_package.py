@@ -77,6 +77,23 @@ class LoadEditorialPackage(load.LoaderPlugin):
         print("Timeline imported: ", timeline)
 
     def update(self, container, context):
+        """Update the container with the latest version."""
+
+        # Get the latest version of the container data
+        timeline_media_pool_item = container["_item"]
+        clip_data = timeline_media_pool_item.GetMetadata(
+            lib.pype_tag_name)
+        clip_data = json.loads(clip_data)
+
+        clip_data["load"] = {}
+
+        # update publish key in publish container data to be False
+        if clip_data["publish"]["publish"] is True:
+            clip_data["publish"]["publish"] = False
+
+        timeline_media_pool_item.SetMetadata(
+            lib.pype_tag_name, json.dumps(clip_data))
+
         self.load(
             context,
             context["product"]["name"],

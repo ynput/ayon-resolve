@@ -926,6 +926,7 @@ def get_editorial_publish_data(
         "productName": product_name,
         "folderPath": folder_path,
         "active": True,
+        "publish": True,
     }
 
     if version:

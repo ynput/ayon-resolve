@@ -67,7 +67,12 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
 
                 publish_data["version"] = version
 
-            publish_data["mediaPoolItem"] = media_pool_item
+            publish_data.update(
+                {
+                    "mediaPoolItem": media_pool_item,
+                    "item": media_pool_item,
+                }
+            )
 
             if publish_data.get("taskId"):
                 task_entity = get_task_by_id(

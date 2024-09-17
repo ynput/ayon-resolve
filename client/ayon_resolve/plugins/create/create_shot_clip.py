@@ -115,6 +115,7 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
             self.product_type, instance_data["productName"], instance_data, self
         )
         self._add_instance_to_context(new_instance)
+        new_instance.transient_data["has_promised_context"] = True
         return new_instance
 
     def update_instances(self, update_list):
@@ -193,22 +194,26 @@ class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
                 "parentInstance",
                 label="Linked to",
                 disabled=True,
-            ),
-            BoolDef(
-                "vSyncOn",
-                label="Enable Vertical Sync",
-                tooltip="Switch on if you want clips above "
-                        "each other to share its attributes",
-                default=True,
-            ),            
-            EnumDef(
-                "vSyncTrack",
-                label="Hero Track",
-                tooltip="Select driving track name which should "
-                        "be mastering all others",
-                items=gui_tracks or ["<nothing to select>"],
-            ),            
+            )           
         ]
+        if self.product_type == "plate":
+            instance_attributes.extend([
+                BoolDef(
+                    "vSyncOn",
+                    label="Enable Vertical Sync",
+                    tooltip="Switch on if you want clips above "
+                            "each other to share its attributes",
+                    default=True,
+                ),            
+                EnumDef(
+                    "vSyncTrack",
+                    label="Hero Track",
+                    tooltip="Select driving track name which should "
+                            "be mastering all others",
+                    items=gui_tracks or ["<nothing to select>"],
+                ), 
+            ])
+
         return instance_attributes
 
 
@@ -547,7 +552,7 @@ OTIO file.
             for creator_id in enabled_creators:
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = copy.deepcopy(instance_data)
-                shot_folder_path = sub_instance_data.pop("target_folder_path")
+                shot_folder_path = sub_instance_data["folderPath"]
 
                 # Shot creation
                 if creator_id == shot_creator_id:
@@ -588,10 +593,14 @@ OTIO file.
                         ),                        
                         "creator_attributes": {
                             "parentInstance": parenting_data["label"],
-                            "vSyncOn": pre_create_data["vSyncOn"],
-                            "vSyncTrack": pre_create_data["vSyncTrack"],
                         }
                     })
+
+                    if creator_id == "io.ayon.creators.resolve.plate":
+                        sub_instance_data["creator_attributes"].update({
+                            "vSyncOn": pre_create_data["vSyncOn"],
+                            "vSyncTrack": pre_create_data["vSyncTrack"],                            
+                        })
 
                 instance = creator.create(sub_instance_data, None)
                 instance.transient_data["track_item"] = track_item            

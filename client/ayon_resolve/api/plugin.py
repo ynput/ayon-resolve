@@ -446,7 +446,7 @@ class PublishableClip:
             self.tag_data["hierarchy"],
             self.tag_data["asset"],
         )
-        self.tag_data["target_folder_path"] = folder_path
+        self.tag_data["folderPath"] = folder_path
 
         if not constants.AYON_MARKER_WORKFLOW:
             # create compound clip workflow

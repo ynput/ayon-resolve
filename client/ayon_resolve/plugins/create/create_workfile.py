@@ -9,7 +9,6 @@ from ayon_core.pipeline import (
 )
 
 from ayon_resolve.api import lib
-from ayon_resolve.api import constants
 
 
 class CreateWorkfile(AutoCreator):

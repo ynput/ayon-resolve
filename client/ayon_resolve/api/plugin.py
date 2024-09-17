@@ -9,7 +9,6 @@ from ayon_core.pipeline import (
     LoaderPlugin,
     Creator,
     HiddenCreator,    
-    CreatedInstance,
     Anatomy
 )
 

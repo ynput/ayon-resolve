@@ -4,9 +4,6 @@ Basic avalon integration
 import os
 import json
 import contextlib
-import atexit
-import tempfile
-import json
 from collections import OrderedDict
 
 from pyblish import api as pyblish

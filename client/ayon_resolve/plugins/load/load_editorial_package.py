@@ -69,7 +69,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
         )
 
         # set clip color based on random choice
-        clip_color = self.get_clip_color()
+        clip_color = self.get_random_clip_color()
         timeline_media_pool_item.SetClipColor(clip_color)
 
         # TODO: there are two ways to import timeline resources (representation
@@ -132,7 +132,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
 
         return data
 
-    def get_clip_color(self):
+    def get_random_clip_color(self):
         """Return clip color."""
 
         # list of all available davinci resolve clip colors

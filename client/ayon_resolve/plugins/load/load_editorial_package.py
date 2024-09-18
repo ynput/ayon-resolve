@@ -99,11 +99,8 @@ class LoadEditorialPackage(load.LoaderPlugin):
         # add additional metadata from the version to imprint AYON knob
         version_entity = context["version"]
 
-        # remove unnecessary keys from the data
-        for key in ["_item", "name"]:
-            if key not in data:
-                continue
-            data.pop(key)
+        for key in ("_item", "name"):
+            data.pop(key, None)  # remove unnecessary key from the data if it exists
 
         data = {
             "load": data,

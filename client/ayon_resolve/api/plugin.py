@@ -396,7 +396,7 @@ class PublishableClip:
 
         # get track name and index
         track_name = timeline_item_data["track"]["name"]
-        self.track_name = str(track_name).replace(" ", "_")
+        self.track_name = str(track_name).replace(" ", "_")  # TODO clarify
         self.track_index = int(timeline_item_data["track"]["index"])
 
         # adding ui inputs if any

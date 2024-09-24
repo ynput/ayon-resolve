@@ -17,6 +17,9 @@ class CollectShot(pyblish.api.InstancePlugin):
         "folderPath",
         "fps",
         "otioClip",
+        "resolutionWidth",
+        "resolutionHeight",
+        "pixelAspect",        
     )
 
     @classmethod

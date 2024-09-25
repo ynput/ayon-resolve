@@ -654,7 +654,7 @@ def set_ayon_marker(timeline_item, tag_data):
 
 
 def get_ayon_marker(timeline_item, tag_name=constants.AYON_MARKER_NAME):
-    timeline_item_markers = timeline_item.GetMarkers()
+    timeline_item_markers = timeline_item.GetMarkers() or []
     for marker_frame in timeline_item_markers:
         note = timeline_item_markers[marker_frame]["note"]
         color = timeline_item_markers[marker_frame]["color"]

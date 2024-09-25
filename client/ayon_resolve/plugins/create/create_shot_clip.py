@@ -512,7 +512,7 @@ OTIO file.
             item_unique_id = track_item_data["clip"]["item"].GetUniqueId()
             instance_data.update({
                 "clip_index": item_unique_id,
-                "clip_source_resolution": resolution_data,  # TODO investigate in collect
+                "clip_source_resolution": resolution_data,
             })
 
             # convert track item to timeline media pool item

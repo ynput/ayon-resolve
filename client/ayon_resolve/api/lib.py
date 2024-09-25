@@ -1,6 +1,7 @@
-import json
 import re
 import os
+import json
+import uuid
 import contextlib
 import tempfile
 from typing import List, Dict, Any
@@ -19,6 +20,36 @@ from . import constants
 from ..otio import davinci_export as otio_export
 
 log = Logger.get_logger(__name__)
+
+
+def get_timeline_media_pool_item(timeline, root=None) -> object:
+    """Return MediaPoolItem from Timeline
+
+
+    Args:
+        timeline (resolve.Timeline): timeline object
+        root (resolve.Folder): root folder / bin object
+
+    Returns:
+        resolve.MediaPoolItem: media pool item from timeline
+    """
+
+    # Due to limitations in the Resolve API we can't get
+    # the media pool item directly from the timeline.
+    # We can find it by name, however names are not
+    # enforced to be unique across bins. So, we give it
+    # unique name.
+    original_name = timeline.GetName()
+    identifier = str(uuid.uuid4().hex)
+    try:
+        timeline.SetName(identifier)
+        for item in iter_all_media_pool_clips(root=root):
+            if item.GetName() != identifier:
+                continue
+            return item
+    finally:
+        # Revert to original name
+        timeline.SetName(original_name)
 
 
 @contextlib.contextmanager
@@ -466,7 +497,7 @@ def get_timeline_item_by_name(name: str) -> object:
     """
     for _ti_data in get_current_timeline_items():
         _ti_clip = _ti_data["clip"]["item"]
-        tag_data = get_timeline_item_ayon_tag(_ti_clip)
+        tag_data = get_timeline_item_pype_tag(_ti_clip)
         tag_name = tag_data.get("namespace")
         if not tag_name:
             continue
@@ -701,7 +732,7 @@ def create_compound_clip(clip_data, name, folder):
                 if c.GetName() in name), None)
 
     if cct:
-        print(f"_ cct exists: {cct}")
+        print(f"Compound clip exists: {cct}")
     else:
         # Create empty timeline in current folder and give name:
         cct = mp.CreateEmptyTimeline(name)
@@ -710,7 +741,7 @@ def create_compound_clip(clip_data, name, folder):
         clips = folder.GetClipList()
         cct = next((c for c in clips
                     if c.GetName() in name), None)
-        print(f"_ cct created: {cct}")
+        print(f"Compound clip created: {cct}")
 
         with maintain_current_timeline(cct, tl_origin):
             # Add input clip to the current timeline:
@@ -807,7 +838,7 @@ def _validate_tc(x):
 
 def get_pype_clip_metadata(clip):
     """
-    Get ayon metadata created by creator plugin
+    Get AYON metadata created by creator plugin
 
     Attributes:
         clip (resolve.TimelineItem): resolve's object
@@ -1108,9 +1139,14 @@ def get_reformated_path(path, padded=False, first=False):
     return path
 
 
-def iter_all_media_pool_clips():
-    """Recursively iterate all media pool clips in current project"""
-    root = get_current_project().GetMediaPool().GetRootFolder()
+def iter_all_media_pool_clips(root=None):
+    """Recursively iterate all media pool clips in current project
+
+    Args:
+        root (Optional[resolve.Folder]): root folder / bin object.
+            When None, defaults to media pool root folder.
+    """
+    root = root or get_current_project().GetMediaPool().GetRootFolder()
     queue = [root]
     for folder in queue:
         for clip in folder.GetClipList():

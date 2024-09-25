@@ -5,6 +5,7 @@ import uuid
 
 import qargparse
 
+from ayon_core.pipeline.constants import AVALON_INSTANCE_ID
 from ayon_core.pipeline import (
     LoaderPlugin,
     Creator,
@@ -326,7 +327,16 @@ Creator = ResolveCreator  # noqa
 class PublishableClip:
     """
     Convert a track item to publishable instance
+
+    Args:
+        timeline_item (hiero.core.TrackItem): hiero track item object
+        kwargs (optional): additional data needed for rename=True (presets)
+
+    Returns:
+        hiero.core.TrackItem: hiero track item object with openpype tag
     """
+    vertical_clip_match = {}
+    tag_data = {}
     types = {
         "shot": "shot",
         "folder": "folder",
@@ -690,6 +700,35 @@ class ResolvePublishCreator(Creator):
 
     def remove_instances(self, instances):
         pass
+
+
+def get_editorial_publish_data(
+    folder_path,
+    product_name,
+    version=None
+) -> dict:
+    """Get editorial publish data from context.
+
+    Args:
+        folder_path (str): Folder path where editorial package is located.
+        product_name (str): Editorial product name.
+        version (Optional[str]): Editorial product version. Defaults to None.
+
+    Returns:
+        dict: Editorial publish data.
+    """
+    data = {
+        "id": AVALON_INSTANCE_ID,
+        "productType": "editorial_pkg",
+        "productName": product_name,
+        "folderPath": folder_path,
+        "active": True,
+    }
+
+    if version:
+        data["version"] = version
+
+    return data
 
 
 def get_representation_files(project_name, representation):

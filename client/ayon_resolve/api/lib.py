@@ -236,12 +236,12 @@ def remove_media_pool_item(media_pool_item: object) -> bool:
     return media_pool.DeleteClips([media_pool_item])
 
 
-def create_media_pool_item(fpath: str,
+def create_media_pool_item(files: list,
                            root: object = None) -> object:
     """ Create media pool item.
 
     Args:
-        fpath (str): absolute path to a file
+        files (list): absolute path to a file
         root (resolve.Folder)[optional]: root folder / bin object
 
     Returns:
@@ -254,27 +254,23 @@ def create_media_pool_item(fpath: str,
     root_bin = root or media_pool.GetRootFolder()
 
     # try to search in bin if the clip does not exist
-    existing_mpi = get_media_pool_item(fpath, root_bin)
+    filepath = next((f for f in files if os.path.isfile(f)), None)
+    if not filepath:
+        raise FileNotFoundError("No file found in input files list")
+
+    existing_mpi = get_media_pool_item(filepath, root_bin)
 
     if existing_mpi:
         return existing_mpi
 
-    dirname, file = os.path.split(fpath)
-    _name, ext = os.path.splitext(file)
-
-    # add all data in folder to media-pool
-    media_pool_items = media_storage.AddItemListToMediaPool(
-        os.path.normpath(dirname))
+    # add media to media-pool
+    media_pool_items = media_pool.ImportMedia(files)
 
     if not media_pool_items:
         return False
 
-    # if any are added then look into them for the right extension
-    media_pool_item = [mpi for mpi in media_pool_items
-                       if ext in mpi.GetClipProperty("File Path")]
-
     # return only first found
-    return media_pool_item.pop()
+    return media_pool_items.pop()
 
 
 def get_media_pool_item(filepath, root: object = None) -> object:

@@ -134,14 +134,9 @@ class ClipLoader:
         # create project bin for the media to be imported into
         self.active_bin = lib.create_bin(self.data["binPath"])
 
-        # make sure files list is not empty and first available file exists
-        filepath = next((f for f in files if os.path.isfile(f)), None)
-        if not filepath:
-            raise FileNotFoundError("No file found in input files list")
-
         # create clip media
         media_pool_item = lib.create_media_pool_item(
-            filepath,
+            files,
             self.active_bin
         )
         _clip_property = media_pool_item.GetClipProperty

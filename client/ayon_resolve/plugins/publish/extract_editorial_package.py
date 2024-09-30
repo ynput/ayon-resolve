@@ -7,7 +7,7 @@ from ayon_core.pipeline import publish
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
     get_current_project,
-    export_timeline_otio
+    export_timeline_otio_native
 )
 from ayon_resolve.otio import davinci_export
 
@@ -167,7 +167,7 @@ class ExtractEditorialPackage(publish.Extractor):
             davinci_export.write_to_file(otio_timeline, filepath.as_posix())
         else:
             # use native otio export
-            export_timeline_otio(timeline, filepath.as_posix())
+            export_timeline_otio_native(timeline, filepath.as_posix())
 
         # check if file exists
         if not filepath.exists():

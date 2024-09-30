@@ -1047,7 +1047,7 @@ def iter_all_media_pool_clips(root=None):
         queue.extend(folder.GetSubFolderList())
 
 
-def export_timeline_otio(timeline, filepath):
+def export_timeline_otio_native(timeline, filepath):
     """Get timeline otio filepath.
 
     Only supported from Resolve 19.5
@@ -1063,7 +1063,7 @@ def export_timeline_otio(timeline, filepath):
             davinci_export.write_to_file(otio_timeline, filepath)
         else:
             # use native otio export
-            export_timeline_otio(timeline, filepath)
+            export_timeline_otio_native(timeline, filepath)
 
     Args:
         timeline (resolve.Timeline): resolve's object

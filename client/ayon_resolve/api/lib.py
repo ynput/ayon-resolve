@@ -1080,7 +1080,6 @@ def export_timeline_otio_to_file(timeline, filepath):
         otio_export.write_to_file(otio_timeline, filepath)
 
 
-
 def export_timeline_otio(timeline):
     """ Export timeline as otio.
 

@@ -386,7 +386,7 @@ OTIO file.
             EnumDef(
                 "clip_variant",
                 label="Product Variant",
-                tooltip="Chose variant which will be then used for "
+                tooltip="Chosen variant which will be then used for "
                         "product name, if <track_name> "
                         "is selected, name of track layer will be used",
                 items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],

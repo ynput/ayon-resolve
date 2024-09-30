@@ -100,9 +100,11 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         return ls()
 
     def get_context_data(self):
+        # TODO: implement to support persisting context attributes
         return {}
 
     def update_context_data(self, data, changes):
+        # TODO: implement to support persisting context attributes
         pass
 
 

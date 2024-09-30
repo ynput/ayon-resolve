@@ -134,8 +134,6 @@ class ClipLoader:
         # create project bin for the media to be imported into
         self.active_bin = lib.create_bin(self.data["binPath"])
 
-        # create mediaItem in active project bin
-
         # make sure files list is not empty and first available file exists
         filepath = next((f for f in files if os.path.isfile(f)), None)
         if not filepath:

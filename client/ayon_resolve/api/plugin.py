@@ -507,6 +507,7 @@ class PublishableClip:
         self.product_type = get("productType") or self.product_type_default
         self.vertical_sync = get("vSyncOn") or self.vertical_sync_default
         self.hero_track = get("vSyncTrack") or self.driving_layer_default
+        self.hero_track = self.hero_track.replace(" ", "_")
         self.review_media_track = (
             get("reviewTrack") or self.review_track_default)
 

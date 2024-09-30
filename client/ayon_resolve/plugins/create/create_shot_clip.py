@@ -110,6 +110,7 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
             # Backwards compatible (Deprecated since 24/06/06)
             "newAssetPublishing": True,            
         })
+        instance_data["folder"] = instance_data["folderPath"]
 
         new_instance = CreatedInstance(
             self.product_type, instance_data["productName"], instance_data, self
@@ -172,14 +173,7 @@ class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
-        instance_attributes = [
-            TextDef(
-                "folderPath",
-                label="Folder path",
-                disabled=True,
-            )           
-        ]
-        instance_attributes.extend(CLIP_ATTR_DEFS)
+        instance_attributes = CLIP_ATTR_DEFS
         return instance_attributes
 
 
@@ -453,6 +447,8 @@ OTIO file.
                                            pre_create_data)
 
         instance_data["clip_variant"] = pre_create_data["clip_variant"]
+        instance_data["task"] = None
+
 
         if not self.timeline:
             raise CreatorError(
@@ -561,7 +557,6 @@ OTIO file.
                         sub_instance_data["workfileFrameStart"]
                     sub_instance_data.update({
                         "creator_attributes": {
-                            "folderPath": shot_folder_path,
                             "workfileFrameStart": workfileFrameStart,
                             "handleStart": sub_instance_data["handleStart"],
                             "handleEnd": sub_instance_data["handleEnd"],
@@ -654,9 +649,6 @@ OTIO file.
         tag_data.update({
             "task": self.create_context.get_current_task_name(),
             "clip_index": item_unique_id,
-            "creator_attributes": {
-                "folderPath": tag_data["folder_path"]
-            },
         })
 
         # create parent shot

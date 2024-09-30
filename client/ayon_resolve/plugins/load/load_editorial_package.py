@@ -43,7 +43,11 @@ class LoadEditorialPackage(load.LoaderPlugin):
         # create versioned bin for editorial package
         version_name = context["version"]["name"]
         loaded_bin = lib.create_bin(f"{folder_path}/{name}/{version_name}")
-        loaded_timeline_name = f"{name}_{version_name}_timeline"
+
+        # make timeline unique name based on folder path
+        folder_path_name = folder_path.replace("/", "_").lstrip("_")
+        loaded_timeline_name = (
+            f"{folder_path_name}_{name}_{version_name}_timeline")
         import_options = {
             "timelineName": loaded_timeline_name,
             "importSourceClips": True,
@@ -67,7 +71,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
         )
 
         # set clip color based on random choice
-        clip_color = self.get_clip_color()
+        clip_color = self.get_random_clip_color()
         timeline_media_pool_item.SetClipColor(clip_color)
 
         # TODO: there are two ways to import timeline resources (representation
@@ -111,11 +115,8 @@ class LoadEditorialPackage(load.LoaderPlugin):
         # add additional metadata from the version to imprint AYON knob
         version_entity = context["version"]
 
-        # remove unnecessary keys from the data
-        for key in ["_item", "name"]:
-            if key not in data:
-                continue
-            data.pop(key)
+        for key in ("_item", "name"):
+            data.pop(key, None)  # remove unnecessary key from the data if it exists
 
         data = {
             "load": data,
@@ -147,7 +148,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
 
         return data
 
-    def get_clip_color(self):
+    def get_random_clip_color(self):
         """Return clip color."""
 
         # list of all available davinci resolve clip colors

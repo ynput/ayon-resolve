@@ -138,7 +138,8 @@ def open_specific_page_by_name(page_name):
     log.info(f"Current page: {current_page}")
 
     log.info(f"Opening page: {page_name}")
-    bmdvr.OpenPage(page_name)
+    if not bmdvr.OpenPage(page_name):
+        raise ValueError(f"Could not open page {page_name}")
 
     try:
         yield

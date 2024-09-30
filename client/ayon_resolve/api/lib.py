@@ -248,7 +248,6 @@ def create_media_pool_item(files: list,
         object: resolve.MediaPoolItem
     """
     # get all variables
-    media_storage = get_media_storage()
     resolve_project = get_current_resolve_project()
     media_pool = resolve_project.GetMediaPool()
     root_bin = root or media_pool.GetRootFolder()

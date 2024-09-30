@@ -8,13 +8,13 @@ AYON_TAG_NAME = "VFX Notes"
 
 # Ayon marker workflow variables
 LEGACY_OPENPYPE_MARKER_NAME = "OpenPypeData"
-AYON_MARKER_NAME = "AyonData"
+AYON_MARKER_NAME = "AYONData"
 AYON_MARKER_DURATION = 1
 AYON_MARKER_COLOR = "Mint"
 TEMP_MARKER_FRAME = None
 
 # Ayon default timeline
-AYON_TIMELINE_NAME = "AyonTimeline"
+AYON_TIMELINE_NAME = "AYONTimeline"
 
 # PAR constants defined by DaVinci Resolve
 PAR_VALUES = {

@@ -10,6 +10,7 @@ from ayon_core.lib import Logger
 
 from .lib import (
     get_current_project,
+    maintain_current_timeline,
     maintain_page_by_name,
 )
 
@@ -18,15 +19,12 @@ log = Logger.get_logger(__name__)
 
 _SLEEP_TIME = 1
 _PROCESSING_JOBS = []
-_FAILED_TIMELINES_TO_RENDER = []
 
 
 def add_timeline_to_render(
     bmr_project,
-    timeline,
     target_render_directory
 ):
-    bmr_project.SetCurrentTimeline(timeline)
     render_settings = {
         "SelectAllFrames": 1,
         "TargetDir": target_render_directory.as_posix(),
@@ -37,51 +35,62 @@ def add_timeline_to_render(
     return bmr_project.AddRenderJob()
 
 
-def render_all_timelines(target_render_directory):
+def _render_timelines(timelines, target_render_directory):
+    """Render timelines to target directory
+
+    Args:
+        timelines (list[resolve.Timeline]): List of Timeline objects
+        target_render_directory (Path): Path to target render directory
+
+    Returns:
+        bool: True if all renders are successful, False otherwise
+    """
     bmr_project = get_current_project()
-
-    with maintain_page_by_name("Deliver"):
-        timelineCount = bmr_project.GetTimelineCount()
-
-        for index in range(0, int(timelineCount)):
-            timeline = bmr_project.GetTimelineByIndex(index + 1)
-            timeline_name = timeline.GetName()
-            log.info(f"Rendering timeline {timeline_name}")
-
+    failed_timelines = []
+    for timeline_to_render in timelines:
+        with maintain_current_timeline(timeline_to_render):
             job_id = add_timeline_to_render(
                 bmr_project,
-                timeline,
                 target_render_directory,
             )
-            if job_id:
-                # adding job id into list of processing
-                # jobs in module constant list
-                _PROCESSING_JOBS.append(job_id)
-                continue
-
-            _FAILED_TIMELINES_TO_RENDER.append(timeline_name)
-
+        if job_id:
+            # adding job id into list of processing
+            # jobs in module constant list
+            _PROCESSING_JOBS.append(job_id)
+            log.info(f"Created render Job ID: {job_id}")
+        else:
+            failed_timelines.append(timeline_to_render.GetName())
+    if len(failed_timelines) != len(timelines):
         bmr_project.StartRendering()
-
         wait_for_rendering_completion()
-
         delete_all_processed_jobs()
-
-        if _FAILED_TIMELINES_TO_RENDER:
-            log.error(
-                f"Failed to render timelines: {_FAILED_TIMELINES_TO_RENDER}")
-            _FAILED_TIMELINES_TO_RENDER.clear()
-            return False
-
-        log.info("Rendering is completed.")
-
-        return True
+    if failed_timelines:
+        log.error(f"Failed to render timelines: {failed_timelines}")
+        return False
+    log.info("Rendering is completed.")
+    return True
 
 
-def render_single_timeline(
-    timeline,
-    target_render_directory
-):
+def render_all_timelines(target_render_directory):
+    """Render all of the timelines of current project.
+
+    Args:
+        target_render_directory (Path): Path to target render directory
+
+    Returns:
+        bool: True if all renders are successful, False otherwise
+    """
+    bmr_project = get_current_project()
+    with maintain_page_by_name("Deliver"):
+        timelineCount = bmr_project.GetTimelineCount()
+        all_timelines = [
+            bmr_project.GetTimelineByIndex(index + 1)
+            for index in range(0, int(timelineCount))
+        ]
+        return _render_timelines(all_timelines, target_render_directory)
+
+
+def render_single_timeline(timeline, target_render_directory):
     """Render single timeline
 
     Process is taking a defined timeline and render it to temporary
@@ -89,43 +98,13 @@ def render_single_timeline(
     for conversion to review file.
 
     Args:
-        timeline (Timeline): Timeline object
+        timeline (resolve.Timeline): Timeline object
         target_render_directory (Path): Path to target render directory
 
     Returns:
         bool: True if rendering is successful, False otherwise
     """
-    bmr_project = get_current_project()
-
-    job_id = None
-
-    timeline_name = timeline.GetName()
-    log.info(f"Rendering timeline {timeline_name}")
-
-    job_id = add_timeline_to_render(
-        bmr_project,
-        timeline,
-        target_render_directory,
-    )
-
-    log.info(f"Job ID: {job_id}")
-
-    if job_id:
-        # adding job id into list of processing
-        # jobs in module constant list
-        _PROCESSING_JOBS.append(job_id)
-        bmr_project.StartRendering()
-    else:
-        log.error(f"Failed to render timelines: {timeline_name}")
-        return False
-
-    wait_for_rendering_completion()
-
-    delete_all_processed_jobs()
-
-    log.info("Rendering is completed.")
-
-    return True
+    return _render_timelines([timeline], target_render_directory)
 
 
 def is_rendering_in_progress():

@@ -6,7 +6,7 @@ import pyblish.api
 from ayon_core.pipeline import publish
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
-    open_specific_page_by_name,
+    maintain_page_by_name,
 )
 from ayon_resolve.api.rendering import (
     set_render_preset_from_file,
@@ -99,7 +99,7 @@ class ExtractIntermediateRepresentation(publish.Extractor):
 
         self.log.info(f"Rendering timeline to '{target_render_directory}'")
 
-        with open_specific_page_by_name("Deliver"):
+        with maintain_page_by_name("Deliver"):
             # first we need to maintain rendering preset
             if not set_render_preset_from_file(render_preset_path.as_posix()):
                 raise Exception("Unable to add render preset.")

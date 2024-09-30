@@ -8,7 +8,7 @@ from ayon_core.lib import Logger
 
 from ayon_resolve.api.lib import (
     get_current_project,
-    open_specific_page_by_name,
+    maintain_page_by_name,
 )
 from ayon_resolve.api.rendering import (
     set_render_preset_from_file,
@@ -37,7 +37,7 @@ def main(
 
     log.info(f"Rendering timeline to '{target_render_directory}'")
 
-    with open_specific_page_by_name("Deliver"):
+    with maintain_page_by_name("Deliver"):
         # first we need to maintain rendering preset
         if not set_render_preset_from_file(render_preset_path.as_posix()):
             log.error("Unable to add render preset.")

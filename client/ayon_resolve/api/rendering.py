@@ -10,7 +10,7 @@ from ayon_core.lib import Logger
 
 from .lib import (
     get_current_project,
-    open_specific_page_by_name,
+    maintain_page_by_name,
 )
 
 log = Logger.get_logger(__name__)
@@ -40,7 +40,7 @@ def add_timeline_to_render(
 def render_all_timelines(target_render_directory):
     bmr_project = get_current_project()
 
-    with open_specific_page_by_name("Deliver"):
+    with maintain_page_by_name("Deliver"):
         timelineCount = bmr_project.GetTimelineCount()
 
         for index in range(0, int(timelineCount)):

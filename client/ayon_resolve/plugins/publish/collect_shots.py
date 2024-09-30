@@ -1,4 +1,3 @@
-import pprint
 import pyblish
 
 from ayon_resolve.api import lib

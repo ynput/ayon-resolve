@@ -2,7 +2,6 @@
 """Creator plugin for creating workfiles."""
 import json
 
-import ayon_api
 from ayon_core.pipeline import (
     AutoCreator,
     CreatedInstance,

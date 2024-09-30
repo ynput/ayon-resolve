@@ -158,7 +158,7 @@ def delete_all_processed_jobs():
     _PROCESSING_JOBS.clear()
 
 
-def set_render_preset_from_file(preset_file_path, ):
+def set_render_preset_from_file(preset_file_path):
     from . import bmdvr
 
     bmr_project = get_current_project()

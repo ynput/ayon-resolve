@@ -18,10 +18,6 @@ class ExtractEditorialPackage(publish.Extractor):
     """
     Extract and Render intermediate file for Editorial Package
 
-    TODO:
-        - find reference video representation
-        - figure out target publishing rootless path for reference paths
-        - swap all references file names in OTIO file point at the rootless path
     """
 
     label = "Extract Editorial Package"
@@ -82,7 +78,6 @@ class ExtractEditorialPackage(publish.Extractor):
         # of video files
         otio_timeline = otio.adapters.read_from_file(otio_file_path.as_posix())
         for track in otio_timeline.tracks:
-            current_end_frame = timeline_start_frame
             for clip in track:
                 # skip transitions
                 if isinstance(clip, otio.schema.Transition):
@@ -90,7 +85,6 @@ class ExtractEditorialPackage(publish.Extractor):
                 # skip gaps
                 if isinstance(clip, otio.schema.Gap):
                     # get duration of gap
-                    current_end_frame += clip.source_range.duration.value
                     continue
 
                 if hasattr(clip.media_reference, "target_url"):
@@ -117,17 +111,17 @@ class ExtractEditorialPackage(publish.Extractor):
                     )
                     clip.media_reference = new_media_reference
 
-                    # replace clip source range
-                    new_source_range = otio.opentime.TimeRange(
+                    # replace clip source range with track parent range
+                    clip.source_range = otio.opentime.TimeRange(
                         start_time=otio.opentime.RationalTime(
-                            value=current_end_frame, rate=timeline_fps
+                            value=(
+                                timeline_start_frame
+                                + clip.range_in_parent().start_time.value
+                            ),
+                            rate=timeline_fps,
                         ),
-                        duration=clip.source_range.duration,
+                        duration=clip.range_in_parent().duration,
                     )
-                    clip.source_range = new_source_range
-
-                    # update current end frame
-                    current_end_frame += clip.source_range.duration.value
 
         # reference video representations also needs to reframe available
         # frames and clip source

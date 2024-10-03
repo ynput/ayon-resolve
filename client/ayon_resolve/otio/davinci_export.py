@@ -194,8 +194,6 @@ def _create_otio_timeline(project, timeline, fps):
 
 
 def _get_timeline_metadata(project, timeline):
-    media_pool = project.GetMediaPool()
-    root_folder = media_pool.GetRootFolder()
     timeline = project.GetCurrentTimeline()
     timeline_name = timeline.GetName()
     print(f"timeline name: {timeline_name}")

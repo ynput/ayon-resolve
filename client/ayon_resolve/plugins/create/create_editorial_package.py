@@ -20,9 +20,9 @@ class CreateEditorialPackage(ResolveCreator):
     def create(self, subset_name, instance_data, pre_create_data):
         """
         """
-        super(CreateEditorialPackage, self).create(subset_name,
-                                           instance_data,
-                                           pre_create_data)
+        super().create(subset_name,
+                       instance_data,
+                       pre_create_data)
 
         current_timeline = lib.get_current_timeline()
 
@@ -74,7 +74,7 @@ class CreateEditorialPackage(ResolveCreator):
 
             # exclude all which are not productType editorial_pkg
             if (
-                data.get("publish", {}).get("productType") != "editorial_pkg"
+                data.get("publish", {}).get("productType") != self.product_type
             ):
                 continue
 

@@ -712,10 +712,12 @@ def get_editorial_publish_data(
     """
     data = {
         "id": AVALON_INSTANCE_ID,
+        "family": "editorial_pkg",
         "productType": "editorial_pkg",
         "productName": product_name,
         "folderPath": folder_path,
         "active": True,
+        "publish": True,
     }
 
     if version:

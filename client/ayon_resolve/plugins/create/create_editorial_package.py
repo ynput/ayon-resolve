@@ -8,7 +8,7 @@ from ayon_core.pipeline import get_current_project_name
 from ayon_api import get_folder_by_id, get_task_by_id, get_folder_by_path
 from ayon_core.pipeline.create.legacy_create import LegacyCreator
 
-from ayon_resolve.api import lib
+from ayon_resolve.api import lib, constants
 from ayon_resolve.api.plugin import get_editorial_publish_data
 
 
@@ -71,7 +71,7 @@ class CreateEditorialPackage(LegacyCreator):
         )
 
         timeline_media_pool_item.SetMetadata(
-            lib.pype_tag_name, json.dumps(publish_data)
+            constants.AYON_TAG_NAME, json.dumps(publish_data)
         )
 
 

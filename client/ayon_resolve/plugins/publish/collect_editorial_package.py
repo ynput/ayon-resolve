@@ -5,7 +5,7 @@ import pyblish.api
 import ayon_api
 from ayon_api import get_task_by_id
 
-from ayon_resolve.api import lib
+from ayon_resolve.api import lib, constants
 
 
 class EditorialPackageInstances(pyblish.api.ContextPlugin):
@@ -21,7 +21,7 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
 
         for media_pool_item in lib.iter_all_media_pool_clips():
 
-            data = media_pool_item.GetMetadata(lib.pype_tag_name)
+            data = media_pool_item.GetMetadata(constants.AYON_TAG_NAME)
             if not data:
                 continue
 

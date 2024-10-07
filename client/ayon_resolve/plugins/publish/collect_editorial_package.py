@@ -13,6 +13,7 @@ class EditorialPackageInstances(pyblish.api.ContextPlugin):
 
     order = pyblish.api.CollectorOrder - 0.49
     label = "Collect Editorial Package Instances"
+    families = ["editorial_pkg"]
 
     def process(self, context):
         project_name = context.data["projectName"]

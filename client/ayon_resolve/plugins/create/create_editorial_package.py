@@ -11,14 +11,18 @@ class CreateEditorialPackage(ResolveCreator):
     """Create Editorial Package."""
 
     identifier = "io.ayon.creators.resolve.editorial_pkg"
-    product_name = "editorial_pkgMain"
     label = "Editorial Package"
     product_type = "editorial_pkg"
     icon = "camera"
     defaults = ["Main"]
 
     def create(self, subset_name, instance_data, pre_create_data):
-        """
+        """Create a new editorial_pkg instance.
+
+        Args:
+            subset_name (str): The subset name
+            instance_data (dict): The instance data.
+            pre_create_data (dict): The pre_create context data.
         """
         super().create(subset_name,
                        instance_data,
@@ -35,25 +39,32 @@ class CreateEditorialPackage(ResolveCreator):
 
         publish_data = deepcopy(instance_data)
 
-        # add publish data for streamline publishing
+        # add publish data for streamlrine publishing
+        product_name = self.get_product_name(
+            self.project_name,
+            self.create_context.get_current_folder_entity(),
+            self.create_context.get_current_task_entity(),
+            instance_data["variant"],
+        )
         publish_data["publish"] = get_editorial_publish_data(
             folder_path=instance_data["folderPath"],
-            product_name=self.product_name,
+            product_name=product_name,
         )
 
-        publish_data["label"] = current_timeline.GetName()
+        publish_data.update({
+            "label": current_timeline.GetName(),
+        })
         timeline_media_pool_item.SetMetadata(
             constants.AYON_TAG_NAME, json.dumps(publish_data)
         )
 
-        publish_data["media_pool_item_id"] = timeline_media_pool_item.GetUniqueId()
         new_instance = CreatedInstance(
             self.product_type,
-            self.product_name,
+            publish_data["publish"]["productName"],
             publish_data,
             self,
         )
-        new_instance.transient_data["timeline_item"] = timeline_media_pool_item
+        new_instance.transient_data["timeline_pool_item"] = timeline_media_pool_item
         self._add_instance_to_context(new_instance)
 
     def collect_instances(self):
@@ -78,15 +89,14 @@ class CreateEditorialPackage(ResolveCreator):
             ):
                 continue
 
-            data["media_pool_item_id"] = media_pool_item.GetUniqueId()
             current_instance = CreatedInstance(
                 self.product_type,
-                self.product_name,
+                data["publish"]["productName"],
                 data,
                 self
             )
 
-            current_instance.transient_data["timeline_item"] = media_pool_item            
+            current_instance.transient_data["timeline_pool_item"] = media_pool_item            
             self._add_instance_to_context(current_instance)
 
     def update_instances(self, update_list):
@@ -97,7 +107,7 @@ class CreateEditorialPackage(ResolveCreator):
                 contain changed instance and it's changes.
         """
         for created_inst, _changes in update_list:
-            timeline_media_pool_item = created_inst.transient_data["timeline_item"]
+            timeline_media_pool_item = created_inst.transient_data["timeline_pool_item"]
             timeline_media_pool_item.SetMetadata(
                 constants.AYON_TAG_NAME,
                 json.dumps(created_inst.data_to_store()),
@@ -112,7 +122,7 @@ class CreateEditorialPackage(ResolveCreator):
         """
         for instance in instances:
             self._remove_instance_from_context(instance)
-            timeline_media_pool_item = instance.transient_data["timeline_item"]
+            timeline_media_pool_item = instance.transient_data["timeline_pool_item"]
             timeline_media_pool_item.SetMetadata(
                 constants.AYON_TAG_NAME,
                 json.dumps({}),

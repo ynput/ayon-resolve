@@ -16,12 +16,7 @@ class EditorialPackageInstances(pyblish.api.InstancePlugin):
         project_name = instance.context.data["projectName"]
         self.log.info(f"project: {project_name}")
 
-        media_pool_item_id = instance.data["media_pool_item_id"]
-        for media_pool_item in lib.iter_all_media_pool_clips():
-            if media_pool_item.GetUniqueId() == media_pool_item_id:
-                break
-        else:
-            raise RuntimeError("Could not identify media pool item from instance.")
+        media_pool_item = instance.data["transientData"]["timeline_pool_item"]
 
         # get version from publish data and rise it one up
         version = instance.data.get("version")

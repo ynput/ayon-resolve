@@ -73,7 +73,7 @@ def maintain_current_timeline(to_timeline: object,
         timeline1
     """
     project = get_current_resolve_project()
-    working_timeline = from_timeline or resolve_project.GetCurrentTimeline()
+    working_timeline = from_timeline or project.GetCurrentTimeline()
 
     # search timeline withing project timelines in case the
     # to_timeline is MediaPoolItem

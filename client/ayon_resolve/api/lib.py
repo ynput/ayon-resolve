@@ -72,7 +72,7 @@ def maintain_current_timeline(to_timeline: object,
         >>> print(get_current_timeline().GetName())
         timeline1
     """
-    resolve_project = get_current_resolve_project()
+    project = get_current_resolve_project()
     working_timeline = from_timeline or resolve_project.GetCurrentTimeline()
 
     # search timeline withing project timelines in case the

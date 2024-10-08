@@ -707,6 +707,7 @@ def get_editorial_publish_data(
         folder_path (str): Folder path where editorial package is located.
         product_name (str): Editorial product name.
         version (Optional[str]): Editorial product version. Defaults to None.
+        task (Optional[str]): Associated task name. Defaults to None (no task).
 
     Returns:
         dict: Editorial publish data.

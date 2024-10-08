@@ -73,8 +73,8 @@ class CreateEditorialPackage(ResolveCreator):
                 data = json.loads(data)
             except json.JSONDecodeError:
                 self.log.warning(
-                    f"Failed to parse json data from media pool item: "
-                    f"{media_pool_item.GetName()}"
+                    "Failed to parse json data from media pool item: %s",
+                    media_pool_item.GetName()
                 )
                 continue
 

@@ -48,4 +48,4 @@ class EditorialPackageInstances(pyblish.api.InstancePlugin):
             }
         )
 
-        self.log.info(f"Editorial Package: {instance.data}")
+        self.log.debug(f"Editorial Package: {instance.data}")

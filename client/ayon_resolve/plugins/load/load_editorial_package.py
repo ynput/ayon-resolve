@@ -112,7 +112,6 @@ class LoadEditorialPackage(load.LoaderPlugin):
     ) -> dict:
         """Return metadata related to the representation and version."""
 
-        representation = context["representation"]
         # add additional metadata from the version to imprint AYON knob
         version_entity = context["version"]
 

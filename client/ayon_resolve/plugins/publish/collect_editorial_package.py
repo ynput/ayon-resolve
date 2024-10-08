@@ -2,8 +2,6 @@ import pyblish.api
 
 import ayon_api
 
-from ayon_resolve.api import lib, constants
-
 
 class EditorialPackageInstances(pyblish.api.InstancePlugin):
     """Collect all Track items selection."""

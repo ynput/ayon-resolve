@@ -53,7 +53,7 @@ class CreateEditorialPackage(ResolveCreator):
 
         new_instance = CreatedInstance(
             self.product_type,
-            publish_data["publish"]["productName"],
+            product_name,
             publish_data,
             self,
         )

@@ -27,11 +27,11 @@ class EditorialPackageInstances(pyblish.api.InstancePlugin):
             # expected current version from publish data
             folder_entity = ayon_api.get_folder_by_path(
                 project_name=project_name,
-                folder_path=publish_data["folderPath"],
+                folder_path=instance.data["folderPath"],
             )
             last_version = ayon_api.get_last_version_by_product_name(
                 project_name=project_name,
-                product_name=publish_data["productName"],
+                product_name=instance.data["productName"],
                 folder_id=folder_entity["id"],
             )
             if last_version is not None:

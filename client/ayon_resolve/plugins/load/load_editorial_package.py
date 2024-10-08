@@ -112,6 +112,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
     ) -> dict:
         """Return metadata related to the representation and version."""
 
+        representation = context["representation"]
         # add additional metadata from the version to imprint AYON knob
         version_entity = context["version"]
 
@@ -144,6 +145,8 @@ class LoadEditorialPackage(load.LoaderPlugin):
             folder_path=context["folder"]["path"],
             product_name=context["product"]["name"],
             version=version_entity["version"],
+            task=context["representation"]["context"].get("task", {}).get(
+                "name"),
         )
 
         return data

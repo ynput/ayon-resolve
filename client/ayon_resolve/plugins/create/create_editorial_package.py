@@ -37,27 +37,29 @@ class CreateEditorialPackage(ResolveCreator):
             current_timeline
         )
 
-        publish_data = deepcopy(instance_data)
-
-        publish_data["publish"] = get_editorial_publish_data(
-            folder_path=instance_data["folderPath"],
-            product_name=product_name,
+        tag_metadata = {
+            "publish": deepcopy(instance_data),
+        }
+        tag_metadata["publish"].update(
+            get_editorial_publish_data(
+                folder_path=instance_data["folderPath"],
+                product_name=product_name
+            )
         )
+        tag_metadata["publish"]["label"] = current_timeline.GetName()
 
-        publish_data.update({
-            "label": current_timeline.GetName(),
-        })
         timeline_media_pool_item.SetMetadata(
-            constants.AYON_TAG_NAME, json.dumps(publish_data)
+            constants.AYON_TAG_NAME, json.dumps(tag_metadata)
         )
 
         new_instance = CreatedInstance(
             self.product_type,
             product_name,
-            publish_data,
+            tag_metadata["publish"],
             self,
         )
-        new_instance.transient_data["timeline_pool_item"] = timeline_media_pool_item
+        new_instance.transient_data["timeline_pool_item"] = (
+            timeline_media_pool_item)
         self._add_instance_to_context(new_instance)
 
     def collect_instances(self):
@@ -82,14 +84,31 @@ class CreateEditorialPackage(ResolveCreator):
             ):
                 continue
 
+            publish_data = data["publish"]
+
+            # TODO: backward compatibility for legacy workflow instances
+            # add label into instance data in case it is missing in publish
+            # data
+            if "label" not in publish_data:
+                publish_data["label"] = media_pool_item.GetName()
+
+            # TODO: backward compatibility for legacy workflow instances
+            # add variant into instance data in case it is missing in publish
+            # data
+            if "variant" not in publish_data:
+                product_name = publish_data["productName"]
+                product_type = publish_data["productType"]
+                publish_data["variant"] = product_name.split(product_type)[1]
+
             current_instance = CreatedInstance(
                 self.product_type,
-                data["publish"]["productName"],
-                data,
+                publish_data["productName"],
+                publish_data,
                 self
             )
 
-            current_instance.transient_data["timeline_pool_item"] = media_pool_item            
+            current_instance.transient_data["timeline_pool_item"] = (
+                media_pool_item)
             self._add_instance_to_context(current_instance)
 
     def update_instances(self, update_list):
@@ -99,11 +118,18 @@ class CreateEditorialPackage(ResolveCreator):
             update_list(List[UpdateData]): Gets list of tuples. Each item
                 contain changed instance and it's changes.
         """
+
         for created_inst, _changes in update_list:
-            timeline_media_pool_item = created_inst.transient_data["timeline_pool_item"]
-            timeline_media_pool_item.SetMetadata(
+            media_pool_item = created_inst.transient_data[
+                "timeline_pool_item"]
+            data = media_pool_item.GetMetadata(constants.AYON_TAG_NAME)
+            data = json.loads(data)
+
+            data["publish"].update(created_inst.data_to_store())
+
+            media_pool_item.SetMetadata(
                 constants.AYON_TAG_NAME,
-                json.dumps(created_inst.data_to_store()),
+                json.dumps(data),
             )
 
     def remove_instances(self, instances):
@@ -115,9 +141,15 @@ class CreateEditorialPackage(ResolveCreator):
         """
         for instance in instances:
             self._remove_instance_from_context(instance)
-            timeline_media_pool_item = instance.transient_data["timeline_pool_item"]
-            timeline_media_pool_item.SetMetadata(
-                constants.AYON_TAG_NAME,
-                json.dumps({}),
-            )
+            media_pool_item = instance.transient_data["timeline_pool_item"]
 
+            data = media_pool_item.GetMetadata(constants.AYON_TAG_NAME)
+            data = json.loads(data)
+
+            # only removing publishing data since loading data has to remain
+            data["publish"] = {}
+
+            media_pool_item.SetMetadata(
+                constants.AYON_TAG_NAME,
+                json.dumps(data),
+            )

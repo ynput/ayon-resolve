@@ -1,4 +1,4 @@
-import copy 
+import copy
 import re
 import uuid
 
@@ -8,7 +8,7 @@ from ayon_core.pipeline.constants import AVALON_INSTANCE_ID
 from ayon_core.pipeline import (
     LoaderPlugin,
     Creator,
-    HiddenCreator,    
+    HiddenCreator,
     Anatomy
 )
 
@@ -698,7 +698,8 @@ class ResolvePublishCreator(Creator):
 def get_editorial_publish_data(
     folder_path,
     product_name,
-    version=None
+    version=None,
+    task=None,
 ) -> dict:
     """Get editorial publish data from context.
 
@@ -722,6 +723,9 @@ def get_editorial_publish_data(
 
     if version:
         data["version"] = version
+
+    if task:
+        data["task"] = task
 
     return data
 

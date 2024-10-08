@@ -19,7 +19,7 @@ from ayon_core.lib.transcoding import (
     IMAGE_EXTENSIONS
 )
 from ayon_core.lib import BoolDef
-from ayon_resolve.api import lib
+from ayon_resolve.api import lib, constants
 from ayon_resolve.api.pipeline import AVALON_CONTAINER_ID
 
 
@@ -283,7 +283,7 @@ class LoadMedia(LoaderPlugin):
             "loader": str(self.__class__.__name__),
         })
 
-        result.SetMetadata(lib.pype_tag_name, json.dumps(data))
+        result.SetMetadata(constants.AYON_TAG_NAME, json.dumps(data))
 
         return result
 
@@ -296,7 +296,7 @@ class LoadMedia(LoaderPlugin):
 
         # Get the existing metadata before we update because the
         # metadata gets removed
-        data = json.loads(item.GetMetadata(lib.pype_tag_name))
+        data = json.loads(item.GetMetadata(constants.AYON_TAG_NAME))
 
         # Get metadata to preserve after the clip replacement
         # TODO: Maybe preserve more, like LUT, Alpha Mode, Input Sizing Preset
@@ -313,7 +313,7 @@ class LoadMedia(LoaderPlugin):
         # Update the metadata
         update_data = self._get_container_data(context)
         data.update(update_data)
-        item.SetMetadata(lib.pype_tag_name, json.dumps(data))
+        item.SetMetadata(constants.AYON_TAG_NAME, json.dumps(data))
 
         self._set_metadata(media_pool_item=item, context=context)
         self._set_colorspace_from_representation(

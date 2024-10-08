@@ -19,9 +19,11 @@ from ayon_core.pipeline import (
 from ayon_core.host import (
     HostBase,
     IWorkfileHost,
-    ILoadHost
+    ILoadHost,
+    IPublishHost
 )
 
+from . import constants
 from . import lib
 from .utils import get_resolve_module
 from .workio import (
@@ -45,7 +47,7 @@ INVENTORY_PATH = os.path.join(PLUGINS_DIR, "inventory")
 AVALON_CONTAINERS = ":AVALON_CONTAINERS"
 
 
-class ResolveHost(HostBase, IWorkfileHost, ILoadHost):
+class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "resolve"
 
     def install(self):
@@ -97,6 +99,14 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost):
     def get_containers(self):
         return ls()
 
+    def get_context_data(self):
+        # TODO: implement to support persisting context attributes
+        return {}
+
+    def update_context_data(self, data, changes):
+        # TODO: implement to support persisting context attributes
+        pass
+
 
 def containerise(timeline_item,
                  name,
@@ -104,20 +114,20 @@ def containerise(timeline_item,
                  context,
                  loader=None,
                  data=None):
-    """Bundle Hiero's object into an assembly and imprint it with metadata
+    """Bundle Resolve's object into an assembly and imprint it with metadata
 
-    Containerisation enables a tracking of version, author and origin
+    Containerization enables a tracking of version, author and origin
     for loaded assets.
 
     Arguments:
-        timeline_item (hiero.core.TrackItem): object to imprint as container
+        timeline_item (resolve.TimelineItem): The object to containerise
         name (str): Name of resulting assembly
         namespace (str): Namespace under which to host container
         context (dict): Asset information
         loader (str, optional): Name of node used to produce this container.
 
     Returns:
-        timeline_item (hiero.core.TrackItem): containerised object
+        timeline_item (resolve.TimelineItem): containerized object
 
     """
 
@@ -133,7 +143,7 @@ def containerise(timeline_item,
     if data:
         data_imprint.update(data)
 
-    lib.set_timeline_item_pype_tag(timeline_item, data_imprint)
+    lib.set_timeline_item_ayon_tag(timeline_item, data_imprint)
 
     return timeline_item
 
@@ -151,7 +161,7 @@ def ls():
 
     # Media Pool instances from Load Media loader
     for clip in lib.iter_all_media_pool_clips():
-        data = clip.GetMetadata(lib.pype_tag_name)
+        data = clip.GetMetadata(constants.AYON_TAG_NAME)
         if not data:
             continue
 
@@ -195,10 +205,10 @@ def ls():
 
 
 def parse_container(timeline_item, validate=True):
-    """Return container data from timeline_item's openpype tag.
+    """Return container data from timeline_item's marker data.
 
     Args:
-        timeline_item (hiero.core.TrackItem): A containerised track item.
+        timeline_item (resolve.TimelineItem): A containerized track item.
         validate (bool)[optional]: validating with avalon scheme
 
     Returns:
@@ -206,7 +216,7 @@ def parse_container(timeline_item, validate=True):
 
     """
     # convert tag metadata to normal keys names
-    data = lib.get_timeline_item_pype_tag(timeline_item)
+    data = lib.get_timeline_item_ayon_tag(timeline_item)
 
     if validate and data and data.get("schema"):
         schema.validate(data)
@@ -232,19 +242,19 @@ def parse_container(timeline_item, validate=True):
 
 
 def update_container(timeline_item, data=None):
-    """Update container data to input timeline_item's openpype tag.
+    """Update container data to input timeline_item's ayon marker data.
 
     Args:
-        timeline_item (hiero.core.TrackItem): A containerised track item.
-        data (dict)[optional]: dictionery with data to be updated
+        timeline_item (resolve.TimelineItem): A containerized track item.
+        data (dict)[optional]: dictionary with data to be updated
 
     Returns:
         bool: True if container was updated correctly
 
     """
-    data = data or dict()
+    data = data or {}
 
-    container = lib.get_timeline_item_pype_tag(timeline_item)
+    container = lib.get_timeline_item_ayon_tag(timeline_item)
 
     for _key, _value in container.items():
         try:
@@ -253,7 +263,7 @@ def update_container(timeline_item, data=None):
             pass
 
     log.info("Updating container: `{}`".format(timeline_item))
-    return bool(lib.set_timeline_item_pype_tag(timeline_item, container))
+    return bool(lib.set_timeline_item_ayon_tag(timeline_item, container))
 
 
 @contextlib.contextmanager
@@ -290,51 +300,3 @@ def on_pyblish_instance_toggled(instance, old_value, new_value):
     # Whether instances should be passthrough based on new value
     timeline_item = instance.data["item"]
     set_publish_attribute(timeline_item, new_value)
-
-
-def remove_instance(instance):
-    """Remove instance marker from track item."""
-    instance_id = instance.get("uuid")
-
-    selected_timeline_items = lib.get_current_timeline_items(
-        filter=True, selecting_color=lib.publish_clip_color)
-
-    found_ti = None
-    for timeline_item_data in selected_timeline_items:
-        timeline_item = timeline_item_data["clip"]["item"]
-
-        # get openpype tag data
-        tag_data = lib.get_timeline_item_pype_tag(timeline_item)
-        _ti_id = tag_data.get("uuid")
-        if _ti_id == instance_id:
-            found_ti = timeline_item
-            break
-
-    if found_ti is None:
-        return
-
-    # removing instance by marker color
-    print(f"Removing instance: {found_ti.GetName()}")
-    found_ti.DeleteMarkersByColor(lib.pype_marker_color)
-
-
-def list_instances():
-    """List all created instances from current workfile."""
-    listed_instances = []
-    selected_timeline_items = lib.get_current_timeline_items(
-        filter=True, selecting_color=lib.publish_clip_color)
-
-    for timeline_item_data in selected_timeline_items:
-        timeline_item = timeline_item_data["clip"]["item"]
-        ti_name = timeline_item.GetName().split(".")[0]
-
-        # get openpype tag data
-        tag_data = lib.get_timeline_item_pype_tag(timeline_item)
-
-        if tag_data:
-            asset = tag_data.get("asset")
-            product_name = tag_data.get("productName")
-            tag_data["label"] = f"{ti_name} [{asset}-{product_name}]"
-            listed_instances.append(tag_data)
-
-    return listed_instances

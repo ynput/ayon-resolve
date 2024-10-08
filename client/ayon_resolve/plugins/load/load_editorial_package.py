@@ -8,7 +8,7 @@ from ayon_core.pipeline import (
     get_representation_path,
 )
 
-from ayon_resolve.api import lib
+from ayon_resolve.api import lib, constants
 from ayon_resolve.api.plugin import get_editorial_publish_data
 
 
@@ -67,7 +67,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
             context, data)
 
         timeline_media_pool_item.SetMetadata(
-            lib.pype_tag_name, json.dumps(clip_data)
+            constants.AYON_TAG_NAME, json.dumps(clip_data)
         )
 
         # set clip color based on random choice
@@ -86,7 +86,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
         # Get the latest version of the container data
         timeline_media_pool_item = container["_item"]
         clip_data = timeline_media_pool_item.GetMetadata(
-            lib.pype_tag_name)
+            constants.AYON_TAG_NAME)
         clip_data = json.loads(clip_data)
 
         clip_data["load"] = {}
@@ -96,7 +96,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
             clip_data["publish"]["publish"] = False
 
         timeline_media_pool_item.SetMetadata(
-            lib.pype_tag_name, json.dumps(clip_data))
+            constants.AYON_TAG_NAME, json.dumps(clip_data))
 
         self.load(
             context,
@@ -144,6 +144,8 @@ class LoadEditorialPackage(load.LoaderPlugin):
             folder_path=context["folder"]["path"],
             product_name=context["product"]["name"],
             version=version_entity["version"],
+            task=context["representation"]["context"].get("task", {}).get(
+                "name"),
         )
 
         return data

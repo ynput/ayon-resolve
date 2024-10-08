@@ -1,7 +1,7 @@
 ## Basic setup
 
--   Actually supported version is up to v18
--   install Python 3.6.2 (latest tested v17) or up to 3.9.13 (latest tested on v18)
+-   Actually supported version is up to v19
+-   install Python 3.6.2 (latest tested v17) or up to 3.9.13 (latest tested on v19)
 -   pip install PySide2:
     -   Python 3.9.*: open terminal and go to python.exe directory, then `python -m pip install PySide2`
 -   pip install OpenTimelineIO:
@@ -10,19 +10,20 @@
     ![image](https://user-images.githubusercontent.com/40640033/102792588-ffcb1c80-43a8-11eb-9c6b-bf2114ed578e.png) with installed CMake in PATH.
 -   make sure Resolve Fusion (Fusion Tab/menu/Fusion/Fusion Settings) is set to Python 3.6
     ![image](https://user-images.githubusercontent.com/40640033/102631545-280b0f00-414e-11eb-89fc-98ac268d209d.png)
--   Open OpenPype **Tray/Admin/Studio settings** > `applications/resolve/environment` and add Python3 path to `RESOLVE_PYTHON3_HOME` platform related.
+-   Open AYON **Tray/Admin/Studio settings** > `applications/resolve/environment` and add Python3 path to `RESOLVE_PYTHON3_HOME` platform related.
 
 ## Editorial setup
 
 This is how it looks on my testing project timeline
 ![image](https://user-images.githubusercontent.com/40640033/102637638-96ec6600-4156-11eb-9656-6e8e3ce4baf8.png)
-Notice I had renamed tracks to `main` (holding metadata markers) and `review` used for generating review data with ffmpeg confersion to jpg sequence.
+Notice I had renamed tracks to `main` (holding metadata markers) and `review` used for generating review data with ffmpeg conversion to jpg sequence.
 
-1.  you need to start AYON menu from Resolve/EditTab/Menu/Workspace/Scripts/Comp/**__OpenPype_Menu__**
+1.  you need to start AYON menu from Resolve/EditTab/Menu/Workspace/Scripts/Comp/**__AYON_Menu__**
 2.  then select any clips in `main` track and change their color to `Chocolate`
-3.  in OpenPype Menu select `Create`
-4.  in Creator select `Create Publishable Clip [New]` (temporary name)
+3.  in AYON Menu select `Create`
+4.  in Creator select `Create Publishable Clip` (temporary name)
 5.  set `Rename clips` to True, Master Track to `main` and Use review track to `review` as in picture
-    ![image](https://user-images.githubusercontent.com/40640033/102643773-0d419600-4160-11eb-919e-9c2be0aecab8.png)
-6.  after you hit `ok` all clips are colored to `ping` and marked with openpype metadata tag
-7.  git `Publish` on openpype menu and see that all had been collected correctly. That is the last step for now as rest is Work in progress. Next steps will follow.
+    ![image](./doc_examples.jpg)
+6.  after you hit `ok` all clips are colored to `pink` and marked with AYON metadata tag
+7.  on the right-menu column you'll see that all products have been collected correctly
+8.  hit `Publish` to trigger the publishing process

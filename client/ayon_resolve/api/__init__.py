@@ -11,28 +11,32 @@ from .pipeline import (
     containerise,
     update_container,
     maintained_selection,
-    remove_instance,
-    list_instances
 )
 
 from .lib import (
     maintain_current_timeline,
-    publish_clip_color,
     get_project_manager,
-    get_current_project,
+    get_current_resolve_project,
+    get_current_project, # backward compatibility
     get_current_timeline,
     get_any_timeline,
     get_new_timeline,
+    export_timeline_otio_to_file,
+    export_timeline_otio,
     create_bin,
     get_media_pool_item,
     create_media_pool_item,
     create_timeline_item,
     get_timeline_item,
+    get_clip_resolution_from_media_pool,
     get_video_track_names,
     get_current_timeline_items,
-    get_pype_timeline_item_by_name,
-    get_timeline_item_pype_tag,
-    set_timeline_item_pype_tag,
+    get_timeline_item_by_name,
+    get_pype_timeline_item_by_name,  # backward compatibility
+    get_timeline_item_ayon_tag,
+    get_timeline_item_pype_tag,  # backward compatibility
+    set_timeline_item_ayon_tag,
+    set_timeline_item_pype_tag,  # backward compatibility
     imprint,
     set_publish_attribute,
     get_publish_attribute,
@@ -49,8 +53,10 @@ from .menu import launch_ayon_menu
 from .plugin import (
     ClipLoader,
     TimelineItemLoader,
-    Creator,
-    PublishClip
+    ResolveCreator,
+    Creator,  # backward compatibility
+    PublishableClip,
+    PublishClip,  # backward compatibility
 )
 
 from .workio import (
@@ -64,13 +70,18 @@ from .workio import (
 
 from .testing_utils import TestGUI
 
-
+# Resolve specific singletons
 bmdvr = None
 bmdvf = None
+project_manager = None
+media_storage = None
+
 
 __all__ = [
     "bmdvr",
     "bmdvf",
+    "project_manager",
+    "media_storage",
 
     # pipeline
     "ResolveHost",
@@ -78,30 +89,34 @@ __all__ = [
     "containerise",
     "update_container",
     "maintained_selection",
-    "remove_instance",
-    "list_instances",
 
     # utils
     "get_resolve_module",
 
     # lib
     "maintain_current_timeline",
-    "publish_clip_color",
     "get_project_manager",
-    "get_current_project",
+    "get_current_resolve_project",
+    "get_current_project", # backward compatibility
     "get_current_timeline",
     "get_any_timeline",
     "get_new_timeline",
+    "export_timeline_otio_to_file",
+    "export_timeline_otio",
     "create_bin",
     "get_media_pool_item",
     "create_media_pool_item",
     "create_timeline_item",
     "get_timeline_item",
+    "get_clip_resolution_from_media_pool",
     "get_video_track_names",
     "get_current_timeline_items",
-    "get_pype_timeline_item_by_name",
-    "get_timeline_item_pype_tag",
-    "set_timeline_item_pype_tag",
+    "get_timeline_item_by_name",
+    "get_pype_timeline_item_by_name",  # backward compatibility
+    "get_timeline_item_ayon_tag",
+    "get_timeline_item_pype_tag",  # backward compatibility
+    "set_timeline_item_ayon_tag",
+    "set_timeline_item_pype_tag",  # backward compatibility
     "imprint",
     "set_publish_attribute",
     "get_publish_attribute",
@@ -118,8 +133,10 @@ __all__ = [
     # plugin
     "ClipLoader",
     "TimelineItemLoader",
-    "Creator",
-    "PublishClip",
+    "ResolveCreator",
+    "Creator",  # backward compatibility
+    "PublishableClip",
+    "PublishClip",  # backward compatibility
 
     # workio
     "open_file",

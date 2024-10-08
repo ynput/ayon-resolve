@@ -20,7 +20,7 @@ class CreateEditorialPackage(ResolveCreator):
         """Create a new editorial_pkg instance.
 
         Args:
-            product_name (str): The subset name
+            product_name (str): The product name
             instance_data (dict): The instance data.
             pre_create_data (dict): The pre_create context data.
         """

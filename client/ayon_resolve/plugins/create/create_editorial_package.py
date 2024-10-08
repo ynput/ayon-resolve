@@ -16,15 +16,15 @@ class CreateEditorialPackage(ResolveCreator):
     icon = "camera"
     defaults = ["Main"]
 
-    def create(self, subset_name, instance_data, pre_create_data):
+    def create(self, product_name, instance_data, pre_create_data):
         """Create a new editorial_pkg instance.
 
         Args:
-            subset_name (str): The subset name
+            product_name (str): The subset name
             instance_data (dict): The instance data.
             pre_create_data (dict): The pre_create context data.
         """
-        super().create(subset_name,
+        super().create(product_name,
                        instance_data,
                        pre_create_data)
 
@@ -39,13 +39,6 @@ class CreateEditorialPackage(ResolveCreator):
 
         publish_data = deepcopy(instance_data)
 
-        # add publish data for streamlrine publishing
-        product_name = self.get_product_name(
-            self.project_name,
-            self.create_context.get_current_folder_entity(),
-            self.create_context.get_current_task_entity(),
-            instance_data["variant"],
-        )
         publish_data["publish"] = get_editorial_publish_data(
             folder_path=instance_data["folderPath"],
             product_name=product_name,

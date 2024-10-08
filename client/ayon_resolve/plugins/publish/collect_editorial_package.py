@@ -18,9 +18,14 @@ class EditorialPackageInstances(pyblish.api.InstancePlugin):
 
         media_pool_item = instance.data["transientData"]["timeline_pool_item"]
 
-        # get version from publish data and rise it one up
+        # Special case for versioning editorial_pkg products:
+        # * instance created by creator: version up as usual
+        # * instance created from loader: loaded version is added 
+        #   into the instance by loader. Then version up from initial pkg
+        #   to keep 'chained' version across tasks/product when possible.
         version = instance.data.get("version")
         if version is not None:
+            # get version from publish data and rise it one up
             version += 1
 
             # make sure last version of product is higher than current

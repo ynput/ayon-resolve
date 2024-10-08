@@ -86,11 +86,9 @@ class CreateEditorialPackage(ResolveCreator):
 
             publish_data = data["publish"]
 
-            # TODO: backward compatibility for legacy workflow instances
             # add label into instance data in case it is missing in publish
-            # data
-            if "label" not in publish_data:
-                publish_data["label"] = media_pool_item.GetName()
+            # data (legacy publish) or timeline was renamed.
+            publish_data["label"] = media_pool_item.GetName()
 
             # TODO: backward compatibility for legacy workflow instances
             # add variant into instance data in case it is missing in publish

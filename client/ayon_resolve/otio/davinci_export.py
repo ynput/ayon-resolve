@@ -12,12 +12,10 @@ import clique
 from ayon_resolve.api import lib
 
 
-self = sys.modules[__name__]
-self.track_types = {
+TRACK_TYPES = {
     "video": otio.schema.TrackKind.Video,
     "audio": otio.schema.TrackKind.Audio
 }
-self.project_fps = None
 
 
 def create_otio_rational_time(frame, fps):
@@ -62,6 +60,10 @@ def create_otio_reference(media_pool_item):
             audio_duration, float(fps)))
 
     otio_ex_ref_item = None
+    available_start = otio.opentime.from_timecode(
+        _mp_clip_property("Start TC"),
+        fps
+    )
 
     if padding:
         # if it is file sequence try to create `ImageSequenceReference`
@@ -78,7 +80,7 @@ def create_otio_reference(media_pool_item):
                 frame_zero_padding=padding_num,
                 rate=fps,
                 available_range=create_otio_time_range(
-                    frame_start,
+                    available_start.value,
                     frame_duration,
                     fps
                 )
@@ -91,7 +93,7 @@ def create_otio_reference(media_pool_item):
         otio_ex_ref_item = otio.schema.ExternalReference(
             target_url=reformat_path,
             available_range=create_otio_time_range(
-                frame_start,
+                available_start.value,
                 frame_duration,
                 fps
             )
@@ -103,9 +105,11 @@ def create_otio_reference(media_pool_item):
     return otio_ex_ref_item
 
 
-def create_otio_markers(track_item, fps):
+def create_otio_markers(track_item, fps, clip):
     track_item_markers = track_item.GetMarkers()
     markers = []
+    available_start = clip.available_range().start_time.value_rescaled_to(fps)
+
     for marker_frame in track_item_markers:
         note = track_item_markers[marker_frame]["note"]
         if "{" in note and "}" in note:
@@ -116,7 +120,7 @@ def create_otio_markers(track_item, fps):
             otio.schema.Marker(
                 name=track_item_markers[marker_frame]["name"],
                 marked_range=create_otio_time_range(
-                    marker_frame,
+                    marker_frame + available_start,
                     track_item_markers[marker_frame]["duration"],
                     fps
                 ),
@@ -127,21 +131,20 @@ def create_otio_markers(track_item, fps):
     return markers
 
 
-def create_otio_clip(track_item):
+def create_otio_clip(track_item, fps=None):
     media_pool_item = track_item.GetMediaPoolItem()
     _mp_clip_property = media_pool_item.GetClipProperty
 
-    if not self.project_fps:
-        fps = float(_mp_clip_property("FPS"))
-    else:
-        fps = self.project_fps
-
+    fps = fps or float(_mp_clip_property("FPS"))
     name = track_item.GetName()
 
     media_reference = create_otio_reference(media_pool_item)
+    available_start = media_reference.available_range.start_time
+    conformed_start = available_start.value_rescaled_to(fps)
+
     source_range = create_otio_time_range(
-        int(track_item.GetLeftOffset()),
-        int(track_item.GetDuration()),
+        conformed_start + track_item.GetLeftOffset(),
+        track_item.GetDuration(),
         fps
     )
 
@@ -154,7 +157,7 @@ def create_otio_clip(track_item):
                 source_range=source_range,
                 media_reference=media_reference
             )
-            for marker in create_otio_markers(track_item, fps):
+            for marker in create_otio_markers(track_item, fps, clip):
                 clip.markers.append(marker)
             return_clips.append(clip)
         return return_clips
@@ -164,7 +167,7 @@ def create_otio_clip(track_item):
             source_range=source_range,
             media_reference=media_reference
         )
-        for marker in create_otio_markers(track_item, fps):
+        for marker in create_otio_markers(track_item, fps, clip):
             clip.markers.append(marker)
 
         return clip
@@ -173,7 +176,7 @@ def create_otio_clip(track_item):
 def create_otio_gap(gap_start, clip_start, tl_start_frame, fps):
     return otio.schema.Gap(
         source_range=create_otio_time_range(
-            gap_start,
+            0,
             (clip_start - tl_start_frame) - gap_start,
             fps
         )
@@ -230,7 +233,7 @@ def _get_metadata_media_pool_item(media_pool_item):
 def create_otio_track(track_type, track_name):
     return otio.schema.Track(
         name=track_name,
-        kind=self.track_types[track_type]
+        kind=TRACK_TYPES[track_type]
     )
 
 
@@ -243,7 +246,7 @@ def add_otio_gap(clip_start, otio_track, track_item, timeline):
                 otio_track.available_range().duration.value,
                 track_item.GetStart(),
                 timeline.GetStartFrame(),
-                self.project_fps
+                timeline.GetSetting("timelineFrameRate")
             )
         )
 
@@ -271,15 +274,18 @@ def create_otio_timeline(resolve_project, timeline=None):
     """
 
     # get current timeline
-    self.project_fps = resolve_project.GetSetting("timelineFrameRate")
     timeline = timeline or resolve_project.GetCurrentTimeline()
+    timeline_fps = (
+        timeline.GetSetting("timelineFrameRate") or
+        resolve_project.GetSetting("timelineFrameRate")
+    )
 
     # convert timeline to otio
     otio_timeline = _create_otio_timeline(
-        resolve_project, timeline, self.project_fps)
+        resolve_project, timeline, timeline_fps)
 
     # loop all defined track types
-    for track_type in list(self.track_types.keys()):
+    for track_type in list(TRACK_TYPES.keys()):
         # get total track count
         track_count = timeline.GetTrackCount(track_type)
 
@@ -309,7 +315,7 @@ def create_otio_timeline(resolve_project, timeline=None):
                     clip_start, otio_track, track_item, timeline)
 
                 # create otio clip and add it to track
-                otio_clip = create_otio_clip(track_item)
+                otio_clip = create_otio_clip(track_item, fps=timeline_fps)
 
                 if not isinstance(otio_clip, list):
                     otio_track.append(otio_clip)

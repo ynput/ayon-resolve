@@ -3,7 +3,6 @@
 
 import os
 import re
-import sys
 import json
 import opentimelineio as otio
 from . import utils

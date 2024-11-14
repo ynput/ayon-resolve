@@ -15,7 +15,6 @@ class CollectShot(pyblish.api.InstancePlugin):
     SHARED_KEYS = (
         "folderPath",
         "fps",
-        "otioClip",
         "resolutionWidth",
         "resolutionHeight",
         "pixelAspect",        

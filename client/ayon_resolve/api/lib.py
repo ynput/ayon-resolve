@@ -1101,6 +1101,10 @@ def export_timeline_otio_to_file(timeline, filepath):
     """
     try:
         from . import bmdvr
+
+        if bmdvr.EXPORT_OTIO is None:
+            raise AttributeError("Unsupported native Export OTIO")
+
         timeline.Export(filepath, bmdvr.EXPORT_OTIO)
 
     except Exception as error:

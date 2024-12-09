@@ -66,12 +66,13 @@ class ExtractIntermediateRepresentation(publish.Extractor):
 
         self.log.debug(f"Rendered file: {rendered_file}")
 
-        # create drp workfile representation
+        # create intermediate workfile representation
         representation_intermediate = {
             "name": "intermediate",
             "ext": os.path.splitext(rendered_file)[1][1:],
             "files": rendered_file.name,
             "stagingDir": staging_dir,
+            "tags": ["review"]
         }
         self.log.debug(f"Video representation: {representation_intermediate}")
         instance.data["representations"].append(representation_intermediate)

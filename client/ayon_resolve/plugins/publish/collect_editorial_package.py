@@ -56,6 +56,11 @@ class EditorialPackageInstances(pyblish.api.InstancePlugin):
                     "frameEnd": timeline.GetEndFrame()
                 }
             )
-        instance.data["families"].append("review")
+
+        # Shall the instance produce reviewable representation ?
+        creator_attributes = instance.data.get("creator_attributes", {})
+        reviewable = creator_attributes.pop("review", False)
+        if reviewable:
+            instance.data["families"].append("review")
 
         self.log.debug(f"Editorial Package: {instance.data}")

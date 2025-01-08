@@ -2,6 +2,8 @@ import pyblish.api
 
 import ayon_api
 
+from ayon_resolve.api.lib import maintain_current_timeline
+
 
 class EditorialPackageInstances(pyblish.api.InstancePlugin):
     """Collect all Track items selection."""
@@ -44,11 +46,21 @@ class EditorialPackageInstances(pyblish.api.InstancePlugin):
 
             instance.data["version"] = version
 
-        instance.data.update(
-            {
-                "mediaPoolItem": media_pool_item,
-                "item": media_pool_item,
-            }
-        )
+        with maintain_current_timeline(media_pool_item) as timeline:
+            instance.data.update(
+                {
+                    "mediaPoolItem": media_pool_item,
+                    "item": media_pool_item,
+                    "fps": timeline.GetSetting("timelineFrameRate"),
+                    "frameStart": timeline.GetStartFrame(),
+                    "frameEnd": timeline.GetEndFrame()
+                }
+            )
+
+        # Shall the instance produce reviewable representation ?
+        creator_attributes = instance.data.get("creator_attributes", {})
+        reviewable = creator_attributes.pop("review", False)
+        if reviewable:
+            instance.data["families"].append("review")
 
         self.log.debug(f"Editorial Package: {instance.data}")

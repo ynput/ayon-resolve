@@ -2,9 +2,20 @@ import json
 from copy import deepcopy
 
 from ayon_core.pipeline.create import CreatorError, CreatedInstance
+from ayon_core.lib import BoolDef
 
 from ayon_resolve.api import lib, constants
 from ayon_resolve.api.plugin import ResolveCreator, get_editorial_publish_data
+
+
+_CREATE_ATTR_DEFS = [
+    BoolDef(
+        "review",
+        label="Make intermediate media reviewable",
+        tooltip="Make editorial package intermediate media reviewable.",
+        default=False,
+    )
+]
 
 
 class CreateEditorialPackage(ResolveCreator):
@@ -15,6 +26,28 @@ class CreateEditorialPackage(ResolveCreator):
     product_type = "editorial_pkg"
     icon = "camera"
     defaults = ["Main"]
+
+    def get_pre_create_attr_defs(self):
+        """Plugin attribute definitions needed for creation.
+
+        Returns:
+            list[AbstractAttrDef]: Attribute definitions that can be tweaked
+                for created instance.
+        """
+        return _CREATE_ATTR_DEFS
+
+    def get_attr_defs_for_instance(self, instance):
+        """Get attribute definitions for an instance.
+
+        Args:
+            instance (CreatedInstance): Instance for which to get
+                attribute definitions.
+
+        Returns:
+            list[AbstractAttrDef]: Attribute definitions that can be tweaked
+                for created instance.
+        """
+        return _CREATE_ATTR_DEFS
 
     def create(self, product_name, instance_data, pre_create_data):
         """Create a new editorial_pkg instance.
@@ -36,6 +69,10 @@ class CreateEditorialPackage(ResolveCreator):
         timeline_media_pool_item = lib.get_timeline_media_pool_item(
             current_timeline
         )
+
+        instance_data["creator_attributes"] = {
+            "review": pre_create_data["review"]
+        }
 
         tag_metadata = {
             "publish": deepcopy(instance_data),

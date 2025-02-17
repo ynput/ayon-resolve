@@ -32,10 +32,19 @@ class CollectAudio(pyblish.api.InstancePlugin):
 
         # Retrieve instance data from parent instance shot instance.
         parent_instance_id = instance.data["parent_instance_id"]
-        edit_shared_data = instance.context.data["editorialSharedData"]
-        instance.data.update(
-            edit_shared_data[parent_instance_id]
-        )
+
+        try:
+            edit_shared_data = instance.context.data["editorialSharedData"]
+            instance.data.update(
+                edit_shared_data[parent_instance_id]
+            )
+
+        # Ensure shot instance related to the audio instance exists.
+        except KeyError:
+            raise PublishError(
+                f'Could not find shot instance for {instance.data["label"]}.'
+                " Please ensure it is set and enabled."
+            )
 
         # solve reviewable options
         review_switch = instance.data["creator_attributes"].get("review")

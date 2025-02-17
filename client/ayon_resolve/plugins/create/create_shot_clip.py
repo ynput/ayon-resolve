@@ -103,14 +103,10 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
             CreatedInstance: The created instance object for the new shot.
         """
         instance_data.update({
-            "productName": f"{self.product_type}{instance_data['variant']}",
-            "productType": self.product_type,
-            "has_promised_context": True,
             "newHierarchyIntegration": True,
             # Backwards compatible (Deprecated since 24/06/06)
             "newAssetPublishing": True,
         })
-        instance_data["folder"] = instance_data["folderPath"]
 
         new_instance = CreatedInstance(
             self.product_type, instance_data["productName"], instance_data, self
@@ -268,18 +264,6 @@ class EditorialAudioInstanceCreator(_ResolveInstanceClipCreatorBase):
     product_type = "audio"
     label = "Editorial Audio"
 
-    def get_product_name(
-        self,
-        project_name,
-        folder_entity,
-        task_entity,
-        variant,
-        host_name=None,
-        instance=None,
-        project_entity=None
-    ):
-        return f"{self.product_type}Main"
-
 
 class CreateShotClip(plugin.ResolveCreator):
     """Publishable clip"""
@@ -296,7 +280,6 @@ or updating already created from Resolve. Publishing will create
 OTIO file.
 """
     create_allow_thumbnail = False
-    shot_instances = {}
 
     def get_pre_create_attr_defs(self):
 
@@ -554,6 +537,10 @@ OTIO file.
         }
 
         instances = []
+        all_shot_instances = {}
+        vertical_clip_match = {}
+        vertical_clip_used = {}
+
         for index, track_item_data in enumerate(sorted_selected_track_items):
 
             # Compute and store resolution metadata from mediapool clip.
@@ -569,10 +556,12 @@ OTIO file.
             # convert track item to timeline media pool item
             publish_clip = plugin.PublishableClip(
                 track_item_data,
+                vertical_clip_match,
+                vertical_clip_used,
                 pre_create_data,
                 media_pool_folder,
                 rename_index=index,
-                data=segment_data  # insert additional data in segment_data
+                data=segment_data,  # insert additional data in segment_data
             )
             track_item = publish_clip.convert()
             if track_item is None:
@@ -613,7 +602,7 @@ OTIO file.
 
             enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
             shot_folder_path = segment_data["folderPath"]
-            shot_instances = self.shot_instances.setdefault(
+            shot_instances = all_shot_instances.setdefault(
                 shot_folder_path, {})
 
             for creator_id in enabled_creators:
@@ -707,8 +696,6 @@ OTIO file.
             track_item.SetClipColor(constants.PUBLISH_CLIP_COLOR)
             instances.extend(list(clip_instances.values()))
 
-        self.shot_instances = {}
-        plugin.PublishableClip.restore_all_caches()
         return instances
 
     def _create_and_add_instance(self, data, creator_id,

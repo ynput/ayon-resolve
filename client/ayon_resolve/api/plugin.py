@@ -327,8 +327,6 @@ class PublishableClip:
     Returns:
         hiero.core.TrackItem: hiero track item object with openpype tag
     """
-    vertical_clip_match = {}
-    vertical_clip_used = {}
     tag_data = {}
     types = {
         "shot": "shot",
@@ -368,10 +366,12 @@ class PublishableClip:
     def __init__(
             self,
             timeline_item_data: dict,
+            vertical_clip_match: dict = None,
+            vertical_clip_used: dict = None,
             pre_create_data: dict = None,
             media_pool_folder: str = None,
             rename_index: int = 0,
-            data: dict = None
+            data: dict = None,
         ):
         """ Initialize object
 
@@ -383,6 +383,9 @@ class PublishableClip:
             data (dict): additional data
 
         """
+        self.vertical_clip_match = vertical_clip_match 
+        self.vertical_clip_used = vertical_clip_used
+
         self.rename_index = rename_index
         self.tag_data = data or {}
 
@@ -415,11 +418,6 @@ class PublishableClip:
 
         # create parents with correct types
         self._create_parents()
-
-    @classmethod
-    def restore_all_caches(cls):
-        cls.vertical_clip_match = {}
-        cls.vertical_clip_used = {}
 
     def convert(self):
         """ Convert track item to publishable instance.
@@ -500,7 +498,7 @@ class PublishableClip:
         self.hierarchy = get("hierarchy") or self.hierarchy_default
         self.count_from = get("countFrom") or self.count_from_default
         self.count_steps = get("countSteps") or self.count_steps_default
-        self.variant = get("variant") or self.variant_default
+        self.variant = get("clip_variant") or self.variant_default
         self.product_type = get("productType") or self.product_type_default
         self.vertical_sync = get("vSyncOn") or self.vertical_sync_default
         self.hero_track = get("vSyncTrack") or self.driving_layer_default

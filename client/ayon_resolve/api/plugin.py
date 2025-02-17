@@ -537,8 +537,8 @@ class PublishableClip:
         self.reviewable_source = ""
 
         if (
-            self.vertical_sync and
-            self.track_name not in self.hero_track
+            self.vertical_sync
+            and self.track_name not in self.hero_track
         ):
             hero_track = False
 

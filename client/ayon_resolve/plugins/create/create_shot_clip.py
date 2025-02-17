@@ -617,7 +617,14 @@ OTIO file.
                     track_item_duration = track_item.GetDuration()
                     workfileFrameStart = \
                         sub_instance_data["workfileFrameStart"]
-                    sub_instance_data["label"] = f"{shot_folder_path} shotMain"
+                    sub_instance_data.update(
+                        {
+                            "variant": "main",
+                            "productType": "shot",
+                            "productName": "shotMain",
+                            "label": f"{shot_folder_path} shotMain",
+                        }
+                    )
                     creator_attributes.update({
                         "workfileFrameStart": workfileFrameStart,
                         "handleStart": sub_instance_data["handleStart"],

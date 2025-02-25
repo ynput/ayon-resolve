@@ -1,7 +1,9 @@
 import pprint
 import pyblish
 
-#from ayon_resolve.otio import utils
+from ayon_core.pipeline import PublishError
+from ayon_resolve.otio import utils
+
 
 class CollectAudio(pyblish.api.InstancePlugin):
     """Collect new audio."""
@@ -16,12 +18,40 @@ class CollectAudio(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
+        otio_timeline = instance.context.data["otioTimeline"]
+        otio_clip, marker = utils.get_marker_from_clip_index(
+            otio_timeline, instance.data["clip_index"]
+        )
+        if not otio_clip:
+            raise PublishError(
+                "Could not retrieve otioClip for audio"
+                f' {dict(instance.data)}'
+            )
+
+        instance.data["otioClip"] = otio_clip
+
         # Retrieve instance data from parent instance shot instance.
         parent_instance_id = instance.data["parent_instance_id"]
-        edit_shared_data = instance.context.data["editorialSharedData"]
-        instance.data.update(
-            edit_shared_data[parent_instance_id]
-        )
+
+        try:
+            edit_shared_data = instance.context.data["editorialSharedData"]
+            instance.data.update(
+                edit_shared_data[parent_instance_id]
+            )
+
+        # Ensure shot instance related to the audio instance exists.
+        except KeyError:
+            raise PublishError(
+                f'Could not find shot instance for {instance.data["label"]}.'
+                " Please ensure it is set and enabled."
+            )
+
+        # solve reviewable options
+        review_switch = instance.data["creator_attributes"].get("review")
+
+        if review_switch is True:
+            instance.data["reviewAudio"] = True
+            instance.data.pop("review", None)
 
         clip_src = instance.data["otioClip"].source_range
         clip_src_in = clip_src.start_time.to_frames()

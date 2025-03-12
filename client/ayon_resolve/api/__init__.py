@@ -128,6 +128,8 @@ __all__ = [
     "set_project_manager_to_folder_name",
     "get_otio_clip_instance_data",
     "get_reformated_path",
+    "set_project_fps",
+    "set_project_resolution",
 
     # menu
     "launch_ayon_menu",

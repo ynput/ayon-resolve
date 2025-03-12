@@ -79,7 +79,12 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         get_resolve_module()
 
     def open_workfile(self, filepath):
-        return open_file(filepath)
+        success = open_file(filepath)
+        if success:
+            lib.set_project_fps()
+            lib.set_project_resolution()
+
+        return success
 
     def save_workfile(self, filepath=None):
         return save_file(filepath)

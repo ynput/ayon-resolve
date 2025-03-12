@@ -45,7 +45,9 @@ from .lib import (
     get_pype_clip_metadata,
     set_project_manager_to_folder_name,
     get_otio_clip_instance_data,
-    get_reformated_path
+    get_reformated_path,
+    set_project_fps,
+    set_project_resolution,
 )
 
 from .menu import launch_ayon_menu

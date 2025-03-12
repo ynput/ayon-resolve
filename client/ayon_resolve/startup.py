@@ -44,108 +44,6 @@ def open_workfile(path):
     host.open_workfile(path)
 
 
-def set_project_fps(attributes):
-    """ Attempt to set project frame rate.
-    This might not be possible if a timeline already exists within the project.
-    """
-    resolve_project = ayon_resolve.api.get_current_resolve_project()
-    project_fps = attributes["fps"]
-
-    SUPPORTED_FPS = {
-        16.0: "16",
-        18.0: "18",
-        23.976: "23.976",
-        24.0: "24",
-        25.0: "25",
-        29.97: "29.97",
-        30.0: "30",
-        47.952: "47.952",
-        48.0: "48",
-        50.0: "50"
-    }
-
-    if float(project_fps) in SUPPORTED_FPS:
-        if not resolve_project.SetSetting(
-            "timelineFrameRate",
-            SUPPORTED_FPS[float(project_fps)]
-        ):
-            # Resolve does not allow to edit timeline fps
-            # project settings once a timeline has been created.
-            log.info(
-                "Cannot override Project fps from AYON."
-                " This could be because a timeline already exists."
-            )
-    else:
-        log.info(
-            "Fps set in AYON project is not supported by Resolve"
-            f" attempt to set {project_fps},"
-            f" supported are {tuple(SUPPORTED_FPS.keys())}."
-        )
-
-
-def set_project_resolution(attributes):
-    """ Attempt to set project resolution.
-    """
-    resolve_project = ayon_resolve.api.get_current_resolve_project()
-    width = attributes["resolutionWidth"]
-    height = attributes["resolutionHeight"]
-
-    resolution_params = {
-        "timelineResolutionHeight": height,
-        "timelineResolutionWidth": width,
-    }
-
-    # In order to set vertical resolution in resolve,
-    # the "Use vertical resolution" option need to be enabled.
-    # This is not exposed from the Python API.
-    if height > width:
-            log.info(
-                "Cannot override Project resolution from AYON."
-                f" Vertical resolution {width}x{height}"
-                " is unsupported from the API."
-            )
-            return
-
-    for resolve_param, value in resolution_params.items():
-        if not resolve_project.SetSetting(
-            resolve_param,
-            str(int(value))
-        ):
-            log.info(
-                "Cannot override Project resolution from AYON."
-            )
-            return
-
-    SUPPORTED_PIXEL_ASPECTS = {
-        1.0: "Square",
-        16/9: "16:9 anamorphic",
-        4/3: "4:3 standard definition",
-        2.0: "Cinemascope",
-    }
-    pixel_aspect_ratio = round(attributes["pixelAspect"], 2)
-
-    for supported_pa in SUPPORTED_PIXEL_ASPECTS:
-        if round(supported_pa, 2) != pixel_aspect_ratio:
-            continue
-
-        if not resolve_project.SetSetting(
-            "timelinePixelAspectRatio",
-            SUPPORTED_PIXEL_ASPECTS[supported_pa]
-        ):
-            log.info(
-                "Cannot override Project pixel aspect ratio from AYON."
-            )
-
-        break
-
-    else:
-        log.info(
-            "Pixel Aspect Ratio set in AYON project is not supported"
-            f" by Resolve, attempt to set {pixel_aspect_ratio},"
-            f" supported are {tuple(SUPPORTED_PIXEL_ASPECTS.keys())}."
-        )
-
-
 def main():
     # Open last workfile
     workfile_path = os.environ.get("AYON_RESOLVE_OPEN_ON_LAUNCH")
@@ -158,16 +56,9 @@ def main():
 
     # Gathered project settings
     from ayon_core.settings import get_project_settings
-    from ayon_core.pipeline import Anatomy
     from ayon_core.pipeline.context_tools import get_current_project_name
     project_name = get_current_project_name()
     log.info(f"Current project name in context: {project_name}")
-
-    # Set project frame rate and resolution
-    project_anatomy = Anatomy(project_name)
-    project_attributes = project_anatomy["attributes"]
-    set_project_fps(project_attributes)
-    set_project_resolution(project_attributes)
 
     # Launch AYON menu
     settings = get_project_settings(project_name)

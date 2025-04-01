@@ -16,6 +16,11 @@ from ayon_core.pipeline import (
     register_inventory_action_path,
     AVALON_CONTAINER_ID,
 )
+from ayon_core.pipeline.context_tools import (
+    get_current_task_entity,
+    get_current_project_name
+)
+from ayon_core.settings import get_project_settings
 from ayon_core.host import (
     HostBase,
     IWorkfileHost,
@@ -79,10 +84,23 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         get_resolve_module()
 
     def open_workfile(self, filepath):
+        settings = get_project_settings(
+            get_current_project_name()
+        )
         success = open_file(filepath)
-        if success:
-            lib.set_project_fps()
-            lib.set_project_resolution()
+        if success and settings["resolve"]["report_fps_resolution"]:
+            current_task = get_current_task_entity()
+            _, bmdvf = get_resolve_module()
+            edited = (
+                lib.set_project_fps(current_task)
+                and lib.set_project_resolution(current_task)
+            )
+            if not edited:
+                bmdvf.Print(
+                    "Could not set current task FPS or Resolution onto current project.\n"
+                    "More information available at: https://docs.ayon.dev/docs/addon_resolve_artist#report-fps-and-resolution-from-ayon-task"
+                )
+                bmdvf.ShowConsole()
 
         return success
 

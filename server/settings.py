@@ -141,6 +141,9 @@ class ResolveSettings(BaseSettingsModel):
     launch_openpype_menu_on_start: bool = SettingsField(
         False, title="Launch OpenPype menu on start of Resolve"
     )
+    report_fps_resolution: bool = SettingsField(
+        False, title="Set FPS and Resolution from current task"
+    )
     imageio: ResolveImageIOModel = SettingsField(
         default_factory=ResolveImageIOModel,
         title="Color Management (ImageIO)"
@@ -157,6 +160,7 @@ class ResolveSettings(BaseSettingsModel):
 
 DEFAULT_VALUES = {
     "launch_openpype_menu_on_start": False,
+    "report_fps_resolution": False,
     "create": {
         "CreateShotClip": {
             "hierarchy": "{folder}/{sequence}",

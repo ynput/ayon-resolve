@@ -1231,11 +1231,11 @@ def export_timeline_otio_native(timeline, filepath):
     return True
 
 
-def set_project_fps():
+def set_project_fps(task_entity=None):
     """ Attempt to set project frame rate from AYON current task.
     This might not be possible if a timeline already exists within the project.
     """
-    task_entity = get_current_task_entity()
+    task_entity = task_entity or get_current_task_entity()
     attributes = task_entity["attrib"]
 
     # Set project frame rate and resolution
@@ -1266,18 +1266,23 @@ def set_project_fps():
                 "Cannot override Project fps from AYON."
                 " This could be because a timeline already exists."
             )
+            return False
+
+        return True
+
     else:
         log.warning(
             "Fps set in AYON project is not supported by Resolve"
             f" attempt to set {project_fps},"
             f" supported are {tuple(SUPPORTED_FPS.keys())}."
         )
+        return False
 
 
-def set_project_resolution():
+def set_project_resolution(task_entity=None):
     """ Attempt to set project resolution from AYON current task.
     """
-    task_entity = get_current_task_entity()
+    task_entity = task_entity or get_current_task_entity()
     attributes = task_entity["attrib"]
 
     resolve_project = get_current_resolve_project()
@@ -1298,7 +1303,7 @@ def set_project_resolution():
                 f" Vertical resolution {width}x{height}"
                 " is unsupported from the API."
             )
-            return
+            return False
 
     for resolve_param, value in resolution_params.items():
         if not resolve_project.SetSetting(
@@ -1309,7 +1314,7 @@ def set_project_resolution():
                 "Cannot override Project resolution from AYON."
                 f" trying to set {resolve_param} = {value}"
             )
-            return
+            return False
 
     SUPPORTED_PIXEL_ASPECTS = {
         1.0: "Square",
@@ -1332,8 +1337,9 @@ def set_project_resolution():
                 " trying to set timelinePixelAspectRatio = "
                 f"{SUPPORTED_PIXEL_ASPECTS[supported_pa]}"
             )
+            return False
 
-        break
+        return True
 
     else:
         log.warning(
@@ -1341,3 +1347,4 @@ def set_project_resolution():
             f" by Resolve, attempt to set {pixel_aspect_ratio},"
             f" supported are {tuple(SUPPORTED_PIXEL_ASPECTS.keys())}."
         )
+        return False

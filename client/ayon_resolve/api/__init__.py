@@ -46,6 +46,8 @@ from .lib import (
     set_project_manager_to_folder_name,
     get_otio_clip_instance_data,
     get_reformated_path,
+    detect_project_fps_mismatch,
+    detect_project_resolution_mismatch,
     set_project_fps,
     set_project_resolution,
 )
@@ -128,6 +130,8 @@ __all__ = [
     "set_project_manager_to_folder_name",
     "get_otio_clip_instance_data",
     "get_reformated_path",
+    "detect_project_fps_mismatch",
+    "detect_project_resolution_mismatch",
     "set_project_fps",
     "set_project_resolution",
 

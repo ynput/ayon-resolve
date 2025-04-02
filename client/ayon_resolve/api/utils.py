@@ -16,9 +16,9 @@ def get_resolve_module():
     from ayon_resolve import api
     # dont run if already loaded
     if api.bmdvr:
-        log.debug(("resolve module is assigned to "
+        log.info(("resolve module is assigned to "
                   f"`ayon_resolve.api.bmdvr`: {api.bmdvr}"))
-        return api.bmdvr, api.bmdvf
+        return api.bmdvr
     try:
         """
         The PYTHONPATH needs to be set correctly for this import
@@ -81,5 +81,3 @@ def get_resolve_module():
               f"`ayon_resolve.api.bmdvr`: {api.bmdvr}"))
     log.info(("Assigning resolve module to "
               f"`ayon_resolve.api.bmdvf`: {api.bmdvf}"))
-
-    return bmdvr, bmdvf

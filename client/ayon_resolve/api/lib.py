@@ -1261,12 +1261,10 @@ def detect_project_resolution_mismatch(task_entity=None):
     attributes = task_entity["attrib"]
     width = attributes["resolutionWidth"]
     height = attributes["resolutionHeight"]
-    pixel_aspect_ratio = round(attributes["pixelAspect"], 2)
 
     resolve_project = get_current_resolve_project()
     resolve_width = resolve_project.GetSetting("timelineResolutionWidth")
     resolve_height = resolve_project.GetSetting("timelineResolutionHeight")
-    resolve_pa = resolve_project.SetSetting("timelinePixelAspectRatio")
 
     if (str(width), str(height)) != (resolve_width, resolve_height):
         return (

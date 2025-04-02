@@ -8,7 +8,7 @@ from collections import OrderedDict
 import sys
 
 from pyblish import api as pyblish
-from qtpy import QtWidgets, QtCore, QtGui
+from qtpy import QtWidgets
 
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
@@ -86,9 +86,6 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         get_resolve_module()
 
     def open_workfile(self, filepath):
-        settings = get_project_settings(
-            get_current_project_name()
-        )
         success = open_file(filepath)
         if success:
             self._show_ayon_settings_confirmation_windows()

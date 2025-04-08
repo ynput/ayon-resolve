@@ -13,7 +13,10 @@ from ayon_core.pipeline.editorial import (
     is_overlapping_otio_ranges,
     frames_to_timecode
 )
-from ayon_core.pipeline.context_tools import get_current_project_name
+from ayon_core.pipeline.context_tools import (
+    get_current_project_name,
+    get_current_task_entity
+)
 from ayon_core.pipeline.tempdir import create_custom_tempdir
 
 from . import constants
@@ -1226,3 +1229,162 @@ def export_timeline_otio_native(timeline, filepath):
         log.error(f"Failed to export timeline otio: {e}")
         return False
     return True
+
+
+def detect_project_fps_mismatch(task_entity=None):
+    """ Detect potential fps mismatch between project settings
+    and task entity. Return any mismatch as a information
+    string to be displayed to the user.
+    """
+    task_entity = task_entity or get_current_task_entity()
+    attributes = task_entity["attrib"]
+    task_fps = attributes["fps"]
+
+    resolve_project = get_current_resolve_project()
+    resolve_fps = resolve_project.GetSetting("timelineFrameRate")
+
+    if task_fps != resolve_fps:
+        return (
+            f"Project current fps is {resolve_fps} "
+            f"while task fps is {task_fps}."
+        )
+
+    return None
+
+
+def detect_project_resolution_mismatch(task_entity=None):
+    """ Detect potential resolution mismatch between project settings
+    and task entity. Return any mismatch as a information
+    string to be displayed to the user.
+    """
+    task_entity = task_entity or get_current_task_entity()
+    attributes = task_entity["attrib"]
+    width = attributes["resolutionWidth"]
+    height = attributes["resolutionHeight"]
+
+    resolve_project = get_current_resolve_project()
+    resolve_width = resolve_project.GetSetting("timelineResolutionWidth")
+    resolve_height = resolve_project.GetSetting("timelineResolutionHeight")
+
+    if (str(width), str(height)) != (resolve_width, resolve_height):
+        return (
+            f"Project current resolution is {resolve_width}x{resolve_height} "
+            f"while task resolution is {width}x{height}."
+        )
+
+    return None
+
+
+def set_project_fps(task_entity=None):
+    """ Attempt to set project frame rate from AYON current task.
+    This might not be possible if a timeline already exists within the project.
+    Return a error string if any issue so it can be displayed to the user.
+    """
+    task_entity = task_entity or get_current_task_entity()
+    attributes = task_entity["attrib"]
+
+    # Set project frame rate and resolution
+    resolve_project = get_current_resolve_project()
+    project_fps = attributes["fps"]
+
+    SUPPORTED_FPS = {
+        16.0: "16",
+        18.0: "18",
+        23.976: "23.976",
+        24.0: "24",
+        25.0: "25",
+        29.97: "29.97",
+        30.0: "30",
+        47.952: "47.952",
+        48.0: "48",
+        50.0: "50"
+    }
+
+    if float(project_fps) in SUPPORTED_FPS:
+        if not resolve_project.SetSetting(
+            "timelineFrameRate",
+            SUPPORTED_FPS[float(project_fps)]
+        ):
+            # Resolve does not allow to edit timeline fps
+            # project settings once a timeline has been created.
+            return (
+                "Cannot override Project fps from AYON."
+                " This could be because a timeline already exists."
+            )
+
+        return None
+
+    else:
+        return (
+            "Fps set in AYON project is not supported by Resolve"
+            f" attempt to set {project_fps},"
+            f" supported are {tuple(SUPPORTED_FPS.keys())}."
+        )
+
+
+def set_project_resolution(task_entity=None):
+    """ Attempt to set project resolution from AYON current task.
+    Return a error string if any issue so it can be displayed to the user.
+    """
+    task_entity = task_entity or get_current_task_entity()
+    attributes = task_entity["attrib"]
+
+    resolve_project = get_current_resolve_project()
+    width = attributes["resolutionWidth"]
+    height = attributes["resolutionHeight"]
+
+    resolution_params = {
+        "timelineResolutionHeight": height,
+        "timelineResolutionWidth": width,
+    }
+
+    # In order to set vertical resolution in resolve,
+    # the "Use vertical resolution" option need to be enabled.
+    # This is not exposed from the Python API.
+    if height > width:
+            return (
+                "Cannot override Project resolution from AYON."
+                f" Vertical resolution {width}x{height}"
+                " is unsupported from the API."
+            )
+
+    for resolve_param, value in resolution_params.items():
+        if not resolve_project.SetSetting(
+            resolve_param,
+            str(int(value))
+        ):
+            return (
+                "Cannot override Project resolution from AYON."
+                f" trying to set {resolve_param} = {value}"
+            )
+
+    SUPPORTED_PIXEL_ASPECTS = {
+        1.0: "Square",
+        16/9: "16:9 anamorphic",
+        4/3: "4:3 standard definition",
+        2.0: "Cinemascope",
+    }
+    pixel_aspect_ratio = round(attributes["pixelAspect"], 2)
+
+    for supported_pa in SUPPORTED_PIXEL_ASPECTS:
+        if round(supported_pa, 2) != pixel_aspect_ratio:
+            continue
+
+        if not resolve_project.SetSetting(
+            "timelinePixelAspectRatio",
+            SUPPORTED_PIXEL_ASPECTS[supported_pa]
+        ):
+            return (
+                "Cannot override Project pixel aspect ratio from AYON."
+                " trying to set timelinePixelAspectRatio = "
+                f"{SUPPORTED_PIXEL_ASPECTS[supported_pa]}"
+            )
+
+        return None
+
+    else:
+        return (
+            "Pixel Aspect Ratio set in AYON project is not supported"
+            f" by Resolve, attempt to set {pixel_aspect_ratio},"
+            f" supported are {tuple(SUPPORTED_PIXEL_ASPECTS.keys())}."
+        )

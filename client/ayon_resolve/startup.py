@@ -54,12 +54,13 @@ def main():
     else:
         log.info("No last workfile set to open. Skipping..")
 
-    # Launch AYON menu
+    # Gathered project settings
     from ayon_core.settings import get_project_settings
     from ayon_core.pipeline.context_tools import get_current_project_name
     project_name = get_current_project_name()
     log.info(f"Current project name in context: {project_name}")
 
+    # Launch AYON menu
     settings = get_project_settings(project_name)
     if settings.get("resolve", {}).get("launch_openpype_menu_on_start", True):
         log.info("Launching AYON menu..")

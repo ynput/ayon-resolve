@@ -5,8 +5,10 @@ import os
 import json
 import contextlib
 from collections import OrderedDict
+import sys
 
 from pyblish import api as pyblish
+from qtpy import QtWidgets
 
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
@@ -16,6 +18,11 @@ from ayon_core.pipeline import (
     register_inventory_action_path,
     AVALON_CONTAINER_ID,
 )
+from ayon_core.pipeline.context_tools import (
+    get_current_task_entity,
+    get_current_project_name
+)
+from ayon_core.settings import get_project_settings
 from ayon_core.host import (
     HostBase,
     IWorkfileHost,
@@ -79,9 +86,14 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         get_resolve_module()
 
     def open_workfile(self, filepath):
-        return open_file(filepath)
+        success = open_file(filepath)
+        if success:
+            self._show_ayon_settings_confirmation_windows()
+
+        return success
 
     def save_workfile(self, filepath=None):
+        self._show_ayon_settings_confirmation_windows()
         return save_file(filepath)
 
     def work_root(self, session):
@@ -106,6 +118,49 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     def update_context_data(self, data, changes):
         # TODO: implement to support persisting context attributes
         pass
+
+    @staticmethod
+    def _show_ayon_settings_confirmation_windows():
+        """
+        """
+        settings = get_project_settings(
+            get_current_project_name()
+        )
+
+        # Only display this confirmation window if relevant setting is enabled.
+        if not settings["resolve"]["report_fps_resolution"]:
+            return
+
+        current_task = get_current_task_entity()
+        mismatch_fps = lib.detect_project_fps_mismatch(current_task)
+        mismatch_res = lib.detect_project_resolution_mismatch(current_task)
+
+        if not mismatch_fps and not mismatch_res:
+            log.info("Current resolve project matches task settings.")
+            return
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+        if QtWidgets.QMessageBox.information(
+            app.activeWindow(),
+            "Report project settings from AYON task ?",
+            (
+                "Your project settings mismatch the current task context. "
+                "Would you like to reset it to match the task attributes?\n"
+            ) + "".join([f"\n - {info}" for info in [mismatch_fps, mismatch_res] if info]),
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        ) == QtWidgets.QMessageBox.Yes:
+
+            issues_fps = lib.set_project_fps(current_task) or ""
+            issues_resolution = lib.set_project_resolution(current_task) or ""
+            if issues_fps or issues_resolution:
+                QtWidgets.QMessageBox.warning(
+                    app.activeWindow(),
+                    "Cannot edit settings from AYON task.",
+                    (
+                        f"{issues_fps}\n{issues_resolution}\n\nMore information available at: "
+                        "https://docs.ayon.dev/docs/addon_resolve_artist#report-fps-and-resolution-from-ayon-task"
+                    )
+                )
 
 
 def containerise(timeline_item,

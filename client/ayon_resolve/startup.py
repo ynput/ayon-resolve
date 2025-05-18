@@ -62,7 +62,7 @@ def main():
 
     # Launch AYON menu
     settings = get_project_settings(project_name)
-    if settings.get("resolve", {}).get("launch_openpype_menu_on_start", True):
+    if settings.get("resolve", {}).get("launch_ayon_menu_on_start", True):
         log.info("Launching AYON menu..")
         launch_menu()
 

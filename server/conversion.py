@@ -2,9 +2,7 @@ from typing import Any
 
 
 def _convert_ayon_menu_0_4_1(overrides):
-    
-    # Already new settings
-    if "launch_ayon_menu_on_start" in overrides:
+    if "launch_openpype_menu_on_start" not in overrides:
         return
 
     overrides["launch_ayon_menu_on_start"] = overrides.pop("launch_openpype_menu_on_start")

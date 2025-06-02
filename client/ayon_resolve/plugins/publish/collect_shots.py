@@ -72,7 +72,8 @@ class CollectShot(pyblish.api.InstancePlugin):
         inst_data = marker.metadata["resolve_sub_products"].get(creator_id, {})
 
         # Overwrite settings with clip metadata is "sourceResolution"
-        overwrite_clip_metadata = inst_data.get("sourceResolution", False)
+        creator_attributes = instance.data['creator_attributes']
+        overwrite_clip_metadata = creator_attributes.get("sourceResolution", False)
         if overwrite_clip_metadata:
             clip_metadata = inst_data["clip_source_resolution"]
             width = clip_metadata["width"]

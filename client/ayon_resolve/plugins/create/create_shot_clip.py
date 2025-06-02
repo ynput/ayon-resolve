@@ -170,6 +170,14 @@ class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
 
     def get_instance_attr_defs(self):
         instance_attributes = CLIP_ATTR_DEFS
+        instance_attributes.append(
+            BoolDef(
+                "sourceResolution",
+                label="Set shot resolution from plate",
+                tooltip="Is resolution taken from timeline or source?",
+                default=False,
+            )
+        )
         return instance_attributes
 
 
@@ -637,7 +645,8 @@ OTIO file.
                         "clipDuration": track_item_duration,
                         "sourceIn": track_item.GetLeftOffset(),
                         "sourceOut": (track_item.GetLeftOffset() +
-                            track_item_duration)
+                            track_item_duration),
+                        "sourceResolution": sub_instance_data["sourceResolution"],
                     })
 
                 # Plate, Audio
@@ -718,6 +727,27 @@ OTIO file.
             CreatedInstance: The newly created instance.
         """
         creator = self.create_context.creators[creator_id]
+
+        if creator_id == "":
+            track_item_duration = timeline_item.GetDuration()
+            workfileFrameStart = data["workfileFrameStart"]
+            creator_attributes = {
+                "workfileFrameStart": workfileFrameStart,
+                "handleStart": sub_instance_data["handleStart"],
+                "handleEnd": sub_instance_data["handleEnd"],
+                "frameStart": workfileFrameStart,
+                "frameEnd": (workfileFrameStart +
+                    timeline_item),
+                "clipIn": timeline_item.GetStart(),
+                "clipOut": timeline_item.GetEnd(),
+                "clipDuration": track_item_duration,
+                "sourceIn": timeline_item.GetLeftOffset(),
+                "sourceOut": (timeline_item.GetLeftOffset() +
+                    track_item_duration),
+                "sourceResolution": sub_instance_data["sourceResolution"],
+            }
+            data["creator_attributes"] = creator_attributes
+
         instance = creator.create(data, None)
         instance.transient_data["track_item"] = timeline_item
         self._add_instance_to_context(instance)
@@ -754,7 +784,7 @@ OTIO file.
             "clip_variant": tag_data["variant"],
             "creator_attributes": {
                 "parentInstance": inst["label"],
-            }            
+            }
         })
         inst = self._create_and_add_instance(
             plate_data, creator_id, timeline_item, instances)

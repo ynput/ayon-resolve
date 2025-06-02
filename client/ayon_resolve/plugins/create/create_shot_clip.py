@@ -728,23 +728,23 @@ OTIO file.
         """
         creator = self.create_context.creators[creator_id]
 
-        if creator_id == "":
+        if creator_id == "io.ayon.creators.resolve.shot":
             track_item_duration = timeline_item.GetDuration()
             workfileFrameStart = data["workfileFrameStart"]
             creator_attributes = {
                 "workfileFrameStart": workfileFrameStart,
-                "handleStart": sub_instance_data["handleStart"],
-                "handleEnd": sub_instance_data["handleEnd"],
+                "handleStart": data["handleStart"],
+                "handleEnd": data["handleEnd"],
                 "frameStart": workfileFrameStart,
                 "frameEnd": (workfileFrameStart +
-                    timeline_item),
+                    track_item_duration),
                 "clipIn": timeline_item.GetStart(),
                 "clipOut": timeline_item.GetEnd(),
                 "clipDuration": track_item_duration,
                 "sourceIn": timeline_item.GetLeftOffset(),
                 "sourceOut": (timeline_item.GetLeftOffset() +
                     track_item_duration),
-                "sourceResolution": sub_instance_data["sourceResolution"],
+                "sourceResolution": data["sourceResolution"],
             }
             data["creator_attributes"] = creator_attributes
 

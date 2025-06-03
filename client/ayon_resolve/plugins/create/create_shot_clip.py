@@ -646,7 +646,7 @@ OTIO file.
                         "sourceIn": track_item.GetLeftOffset(),
                         "sourceOut": (track_item.GetLeftOffset() +
                             track_item_duration),
-                        "sourceResolution": sub_instance_data["sourceResolution"],
+                        "useSourceResolution": sub_instance_data["sourceResolution"],
                     })
 
                 # Plate, Audio
@@ -744,7 +744,7 @@ OTIO file.
                 "sourceIn": timeline_item.GetLeftOffset(),
                 "sourceOut": (timeline_item.GetLeftOffset() +
                     track_item_duration),
-                "sourceResolution": data["sourceResolution"],
+                "useSourceResolution": data["sourceResolution"],
             }
             data["creator_attributes"] = creator_attributes
 

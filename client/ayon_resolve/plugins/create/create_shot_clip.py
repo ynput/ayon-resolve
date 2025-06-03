@@ -172,7 +172,7 @@ class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
         instance_attributes = CLIP_ATTR_DEFS
         instance_attributes.append(
             BoolDef(
-                "sourceResolution",
+                "useSourceResolution",
                 label="Set shot resolution from plate",
                 tooltip="Is resolution taken from timeline or source?",
                 default=False,

@@ -15,7 +15,7 @@ def main(env):
     # the only way to gather the Resolve/Fusion applications.
     #
     # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=113252
-    ResolveHost.set_resolve_modules_from_app(app)
+    ResolveHost.set_resolve_modules_from_app(app)  # noqa: F821
 
     # activate resolve from openpype
     host = ResolveHost()

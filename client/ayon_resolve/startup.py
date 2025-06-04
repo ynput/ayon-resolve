@@ -32,7 +32,7 @@ def ensure_installed_host():
     # the only way to gather the Resolve/Fusion applications.
     #
     # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=113252
-    ayon_resolve.api.ResolveHost.set_resolve_modules_from_app(app)
+    ayon_resolve.api.ResolveHost.set_resolve_modules_from_app(app)  # noqa: F821
 
     host = ayon_resolve.api.ResolveHost()
     install_host(host)

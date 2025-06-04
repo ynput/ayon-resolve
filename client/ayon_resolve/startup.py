@@ -27,6 +27,13 @@ def ensure_installed_host():
     if host:
         return host
 
+    # Register injected "app" variable at class level for future uses.
+    # For free version of DaVinci Resolve, this seems to be
+    # the only way to gather the Resolve/Fusion applications.
+    #
+    # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=113252
+    ayon_resolve.api.ResolveHost.set_resolve_modules_from_app(app)
+
     host = ayon_resolve.api.ResolveHost()
     install_host(host)
     return registered_host()

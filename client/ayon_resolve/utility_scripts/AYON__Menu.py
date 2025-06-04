@@ -9,7 +9,7 @@ log = Logger.get_logger(__name__)
 
 # Undocumented app variable is injected by Resolve automatically
 # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=113252
-app: object   # noqa: F821
+app: object  # noqa: F821
 
 
 def main(env):
@@ -18,7 +18,7 @@ def main(env):
     # Register injected "app" variable at class level for future uses.
     # For free version of DaVinci Resolve, this seems to be
     # the only way to gather the Resolve/Fusion applications.
-    ResolveHost.set_resolve_modules_from_app(app)
+    ResolveHost.set_resolve_modules_from_app(app)  # noqa: F821
 
     # activate resolve from openpype
     host = ResolveHost()

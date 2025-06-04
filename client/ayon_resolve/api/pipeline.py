@@ -89,7 +89,10 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         try:
             bmdvf = self._app
             bmdvr = self._app.GetResolve()
-            assert bmdvr and bmdvf
+
+            if not bmdvr:
+                raise RuntimeError("Expecting valid Resolve module from app.")
+
             set_resolve_module(bmdvr, bmdvf)
 
         # If any issue, default to DaVinci Resolve Studio mechanism.

@@ -145,7 +145,10 @@ class AYONMenu(QtWidgets.QWidget):
 
 
 def launch_ayon_menu():
-    app = QtWidgets.QApplication(sys.argv)
+    app = (
+        QtWidgets.QApplication.instance()
+        or QtWidgets.QApplication(sys.argv)
+    )
 
     ayon_menu = AYONMenu()
 

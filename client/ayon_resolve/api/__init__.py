@@ -2,7 +2,8 @@
 resolve api
 """
 from .utils import (
-    get_resolve_module
+    get_resolve_module,
+    set_resolve_module
 )
 
 from .pipeline import (
@@ -96,6 +97,7 @@ __all__ = [
 
     # utils
     "get_resolve_module",
+    "set_resolve_module",
 
     # lib
     "maintain_current_timeline",

@@ -75,8 +75,17 @@ def get_resolve_module():
     # assign global var and return
     bmdvr = bmd.scriptapp("Resolve")
     bmdvf = bmd.scriptapp("Fusion")
-    api.bmdvr = bmdvr
-    api.bmdvf = bmdvf
+    set_resolve_module(bmdvr, bmdvf)
+
+
+def set_resolve_module(resolve_app, fusion_app):
+    """ Set Fusion and Resolve app as public api modules.
+    """
+    from ayon_resolve import api
+
+    api.bmdvr = resolve_app
+    api.bmdvf = fusion_app
+
     log.info(("Assigning resolve module to "
               f"`ayon_resolve.api.bmdvr`: {api.bmdvr}"))
     log.info(("Assigning resolve module to "

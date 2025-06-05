@@ -2,7 +2,6 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 from ayon_core.pipeline import anatomy
-from ayon_resolve.api import lib, constants
 
 resolve_script_api = os.path.expandvars(r"%PROGRAMDATA%\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting")
 sys.path.append(f"{resolve_script_api}/Modules")

@@ -9,14 +9,13 @@ sys.path.append(f"{resolve_script_api}/Examples")
 AYON_PROJECT_ROOT = str(anatomy.Anatomy().roots['internal'])
 
 
-render_preset_path = f"{AYON_PROJECT_ROOT}/scripts/Halon Render.xml"
-
-
 def get_application():
     from python_get_resolve import GetResolve
     resolve = app.GetResolve()
     print(f"Resolve: {resolve}")
     return resolve
+
+def get
 
 
 def main():
@@ -38,7 +37,9 @@ def main():
     print("Import path:", source_folder)
     print("Output path:", output_path)
 
+    render_preset_path = f"{AYON_PROJECT_ROOT}/scripts/Halon Render.xml"
     is_preset_imported = resolve.ImportRenderPreset(render_preset_path)
+    print(f"Preset path: {render_preset_path} {is_preset_imported}")
     if not is_preset_imported:
         preset_name = "Halon Render"
         preset_loaded = project.LoadRenderPreset(preset_name)

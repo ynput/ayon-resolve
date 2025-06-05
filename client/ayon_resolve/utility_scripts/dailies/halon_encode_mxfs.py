@@ -1,14 +1,16 @@
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from ayon_core.pipeline import anatomy
+from ayon_resolve.api import lib, constants
 
-# Bunch of crap we have to path
 resolve_script_api = os.path.expandvars(r"%PROGRAMDATA%\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting")
 sys.path.append(f"{resolve_script_api}/Modules")
 sys.path.append(f"{resolve_script_api}/Examples")
+AYON_PROJECT_ROOT = str(anatomy.Anatomy().roots['internal'])
 
-# Path to saved xml of render preset
-render_preset_path = "C:/ProgramData/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility/Halon Render.xml"
+
+render_preset_path = f"{AYON_PROJECT_ROOT}/scripts/Halon Render.xml"
 
 
 def get_application():
@@ -29,11 +31,11 @@ def main():
     now_pst = datetime.now(pst)
     date_str = now_pst.strftime("%Y%m%d")
 
-    # output_path = "Z:/InProd/inknpaint/editorial/footage"
+    # output_path = f"{AYON_PROJECT_ROOT}/editorial/footage"
     output_path = "D:/Test/footage"
     success = False
 
-    source_folder = os.path.join("Z:/InProd/inknpaint/editorial/footage", date_str)
+    source_folder = os.path.join(f"{AYON_PROJECT_ROOT}/editorial/footage", date_str)
     print("Import path:", source_folder)
     print("Output path:", output_path)
 
@@ -50,7 +52,8 @@ def main():
     if not os.path.exists(export_folder):
         os.mkdir(export_folder)
 
-
+    if len(mxf_files) > 0:
+        success = True
 
     for index, filename in enumerate(mxf_files):
         full_path = os.path.join(source_folder, filename)

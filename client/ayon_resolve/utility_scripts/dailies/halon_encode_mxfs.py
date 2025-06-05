@@ -6,23 +6,9 @@ from datetime import datetime, timedelta, timezone
 resolve_script_api = os.path.expandvars(r"%PROGRAMDATA%\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting")
 sys.path.append(f"{resolve_script_api}/Modules")
 sys.path.append(f"{resolve_script_api}/Examples")
-resolve_script_lib = r"C:\Program Files\Blackmagic Design\DaVinci Resolve\fusionscript.dll"
 
 # Path to saved xml of render preset
 render_preset_path = "C:/ProgramData/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility/Halon Render.xml"
-
-# Get current PYTHONPATH or default to empty string
-current_pythonpath = os.environ.get("PYTHONPATH", "")
-new_pythonpath = f"{current_pythonpath};{resolve_script_api}\\Modules" if current_pythonpath else f"{resolve_script_api}\\Modules"
-
-# Set environment variables
-os.environ["RESOLVE_SCRIPT_API"] = resolve_script_api
-os.environ["RESOLVE_SCRIPT_LIB"] = resolve_script_lib
-os.environ["PYTHONPATH"] = new_pythonpath
-
-# This is having to be manually referenced to access Resolve (see crap above)
-import DaVinciResolveScript as dvr_script
-
 
 
 def get_application():
@@ -43,8 +29,9 @@ def main():
     now_pst = datetime.now(pst)
     date_str = now_pst.strftime("%Y%m%d")
 
-    output_path = "Z:/InProd/inknpaint/editorial/footage"
-    # output_path = "D:/Test/footage"
+    # output_path = "Z:/InProd/inknpaint/editorial/footage"
+    output_path = "D:/Test/footage"
+    success = False
 
     source_folder = os.path.join("Z:/InProd/inknpaint/editorial/footage", date_str)
     print("Import path:", source_folder)

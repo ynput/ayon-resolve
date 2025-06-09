@@ -382,8 +382,8 @@ class LoadMedia(LoaderPlugin):
             data[key] = version["attrib"][key]
 
         # version.data
-        for key in ["author"]:
-            data[key] = version["data"][key]
+        if "author" in version["data"]:
+            data["author"] = version["data"]["author"]
 
         # add variables related to version context
         data.update({

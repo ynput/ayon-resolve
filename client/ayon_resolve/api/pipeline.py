@@ -32,7 +32,10 @@ from ayon_core.host import (
 
 from . import constants
 from . import lib
-from .utils import get_resolve_module
+from .utils import (
+    get_resolve_module,
+    set_resolve_module
+)
 from .workio import (
     open_file,
     save_file,
@@ -56,6 +59,7 @@ AVALON_CONTAINERS = ":AVALON_CONTAINERS"
 
 class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "resolve"
+    _app = None
 
     def install(self):
         """Install resolve-specific functionality of avalon-core.
@@ -79,11 +83,31 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         register_creator_plugin_path(CREATE_PATH)
         register_inventory_action_path(INVENTORY_PATH)
 
+        # DaVinci Resolve version >= 20
+        # Set api resolve modules from undocumented injected cached app.
+        # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=113252
+        try:
+            bmdvf = self._app
+            bmdvr = self._app.GetResolve()
+
+            if not bmdvr:
+                raise RuntimeError("Expecting valid Resolve module from app.")
+
+            set_resolve_module(bmdvr, bmdvf)
+
+        # If any issue, default to DaVinci Resolve Studio mechanism.
+        except Exception as error:
+            log.info(
+                "Could not gather resolve apps from cached entry point %r. "
+                "Default to DaVinci Resolve Studio specific logic.",
+                error,
+            )
+            get_resolve_module()
+
         # register callback for switching publishable
         pyblish.register_callback("instanceToggled",
                                   on_pyblish_instance_toggled)
 
-        get_resolve_module()
 
     def open_workfile(self, filepath):
         success = open_file(filepath)
@@ -118,6 +142,12 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     def update_context_data(self, data, changes):
         # TODO: implement to support persisting context attributes
         pass
+
+    @classmethod
+    def set_resolve_modules_from_app(cls, app):
+        """ Cache injected entry point "app" as class variable for re-use.
+        """
+        cls._app = app
 
     @staticmethod
     def _show_ayon_settings_confirmation_windows():

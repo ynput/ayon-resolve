@@ -24,6 +24,7 @@ from ayon_resolve.api.pipeline import AVALON_CONTAINER_ID
 
 
 FRAME_SPLITTER = "__frame_splitter__"
+RESOLVE_AUDIO_EXTENSIONS = {".wav", ".aif", ".aiff", ".mp3", ".flac"}
 
 
 class MetadataEntry(TypedDict):
@@ -141,7 +142,7 @@ class LoadMedia(LoaderPlugin):
 
     representations = ["*"]
     extensions = set(
-        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS, {".wav"})
+        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS, RESOLVE_AUDIO_EXTENSIONS)
     )
 
     label = "Load media"

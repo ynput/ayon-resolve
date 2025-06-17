@@ -24,7 +24,7 @@ from ayon_resolve.api.pipeline import AVALON_CONTAINER_ID
 
 
 FRAME_SPLITTER = "__frame_splitter__"
-RESOLVE_AUDIO_EXTENSIONS = {".wav", ".aif", ".aiff", ".mp3", ".flac", "aac", "m4a", "ac3"}
+RESOLVE_AUDIO_EXTENSIONS = {".wav", ".aif", ".aiff", ".mp3", ".flac", ".aac", ".m4a", ".ac3"}
 
 
 class MetadataEntry(TypedDict):

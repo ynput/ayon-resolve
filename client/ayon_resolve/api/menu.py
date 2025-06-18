@@ -8,6 +8,8 @@ from ayon_core.pipeline import registered_host
 from ayon_core.style import load_stylesheet
 from ayon_core.resources import get_ayon_icon_filepath
 
+from .pulse import ResolvePulse
+
 MENU_LABEL = os.environ["AYON_MENU_LABEL"]
 
 
@@ -96,6 +98,10 @@ class AYONMenu(QtWidgets.QWidget):
 
         # Resize width, make height as small fitting as possible
         self.resize(200, 1)
+
+        # Force close current process if Resolve is closed
+        self._pulse = ResolvePulse(parent=self)
+        self._pulse.start()
 
     def on_save_current_clicked(self):
         host = registered_host()

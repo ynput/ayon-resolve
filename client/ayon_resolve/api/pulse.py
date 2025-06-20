@@ -3,7 +3,7 @@
 import os
 import sys
 
-from qtpy import QtCore
+from qtpy import QtCore, QtWidgets
 
 
 class PulseThread(QtCore.QThread):
@@ -55,8 +55,9 @@ class ResolvePulse(QtCore.QObject):
         self._thread.no_response.connect(self.on_no_response)
 
     def on_no_response(self):
-        print("Pulse detected no response from Fusion..")
-        sys.exit(1)
+        print("Pulse detected no response from Resolve..")
+        app = QtWidgets.QApplication.instance()
+        app.quit()
 
     def start(self):
         self._thread.start()

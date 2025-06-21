@@ -8,7 +8,7 @@ from ayon_core.pipeline import registered_host
 from ayon_core.style import load_stylesheet
 from ayon_core.resources import get_ayon_icon_filepath
 
-from .pulse import ResolvePulse
+from .pulse import PulseThread
 
 MENU_LABEL = os.environ["AYON_MENU_LABEL"]
 
@@ -99,10 +99,6 @@ class AYONMenu(QtWidgets.QWidget):
         # Resize width, make height as small fitting as possible
         self.resize(200, 1)
 
-        # Force close current process if Resolve is closed
-        self._pulse = ResolvePulse(parent=self)
-        self._pulse.start()
-
     def on_save_current_clicked(self):
         host = registered_host()
         current_file = host.get_current_workfile()
@@ -149,7 +145,6 @@ class AYONMenu(QtWidgets.QWidget):
         print("Clicked Set Resolution")
 
 
-
 def launch_ayon_menu():
     app = (
         QtWidgets.QApplication.instance()
@@ -162,5 +157,10 @@ def launch_ayon_menu():
     ayon_menu.setStyleSheet(stylesheet)
 
     ayon_menu.show()
+
+    # Force close current process if Resolve is closed
+    pulse = PulseThread(parent=ayon_menu)
+    pulse.no_host_response.connect(app.quit)
+    pulse.start()
 
     sys.exit(app.exec_())

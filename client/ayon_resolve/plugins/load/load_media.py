@@ -24,6 +24,7 @@ from ayon_resolve.api.pipeline import AVALON_CONTAINER_ID
 
 
 FRAME_SPLITTER = "__frame_splitter__"
+RESOLVE_AUDIO_EXTENSIONS = {".wav", ".aif", ".aiff", ".mp3", ".flac", ".aac", ".m4a", ".ac3"}
 
 
 class MetadataEntry(TypedDict):
@@ -137,11 +138,11 @@ def find_clip_usage(media_pool_item, project=None):
 class LoadMedia(LoaderPlugin):
     """Load product as media pool item."""
 
-    product_types = {"render2d", "source", "plate", "render", "review"}
+    product_types = {"render2d", "source", "plate", "render", "review", "audio"}
 
     representations = ["*"]
     extensions = set(
-        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
+        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS, RESOLVE_AUDIO_EXTENSIONS)
     )
 
     label = "Load media"

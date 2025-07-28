@@ -19,7 +19,7 @@ class CollectResolveProject(pyblish.api.ContextPlugin):
         video_tracks = api.get_video_track_names()
         otio_timeline = api.export_timeline_otio(timeline)
 
-        host = registered_host()        
+        host = registered_host()
         current_file = host.get_current_workfile()
         fps = timeline.GetSetting("timelineFrameRate")
 

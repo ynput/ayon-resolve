@@ -5,13 +5,14 @@ from ayon_core.pipeline import PublishError
 from ayon_resolve.otio import utils
 
 
-class CollectAudio(pyblish.api.InstancePlugin):
-    """Collect new audio."""
+class CollectShotAudio(pyblish.api.InstancePlugin):
+    """Collect new audio for shot."""
 
     order = pyblish.api.CollectorOrder - 0.48
-    label = "Collect Audio"
+    label = "Collect Shot Audio"
     hosts = ["resolve"]
     families = ["audio"]
+    settings_category = "resolve"
 
     def process(self, instance):
         """

@@ -3,6 +3,7 @@ title = "DaVinci Resolve"
 version = "0.5.1+dev"
 app_host_name = "resolve"
 client_dir = "ayon_resolve"
+project_can_override_addon_version = True
 
 ayon_server_version = ">=1.1.2"
 ayon_required_addons = {

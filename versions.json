@@ -2,6 +2,11 @@
   {
     "version": "test-build",
     "title": "test-build",
+    "aliases": []
+  },
+  {
+    "version": "0.5.4",
+    "title": "0.5.4",
     "aliases": [
       "latest"
     ]

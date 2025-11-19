@@ -40,7 +40,8 @@ def get_resolve_module():
                 )
             )
         elif sys.platform.startswith("linux"):
-            expected_path = "/opt/resolve/libs/Fusion/Modules"
+            resolve_root = os.getenv("RESOLVE_ROOT", "/opt/resolve")
+            expected_path = f"{resolve_root}/libs/Fusion/Modules"
         else:
             raise NotImplementedError(
                 "Unsupported platform: {}".format(sys.platform)

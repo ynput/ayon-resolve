@@ -37,6 +37,7 @@ class PreLaunchResolveSetup(PreLaunchHook):
         current_platform = platform.system().lower()
 
         programdata = self.launch_context.env.get("PROGRAMDATA", "")
+        resolve_root = self.launch_context.env.get("RESOLVE_ROOT", "/opt/resolve")
         resolve_script_api_locations = {
             "windows": (
                 f"{programdata}/Blackmagic Design/"
@@ -46,7 +47,7 @@ class PreLaunchResolveSetup(PreLaunchHook):
                 "/Library/Application Support/Blackmagic Design"
                 "/DaVinci Resolve/Developer/Scripting"
             ),
-            "linux": "/opt/resolve/Developer/Scripting",
+            "linux": f"{resolve_root}/Developer/Scripting",
         }
         resolve_script_api = Path(
             resolve_script_api_locations[current_platform]
@@ -67,7 +68,7 @@ class PreLaunchResolveSetup(PreLaunchHook):
                 "/Applications/DaVinci Resolve/DaVinci Resolve.app"
                 "/Contents/Libraries/Fusion/fusionscript.so"
             ),
-            "linux": "/opt/resolve/libs/Fusion/fusionscript.so",
+            "linux": f"{resolve_root}/libs/Fusion/fusionscript.so",
         }
         resolve_script_lib = Path(resolve_script_lib_dirs[current_platform])
         self.launch_context.env[
@@ -121,7 +122,7 @@ class PreLaunchResolveSetup(PreLaunchHook):
                 "/Library/Application Support/Blackmagic Design"
                 "/DaVinci Resolve/Fusion/Scripts/Comp"
             ),
-            "linux": "/opt/resolve/Fusion/Scripts/Comp",
+            "linux": f"{resolve_root}/Fusion/Scripts/Comp",
         }
         resolve_utility_scripts_dir = Path(
             resolve_utility_scripts_dirs[current_platform]

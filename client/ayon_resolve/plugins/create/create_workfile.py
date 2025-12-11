@@ -17,6 +17,7 @@ class CreateWorkfile(AutoCreator):
     identifier = "io.ayon.creators.resolve.workfile"
     label = "Workfile"
     product_type = "workfile"
+    product_base_type = "workfile"
 
     default_variant = "Main"
 

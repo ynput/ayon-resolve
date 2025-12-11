@@ -24,6 +24,7 @@ class CreateEditorialPackage(ResolveCreator):
     identifier = "io.ayon.creators.resolve.editorial_pkg"
     label = "Editorial Package"
     product_type = "editorial_pkg"
+    product_base_type = "editorial_pkg"
     icon = "camera"
     defaults = ["Main"]
 

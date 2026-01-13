@@ -1,6 +1,14 @@
 """Host API required Work Files tool"""
 
 import os
+import sys
+import time
+import hashlib
+from pathlib import Path
+from datetime import datetime as dt
+
+from qtpy import QtWidgets
+
 from ayon_core.lib import Logger
 from ayon_core.settings import get_project_settings
 from ayon_core.pipeline.context_tools import get_current_project_name
@@ -90,6 +98,12 @@ def open_file(filepath):
         )
         if not override_is_valid:
             return False
+
+        if settings["resolve"]["project_db"]["db_type"] == "Disk":
+            handle_local_vs_exported_project(
+                settings, project_name, filepath
+            )
+
     try:
         # load project from input path
         resolve_project = project_manager.LoadProject(fname)
@@ -123,6 +137,30 @@ def current_file():
         return os.path.normpath(current_file_path)
 
 
+def handle_local_vs_exported_project(settings, project_name, file_path):
+    project_manager = get_project_manager()
+
+    file_name = Path(file_path).stem
+    if settings["resolve"]["project_db"].get("use_db_project_folder", False):
+        db_project = get_local_database_root() / project_name / file_name / "Project.db"
+    else:
+        db_project = get_local_database_root() / file_name / "Project.db"
+
+    mtime_drp = Path(file_path).stat().st_mtime
+    mtime_dbp = db_project.stat().st_mtime if db_project.exists() else 0
+    if mtime_drp > mtime_dbp:
+        choice = ProjectImportChooser(mtime_drp, mtime_dbp).exec_()
+        if choice == QtWidgets.QMessageBox.Ok:
+            proj = project_manager.LoadProject(file_name)
+            sha = hashlib.sha1(
+                f"{file_name}_{time.time()}".encode("utf-8")
+            ).hexdigest()[:6]
+            proj_bkp_name = f"{proj.GetName()}_BKP_{sha}"
+            proj.SetName(proj_bkp_name)
+            project_manager.SaveProject()
+            project_manager.CloseProject(proj_bkp_name)
+            project_manager.ImportProject(file_path)
+
 
 def handle_project_db_override(project_name, settings) -> bool:
     project_manager = get_project_manager()
@@ -153,6 +191,23 @@ def handle_project_db_override(project_name, settings) -> bool:
         set_project_manager_to_folder_name(project_name)
 
     return True
+
+
+def get_local_database_root() -> Path:
+    # does anyone use resolve users other than guest?
+    if sys.platform == "win32":
+        result = (
+            Path(os.getenv("APPDATA"))
+            / "Blackmagic Design" / "DaVinci Resolve" / "Support"
+            / "Resolve Project Library" / "Resolve Projects"
+            / "Users" / "guest" / "Projects"
+        )
+    if sys.platform == "darwin":
+        raise NotImplementedError("MacOS database path is not implemented yet.")
+    if sys.platform == "linux":
+        raise NotImplementedError("Linux database path is not implemented yet.")
+    return result
+
 
 def work_root(session):
     return os.path.normpath(session["AYON_WORKDIR"]).replace("\\", "/")

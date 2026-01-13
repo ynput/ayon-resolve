@@ -55,7 +55,7 @@ def save_file(filepath):
             return False
 
     response = False
-    if name == "Untitled Project":
+    if "Untitled Project" in name:
         response = project_manager.CreateProject(fname)
         log.info("New project created: {}".format(response))
         project_manager.SaveProject()

@@ -145,6 +145,48 @@ class AYONMenu(QtWidgets.QWidget):
         print("Clicked Set Resolution")
 
 
+class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):
+    def __init__(self, requested_db, available_dbs, parent=None):
+        app = QtWidgets.QApplication.instance()
+        if not app:
+            app = QtWidgets.QApplication([])
+        super(DatabaseMisconfigurationWarning, self).__init__(parent)
+
+        self.parent = parent
+        self.requested_db = requested_db
+        self.available_dbs = available_dbs
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        stylesheet = load_stylesheet()
+        self.setStyleSheet(stylesheet)
+
+        self.setWindowTitle("Project Database Warning")
+        self.setIcon(QtWidgets.QMessageBox.Warning)
+        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
+
+        self.setWindowFlags(
+            self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint
+        )
+
+        self.setText(
+            "The requested project database can't be found.\n"
+            "No workfile will be opened. Please revisit AYON project settings.\n"
+            "Proceed at risk of losing local work."
+        )
+        report = (
+            "Requested project database:\n"
+            f"\tDB Type: {self.requested_db['db_type']}\n"
+            f"\tDB Name: {self.requested_db['db_name']}\n"
+            "Available project databases:\n"
+        )
+        for db in self.available_dbs:
+            report += f"\t- DB Type: {db['DbType']}\n"
+            report += f"\t  DB Name: {db['DbName']}\n"
+        self.setDetailedText(report)
+
+
 def launch_ayon_menu():
     app = (
         QtWidgets.QApplication.instance()

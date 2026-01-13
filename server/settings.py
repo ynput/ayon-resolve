@@ -137,12 +137,42 @@ class LoaderPluginsModel(BaseSettingsModel):
     )
 
 
+class ProjectDatabaseOverrideModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        default=False,
+    )
+    db_type: str = SettingsField(
+        "Disk",
+        enum_resolver=lambda: ["Disk", "PostgreSQL"],
+        title="Database Type"
+    )
+    db_name: str = SettingsField(
+        default="Local Database",
+        title="Database Name"
+    )
+    db_ip: str = SettingsField(
+        default="",
+        title="Database IP",
+    )
+    use_db_project_folder: bool = SettingsField(
+        default=False,
+        title="Use Project Folders in Database",
+        description=(
+            "Enable to store workfiles in database folders named after the project."
+        )
+    )
+
+
 class ResolveSettings(BaseSettingsModel):
     launch_ayon_menu_on_start: bool = SettingsField(
         False, title="Launch AYON menu on start of Resolve"
     )
     report_fps_resolution: bool = SettingsField(
         False, title="Set FPS and Resolution from current task"
+    )
+    project_db: ProjectDatabaseOverrideModel = SettingsField(
+        default_factory=ProjectDatabaseOverrideModel,
+        title="Project Database Override"
     )
     imageio: ResolveImageIOModel = SettingsField(
         default_factory=ResolveImageIOModel,

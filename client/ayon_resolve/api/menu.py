@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime as dt
 
 from qtpy import QtWidgets, QtCore, QtGui
 
@@ -143,6 +144,83 @@ class AYONMenu(QtWidgets.QWidget):
 
     def on_set_resolution_clicked(self):
         print("Clicked Set Resolution")
+
+
+class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):
+    def __init__(self, requested_db, available_dbs, parent=None):
+        app = QtWidgets.QApplication.instance()
+        if not app:
+            app = QtWidgets.QApplication([])
+        super(DatabaseMisconfigurationWarning, self).__init__(parent)
+
+        self.parent = parent
+        self.requested_db = requested_db
+        self.available_dbs = available_dbs
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        stylesheet = load_stylesheet()
+        self.setStyleSheet(stylesheet)
+
+        self.setWindowTitle("Project Database Warning")
+        self.setIcon(QtWidgets.QMessageBox.Warning)
+        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
+
+        self.setWindowFlags(
+            self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint
+        )
+
+        self.setText(
+            "The requested project database can't be found.\n"
+            "No workfile will be opened. Please revisit AYON project settings.\n"
+            "Proceed at risk of losing local work."
+        )
+        report = (
+            "Requested project database:\n"
+            f"\tDB Type: {self.requested_db['db_type']}\n"
+            f"\tDB Name: {self.requested_db['db_name']}\n"
+            "Available project databases:\n"
+        )
+        for db in self.available_dbs:
+            report += f"\t- DB Type: {db['DbType']}\n"
+            report += f"\t  DB Name: {db['DbName']}\n"
+        self.setDetailedText(report)
+
+
+class ProjectImportChooser(QtWidgets.QMessageBox):
+    def __init__(self, datemod_drp, datemod_dbp, parent=None):
+        app = QtWidgets.QApplication.instance()
+        if not app:
+            app = QtWidgets.QApplication([])
+        super().__init__(parent)
+
+        self.parent = parent
+        self.datemod_drp = datemod_drp
+        self.datemod_dbp = datemod_dbp
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        stylesheet = load_stylesheet()
+        self.setStyleSheet(stylesheet)
+
+        self.setWindowTitle("Recent Export")
+        self.setIcon(QtWidgets.QMessageBox.Warning)
+        self.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+
+        self.setText(
+            "A more recent project version was found exported.\n"
+            "Do you want to re-import the DRP?\n"
+            "Cancel for opening the existing database project\n"
+            "Ok for re-importing"
+        )
+        dt_drp = dt.fromtimestamp(self.datemod_drp).strftime('%Y-%m-%d %H:%M:%S')
+        dt_dbp = dt.fromtimestamp(self.datemod_dbp).strftime('%Y-%m-%d %H:%M:%S')
+        self.setDetailedText(
+            f"Date Modified DRP: {dt_drp}\n"
+            f"Date Modified DB:  {dt_dbp}\n"
+        )
 
 
 def launch_ayon_menu():

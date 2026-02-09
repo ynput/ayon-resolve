@@ -153,7 +153,7 @@ class ExtractEditorialPackage(publish.Extractor):
         # Native otio export is available from Resolve 18.5
         # [major, minor, patch, build, suffix]
         resolve_version = bmdvr.GetVersion()
-        if resolve_version < (18, 5):
+        if tuple(resolve_version[:2]) < (18, 5):
             # if it is lower then use ayon's otio exporter
             otio_timeline = davinci_export.create_otio_timeline(
                 resolve_project, timeline=timeline

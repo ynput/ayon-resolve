@@ -1,6 +1,6 @@
 name = "resolve"
 title = "DaVinci Resolve"
-version = "0.5.7"
+version = "0.5.7+dev"
 app_host_name = "resolve"
 client_dir = "ayon_resolve"
 project_can_override_addon_version = True

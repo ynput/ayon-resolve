@@ -166,6 +166,7 @@ def handle_project_db_override(project_name, settings) -> bool:
     project_manager = get_project_manager()
 
     available_dbs = project_manager.GetDatabaseList() or []
+    curr_db = project_manager.GetCurrentDatabase()
     db_names = [db["DbName"] for db in available_dbs]
 
     valid_db_settings = False
@@ -181,11 +182,23 @@ def handle_project_db_override(project_name, settings) -> bool:
         ).exec_()
         return False
 
-    project_manager.SetCurrentDatabase({
-        "DbType": settings["db_type"],
-        "DbName": settings["db_name"],
-        "IpAddress": settings["db_ip"]
-    })
+    # check if we're already in the right database
+    # reloading the database causes projects to not increment correctly anymore
+    curr_db_valid = True
+    if settings["db_ip"] != curr_db.get("IpAddress", "127.0.0.1"):
+        curr_db_valid = False
+    if settings["db_type"] != curr_db.get("DbType", ""):
+        curr_db_valid = False
+    if settings["db_name"] != curr_db.get("DbName", ""):
+        curr_db_valid = False
+
+    if not curr_db_valid:
+        log.info(f"Setting Project Database to: {settings}")
+        project_manager.SetCurrentDatabase({
+            "DbType": settings["db_type"],
+            "DbName": settings["db_name"],
+            "IpAddress": settings["db_ip"]
+        })
 
     if settings.get("use_db_project_folder", False):
         set_project_manager_to_folder_name(project_name)

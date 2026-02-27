@@ -1199,13 +1199,13 @@ def iter_all_media_pool_clips(root=None):
 def export_timeline_otio_native(timeline, filepath):
     """Get timeline otio filepath.
 
-    Only supported from Resolve 19.5
+    Only supported from Resolve 18.5
 
     Example:
         # Native otio export is available from Resolve 18.5
         # [major, minor, patch, build, suffix]
         resolve_version = bmdvr.GetVersion()
-        if resolve_version[0] < 18 or resolve_version[1] < 5:
+        if tuple(resolve_version[:2]) < (18, 5):
             # if it is lower then use ayon's otio exporter
             otio_timeline = davinci_export.create_otio_timeline(
                 resolve_project, timeline=timeline)

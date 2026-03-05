@@ -551,9 +551,9 @@ OTIO file.
         media_pool_folder = create_bin(self.timeline.GetName())
 
         # detect enabled creators for review, plate and audio
-        shot_creator_id = "io.ayon.creators.resolve.shot"
-        plate_creator_id = "io.ayon.creators.resolve.plate"
-        audio_creator_id = "io.ayon.creators.resolve.audio"
+        shot_creator_id = ResolveShotInstanceCreator.identifier
+        plate_creator_id = EditorialPlateInstanceCreator.identifier
+        audio_creator_id = EditorialAudioInstanceCreator.identifier
         all_creators = {
             shot_creator_id: True,
             plate_creator_id: True,
@@ -746,10 +746,11 @@ OTIO file.
 
         Returns:
             CreatedInstance: The newly created instance.
+
         """
         creator = self.create_context.creators[creator_id]
 
-        if creator_id == "io.ayon.creators.resolve.shot":
+        if creator_id == ResolveShotInstanceCreator.identifier:
             track_item_duration = timeline_item.GetDuration()
             workfileFrameStart = data["workfileFrameStart"]
             creator_attributes = {
@@ -791,14 +792,14 @@ OTIO file.
         })
 
         # create parent shot
-        creator_id = "io.ayon.creators.resolve.shot"
+        creator_id = ResolveShotInstanceCreator.identifier
         shot_data = tag_data.copy()
         inst = self._create_and_add_instance(
             shot_data, creator_id, timeline_item, instances)
         clip_instances[creator_id] = inst.data_to_store()
 
         # create children plate
-        creator_id = "io.ayon.creators.resolve.plate"
+        creator_id = EditorialPlateInstanceCreator.identifier
         plate_data = tag_data.copy()
         plate_data.update({
             "parent_instance_id": inst["instance_id"],

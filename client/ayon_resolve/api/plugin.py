@@ -290,6 +290,9 @@ class TimelineItemLoader(LoaderPlugin):
 class ResolveCreator(Creator):
     """ Resolve Creator class wrapper"""
 
+    skip_discovery = True
+    settings_category = "resolve"
+    host_name = "resolve"
     marker_color = "Purple"
     presets = {}
 
@@ -728,6 +731,7 @@ class PublishableClip:
 
 
 class HiddenResolvePublishCreator(HiddenCreator):
+    skip_discovery = True
     host_name = "resolve"
     settings_category = "resolve"
 
@@ -742,9 +746,8 @@ class HiddenResolvePublishCreator(HiddenCreator):
 
 
 class ResolvePublishCreator(ResolveCreator):
+    skip_discovery = True
     create_allow_context_change = True
-    host_name = "resolve"
-    settings_category = "resolve"
 
     def collect_instances(self):
         pass

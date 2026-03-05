@@ -92,6 +92,7 @@ CLIP_ATTR_DEFS = [
 class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
     """Wrapper class for clip types products.
     """
+    skip_discovery = True
 
     def create(self, instance_data, _):
         """Return a new CreateInstance for new shot from Resolve.
@@ -185,6 +186,7 @@ class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
 class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
     """ Base clip product creator.
     """
+    skip_discovery = True
 
     def register_callbacks(self):
         self.create_context.add_value_changed_callback(self._on_value_change)

@@ -35,7 +35,6 @@ from .lib import (
     get_timeline_item_by_name,
     get_timeline_item_ayon_tag,
     set_timeline_item_ayon_tag,
-    set_timeline_item_pype_tag,  # backward compatibility
     imprint,
     set_publish_attribute,
     get_publish_attribute,
@@ -118,7 +117,6 @@ __all__ = [
     "get_timeline_item_by_name",
     "get_timeline_item_ayon_tag",
     "set_timeline_item_ayon_tag",
-    "set_timeline_item_pype_tag",  # backward compatibility
     "imprint",
     "set_publish_attribute",
     "get_publish_attribute",

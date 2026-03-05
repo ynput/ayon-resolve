@@ -614,10 +614,6 @@ def set_timeline_item_ayon_tag(timeline_item, data=None):
     return tag_data
 
 
-# alias for backward compatibility
-set_timeline_item_pype_tag = set_timeline_item_ayon_tag
-
-
 def imprint(timeline_item, data=None):
     """
     Adding `Ayon data` into a timeline item track item tag.

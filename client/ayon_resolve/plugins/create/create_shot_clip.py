@@ -1,6 +1,11 @@
 import copy
 
-from ayon_resolve.api import plugin, lib, constants
+from ayon_resolve.api import lib, constants
+from ayon_resolve.api.plugin import (
+    HiddenResolvePublishCreator,
+    ResolveCreator,
+    PublishableClip,
+)
 from ayon_resolve.api.lib import (
     get_video_track_names,
     get_current_timeline_items,
@@ -89,7 +94,7 @@ CLIP_ATTR_DEFS = [
 ]
 
 
-class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
+class _ResolveInstanceClipCreator(HiddenResolvePublishCreator):
     """Wrapper class for clip types products.
     """
     skip_discovery = True
@@ -278,7 +283,7 @@ class EditorialAudioInstanceCreator(_ResolveInstanceClipCreatorBase):
     label = "Editorial Audio"
 
 
-class CreateShotClip(plugin.ResolveCreator):
+class CreateShotClip(ResolveCreator):
     """Publishable clip"""
 
     identifier = "io.ayon.creators.resolve.clip"
@@ -568,7 +573,7 @@ OTIO file.
             })
 
             # convert track item to timeline media pool item
-            publish_clip = plugin.PublishableClip(
+            publish_clip = PublishableClip(
                 track_item_data,
                 vertical_clip_match,
                 vertical_clip_used,

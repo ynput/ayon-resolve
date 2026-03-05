@@ -630,12 +630,13 @@ OTIO file.
                 pre_create_data.get("export_audio", False)
             )
 
-            enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
             shot_folder_path = segment_data["folderPath"]
             shot_instances = all_shot_instances.setdefault(
                 shot_folder_path, {})
 
-            for creator_id in enabled_creators:
+            for creator_id, enabled in all_creators.items():
+                if not enabled:
+                    continue
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = copy.deepcopy(segment_data)
                 shot_folder_path = sub_instance_data["folderPath"]

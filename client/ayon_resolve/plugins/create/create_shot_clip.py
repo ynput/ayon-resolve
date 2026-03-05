@@ -335,12 +335,7 @@ OTIO file.
             for tr_name in get_video_track_names()
         ]
 
-        # Project settings might be applied to this creator via
-        # the inherited `Creator.apply_settings`
-        presets = self.presets
-
         return [
-
             BoolDef(
                 "use_selection",
                 label="Use only clips with <b>Chocolate</b>  clip color",
@@ -363,32 +358,32 @@ OTIO file.
                 label="{folder}",
                 tooltip="Name of folder used for root of generated shots.\n"
                         f"{tokens_help}",
-                default=presets.get("folder", "shots"),
+                default=self.presets["folder"],
             ),
             TextDef(
                 "episode",
                 label="{episode}",
                 tooltip=f"Name of episode.\n{tokens_help}",
-                default=presets.get("episode", "ep01"),
+                default=self.presets["episode"],
             ),
             TextDef(
                 "sequence",
                 label="{sequence}",
                 tooltip=f"Name of sequence of shots.\n{tokens_help}",
-                default=presets.get("sequence", "sq01"),
+                default=self.presets["sequence"],
             ),
             TextDef(
                 "track",
                 label="{track}",
                 tooltip=f"Name of timeline track.\n{tokens_help}",
-                default=presets.get("track", "{_track_}"),
+                default=self.presets["track"],
             ),
             TextDef(
                 "shot",
                 label="{shot}",
                 tooltip="Name of shot. '#' is converted to padded number."
                         f"\n{tokens_help}",
-                default=presets.get("shot", "sh###"),
+                default=self.presets["shot"],
             ),
 
             # renameHierarchy
@@ -400,32 +395,32 @@ OTIO file.
                 label="Shot Parent Hierarchy",
                 tooltip="Parents folder for shot root folder, "
                         "Template filled with *Hierarchy Data* section",
-                default=presets.get("hierarchy", "{folder}/{sequence}"),
+                default=self.presets["hierarchy"],
             ),
             BoolDef(
                 "clipRename",
                 label="Rename Shots/Clips",
                 tooltip="Renaming selected clips on fly",
-                default=presets.get("clipRename", False),
+                default=self.presets["clipRename"],
             ),
             TextDef(
                 "clipName",
                 label="Rename Template",
                 tooltip="template for creating shot names, used for "
                         "renaming (use rename: on)",
-                default=presets.get("clipName", "{sequence}{shot}"),
+                default=self.presets["clipName"],
             ),
             NumberDef(
                 "countFrom",
                 label="Count Sequence from",
                 tooltip="Set where the sequence number starts from",
-                default=presets.get("countFrom", 10),
+                default=self.presets["countFrom"],
             ),
             NumberDef(
                 "countSteps",
                 label="Stepping Number",
                 tooltip="What number is adding every new step",
-                default=presets.get("countSteps", 10),
+                default=self.presets["countSteps"],
             ),
 
             # verticalSync
@@ -437,7 +432,7 @@ OTIO file.
                 label="Enable Vertical Sync",
                 tooltip="Switch on if you want clips above "
                         "each other to share its attributes",
-                default=presets.get("vSyncOn", True),
+                default=self.presets["vSyncOn"],
             ),
             EnumDef(
                 "vSyncTrack",
@@ -492,19 +487,19 @@ OTIO file.
                 "workfileFrameStart",
                 label="Workfiles Start Frame",
                 tooltip="Set workfile starting frame number",
-                default=presets.get("workfileFrameStart", 1001),
+                default=self.presets["workfileFrameStart"],
             ),
             NumberDef(
                 "handleStart",
                 label="Handle Start (head)",
                 tooltip="Handle at start of clip",
-                default=presets.get("handleStart", 0),
+                default=self.presets["handleStart"],
             ),
             NumberDef(
                 "handleEnd",
                 label="Handle End (tail)",
                 tooltip="Handle at end of clip",
-                default=presets.get("handleEnd", 0),
+                default=self.presets["handleEnd"],
             ),
         ]
 

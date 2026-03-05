@@ -166,8 +166,8 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
 class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.resolve.shot"
-    product_type = "shot"
     product_base_type = "shot"
+    product_type = product_base_type
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -265,16 +265,16 @@ class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
 class EditorialPlateInstanceCreator(_ResolveInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.resolve.plate"
-    product_type = "plate"
     product_base_type = "plate"
+    product_type = product_base_type
     label = "Editorial Plate"
 
 
 class EditorialAudioInstanceCreator(_ResolveInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.resolve.audio"
-    product_type = "audio"
     product_base_type = "audio"
+    product_type = product_base_type
     label = "Editorial Audio"
 
 
@@ -283,8 +283,8 @@ class CreateShotClip(plugin.ResolveCreator):
 
     identifier = "io.ayon.creators.resolve.clip"
     label = "Create Publishable Clip"
-    product_type = "editorial"
     product_base_type = "editorial"
+    product_type = product_base_type
     icon = "film"
     defaults = ["Main"]
 

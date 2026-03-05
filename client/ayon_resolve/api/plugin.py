@@ -516,7 +516,7 @@ class PublishableClip:
 
         # create subset for publishing
         # TODO: Use creator `get_subset_name` to correctly define name
-        self.product_name = self.product_type + self.variant.capitalize()
+        self.product_name = self.product_base_type + self.variant.capitalize()
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """

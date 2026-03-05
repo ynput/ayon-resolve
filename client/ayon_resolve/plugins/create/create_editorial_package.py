@@ -23,8 +23,8 @@ class CreateEditorialPackage(ResolveCreator):
 
     identifier = "io.ayon.creators.resolve.editorial_pkg"
     label = "Editorial Package"
-    product_type = "editorial_pkg"
     product_base_type = "editorial_pkg"
+    product_type = product_base_type
     icon = "camera"
     defaults = ["Main"]
 
@@ -58,9 +58,11 @@ class CreateEditorialPackage(ResolveCreator):
             instance_data (dict): The instance data.
             pre_create_data (dict): The pre_create context data.
         """
-        super().create(product_name,
-                       instance_data,
-                       pre_create_data)
+        super().create(
+            product_name,
+            instance_data,
+            pre_create_data
+        )
 
         current_timeline = lib.get_current_timeline()
 
@@ -89,12 +91,16 @@ class CreateEditorialPackage(ResolveCreator):
         timeline_media_pool_item.SetMetadata(
             constants.AYON_TAG_NAME, json.dumps(tag_metadata)
         )
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
 
         new_instance = CreatedInstance(
-            self.product_type,
-            product_name,
-            tag_metadata["publish"],
-            self,
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=product_name,
+            data=tag_metadata["publish"],
+            creator=self,
         )
         new_instance.transient_data["timeline_pool_item"] = (
             timeline_media_pool_item)
@@ -116,13 +122,23 @@ class CreateEditorialPackage(ResolveCreator):
                 )
                 continue
 
-            # exclude all which are not productType editorial_pkg
-            if (
-                data.get("publish", {}).get("productType") != self.product_type
-            ):
+            publish_data = data.get("publish")
+            if not publish_data:
                 continue
 
-            publish_data = data["publish"]
+            product_type = publish_data.get("productType")
+            product_base_type = publish_data.get("productBaseType")
+            if not product_base_type:
+                product_base_type = product_type
+
+            # exclude all which are not productType editorial_pkg
+            if product_base_type != self.product_base_type:
+                continue
+
+            if not product_type:
+                product_type = self.product_base_type
+
+            product_name = publish_data["productName"]
 
             # add label into instance data in case it is missing in publish
             # data (legacy publish) or timeline was renamed.
@@ -132,15 +148,14 @@ class CreateEditorialPackage(ResolveCreator):
             # add variant into instance data in case it is missing in publish
             # data
             if "variant" not in publish_data:
-                product_name = publish_data["productName"]
-                product_type = publish_data["productType"]
                 publish_data["variant"] = product_name.split(product_type)[1]
 
             current_instance = CreatedInstance(
-                self.product_type,
-                publish_data["productName"],
-                publish_data,
-                self
+                product_base_type=self.product_base_type,
+                product_type=product_type,
+                product_name=product_name,
+                data=publish_data,
+                creator=self,
             )
 
             current_instance.transient_data["timeline_pool_item"] = (

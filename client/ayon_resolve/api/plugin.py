@@ -290,18 +290,12 @@ class TimelineItemLoader(LoaderPlugin):
 class ResolveCreator(Creator):
     """ Resolve Creator class wrapper"""
 
+    skip_discovery = True
+    settings_category = "resolve"
+    host_name = "resolve"
     marker_color = "Purple"
-    presets = {}
 
-    def apply_settings(self, project_settings):
-        resolve_create_settings = (
-            project_settings.get("resolve", {}).get("create")
-        )
-        self.presets = resolve_create_settings.get(
-            self.__class__.__name__, {}
-        )
-
-    def create(self, subset_name, instance_data, pre_create_data):
+    def create(self, product_name, instance_data, pre_create_data):
         # adding basic current context resolve objects
         self.project = lib.get_current_resolve_project()
         self.timeline = lib.get_current_timeline()
@@ -310,10 +304,6 @@ class ResolveCreator(Creator):
             self.selected = lib.get_current_timeline_items(filter=True)
         else:
             self.selected = lib.get_current_timeline_items(filter=False)
-
-
-# alias for backward compatibility
-Creator = ResolveCreator  # noqa
 
 
 class PublishableClip:
@@ -511,13 +501,13 @@ class PublishableClip:
             for key in ["folder", "episode", "sequence", "track", "shot"]
         }
 
-        # build subset name from layer name
+        # build product name from layer name
         if self.variant == "<track_name>":
             self.variant = self.track_name
 
-        # create subset for publishing
-        # TODO: Use creator `get_subset_name` to correctly define name
-        self.product_name = self.product_type + self.variant.capitalize()
+        # create product name for publishing
+        # TODO: Use creator `get_product_name` to correctly define name
+        self.product_name = self.product_base_type + self.variant.capitalize()
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """
@@ -730,11 +720,9 @@ class PublishableClip:
             parent = self._convert_to_entity(key)
             self.parents.append(parent)
 
-# alias for backward compatibility
-PublishClip = PublishableClip  # noqa
-
 
 class HiddenResolvePublishCreator(HiddenCreator):
+    skip_discovery = True
     host_name = "resolve"
     settings_category = "resolve"
 
@@ -748,10 +736,9 @@ class HiddenResolvePublishCreator(HiddenCreator):
         pass
 
 
-class ResolvePublishCreator(Creator):
+class ResolvePublishCreator(ResolveCreator):
+    skip_discovery = True
     create_allow_context_change = True
-    host_name = "resolve"
-    settings_category = "resolve"
 
     def collect_instances(self):
         pass

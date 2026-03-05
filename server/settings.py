@@ -72,6 +72,16 @@ class CreateShotClipModels(BaseSettingsModel):
         10,
         title="Handle end (tail)"
     )
+    plate_product_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Plate Product types",
+        description="Optional list of product types for plate products."
+    )
+    audio_product_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Audio Product types",
+        description="Optional list of product types for audio products."
+    )
 
 
 class CreatorPluginsModel(BaseSettingsModel):

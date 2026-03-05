@@ -59,9 +59,7 @@ from .plugin import (
     ClipLoader,
     TimelineItemLoader,
     ResolveCreator,
-    Creator,  # backward compatibility
     PublishableClip,
-    PublishClip,  # backward compatibility
 )
 
 from .workio import (
@@ -144,9 +142,7 @@ __all__ = [
     "ClipLoader",
     "TimelineItemLoader",
     "ResolveCreator",
-    "Creator",  # backward compatibility
     "PublishableClip",
-    "PublishClip",  # backward compatibility
 
     # workio
     "open_file",

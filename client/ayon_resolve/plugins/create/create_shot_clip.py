@@ -1,14 +1,27 @@
+from __future__ import annotations
+
 import copy
 
-from ayon_resolve.api import plugin, lib, constants
+from ayon_resolve.api import lib, constants
+from ayon_resolve.api.plugin import (
+    HiddenResolvePublishCreator,
+    ResolveCreator,
+    PublishableClip,
+)
 from ayon_resolve.api.lib import (
     get_video_track_names,
     get_current_timeline_items,
     create_bin,
 )
 from ayon_core.pipeline.create import CreatorError, CreatedInstance
-from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
-
+from ayon_core.lib import (
+    BoolDef,
+    EnumDef,
+    TextDef,
+    UILabelDef,
+    NumberDef,
+    AbstractAttrDef
+)
 
 # Used as a key by the creators in order to
 # retrieve the instances data into clip markers.
@@ -16,7 +29,7 @@ _CONTENT_ID = "resolve_sub_products"
 
 
 # Shot attributes
-CLIP_ATTR_DEFS = [
+CLIP_ATTR_DEFS: list[AbstractAttrDef] = [
     EnumDef(
         "fps",
         items=[
@@ -89,11 +102,12 @@ CLIP_ATTR_DEFS = [
 ]
 
 
-class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
+class _ResolveInstanceClipCreator(HiddenResolvePublishCreator):
     """Wrapper class for clip types products.
     """
+    skip_discovery = True
 
-    def create(self, instance_data, _):
+    def create(self, instance_data):
         """Return a new CreateInstance for new shot from Resolve.
 
         Args:
@@ -102,14 +116,17 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        instance_data.update({
-            "newHierarchyIntegration": True,
-            # Backwards compatible (Deprecated since 24/06/06)
-            "newAssetPublishing": True,
-        })
+        instance_data["newHierarchyIntegration"] = True
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         new_instance = CreatedInstance(
-            self.product_type, instance_data["productName"], instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=instance_data["productName"],
+            data=instance_data,
+            creator=self,
         )
         self._add_instance_to_context(new_instance)
         new_instance.transient_data["has_promised_context"] = True
@@ -165,8 +182,8 @@ class _ResolveInstanceClipCreator(plugin.HiddenResolvePublishCreator):
 class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.resolve.shot"
-    product_type = "shot"
     product_base_type = "shot"
+    product_type = product_base_type
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -185,6 +202,7 @@ class ResolveShotInstanceCreator(_ResolveInstanceClipCreator):
 class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
     """ Base clip product creator.
     """
+    skip_discovery = True
 
     def register_callbacks(self):
         self.create_context.add_value_changed_callback(self._on_value_change)
@@ -219,7 +237,7 @@ class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
             for tr_name in get_video_track_names()
         ]
 
-        instance_attributes = [
+        instance_attributes: list[AbstractAttrDef] = [
             TextDef(
                 "parentInstance",
                 label="Linked to",
@@ -263,26 +281,26 @@ class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
 class EditorialPlateInstanceCreator(_ResolveInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.resolve.plate"
-    product_type = "plate"
     product_base_type = "plate"
+    product_type = product_base_type
     label = "Editorial Plate"
 
 
 class EditorialAudioInstanceCreator(_ResolveInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.resolve.audio"
-    product_type = "audio"
     product_base_type = "audio"
+    product_type = product_base_type
     label = "Editorial Audio"
 
 
-class CreateShotClip(plugin.ResolveCreator):
+class CreateShotClip(ResolveCreator):
     """Publishable clip"""
 
     identifier = "io.ayon.creators.resolve.clip"
     label = "Create Publishable Clip"
-    product_type = "editorial"
     product_base_type = "editorial"
+    product_type = product_base_type
     icon = "film"
     defaults = ["Main"]
 
@@ -292,6 +310,16 @@ or updating already created from Resolve. Publishing will create
 OTIO file.
 """
     create_allow_thumbnail = False
+
+    presets = {}
+
+    def apply_settings(self, project_settings):
+        self.presets = (
+            project_settings
+            [self.settings_category]
+            ["create"]
+            [self.__class__.__name__]
+        )
 
     def get_pre_create_attr_defs(self):
 
@@ -307,12 +335,7 @@ OTIO file.
             for tr_name in get_video_track_names()
         ]
 
-        # Project settings might be applied to this creator via
-        # the inherited `Creator.apply_settings`
-        presets = self.presets
-
-        return [
-
+        output = [
             BoolDef(
                 "use_selection",
                 label="Use only clips with <b>Chocolate</b>  clip color",
@@ -335,32 +358,32 @@ OTIO file.
                 label="{folder}",
                 tooltip="Name of folder used for root of generated shots.\n"
                         f"{tokens_help}",
-                default=presets.get("folder", "shots"),
+                default=self.presets["folder"],
             ),
             TextDef(
                 "episode",
                 label="{episode}",
                 tooltip=f"Name of episode.\n{tokens_help}",
-                default=presets.get("episode", "ep01"),
+                default=self.presets["episode"],
             ),
             TextDef(
                 "sequence",
                 label="{sequence}",
                 tooltip=f"Name of sequence of shots.\n{tokens_help}",
-                default=presets.get("sequence", "sq01"),
+                default=self.presets["sequence"],
             ),
             TextDef(
                 "track",
                 label="{track}",
                 tooltip=f"Name of timeline track.\n{tokens_help}",
-                default=presets.get("track", "{_track_}"),
+                default=self.presets["track"],
             ),
             TextDef(
                 "shot",
                 label="{shot}",
                 tooltip="Name of shot. '#' is converted to padded number."
                         f"\n{tokens_help}",
-                default=presets.get("shot", "sh###"),
+                default=self.presets["shot"],
             ),
 
             # renameHierarchy
@@ -372,32 +395,32 @@ OTIO file.
                 label="Shot Parent Hierarchy",
                 tooltip="Parents folder for shot root folder, "
                         "Template filled with *Hierarchy Data* section",
-                default=presets.get("hierarchy", "{folder}/{sequence}"),
+                default=self.presets["hierarchy"],
             ),
             BoolDef(
                 "clipRename",
                 label="Rename Shots/Clips",
                 tooltip="Renaming selected clips on fly",
-                default=presets.get("clipRename", False),
+                default=self.presets["clipRename"],
             ),
             TextDef(
                 "clipName",
                 label="Rename Template",
                 tooltip="template for creating shot names, used for "
                         "renaming (use rename: on)",
-                default=presets.get("clipName", "{sequence}{shot}"),
+                default=self.presets["clipName"],
             ),
             NumberDef(
                 "countFrom",
                 label="Count Sequence from",
                 tooltip="Set where the sequence number starts from",
-                default=presets.get("countFrom", 10),
+                default=self.presets["countFrom"],
             ),
             NumberDef(
                 "countSteps",
                 label="Stepping Number",
                 tooltip="What number is adding every new step",
-                default=presets.get("countSteps", 10),
+                default=self.presets["countSteps"],
             ),
 
             # verticalSync
@@ -409,7 +432,7 @@ OTIO file.
                 label="Enable Vertical Sync",
                 tooltip="Switch on if you want clips above "
                         "each other to share its attributes",
-                default=presets.get("vSyncOn", True),
+                default=self.presets["vSyncOn"],
             ),
             EnumDef(
                 "vSyncTrack",
@@ -432,12 +455,6 @@ OTIO file.
                 items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],
             ),
             EnumDef(
-                "productType",
-                label="Product Type",
-                tooltip="How the product will be used",
-                items=['plate'],  # it is prepared for more types
-            ),
-            EnumDef(
                 "reviewableSource",
                 label="Reviewable Source",
                 tooltip="Selecting source for reviewable files.",
@@ -452,7 +469,7 @@ OTIO file.
             BoolDef(
                 "export_audio",
                 label="Include audio",
-                tooltip="Process subsets with corresponding audio",
+                tooltip="Process products with corresponding audio",
                 default=False,
             ),
             BoolDef(
@@ -470,25 +487,44 @@ OTIO file.
                 "workfileFrameStart",
                 label="Workfiles Start Frame",
                 tooltip="Set workfile starting frame number",
-                default=presets.get("workfileFrameStart", 1001),
+                default=self.presets["workfileFrameStart"],
             ),
             NumberDef(
                 "handleStart",
                 label="Handle Start (head)",
                 tooltip="Handle at start of clip",
-                default=presets.get("handleStart", 0),
+                default=self.presets["handleStart"],
             ),
             NumberDef(
                 "handleEnd",
                 label="Handle End (tail)",
                 tooltip="Handle at end of clip",
-                default=presets.get("handleEnd", 0),
+                default=self.presets["handleEnd"],
             ),
         ]
 
-    def create(self, subset_name, instance_data, pre_create_data):
-        super(CreateShotClip, self).create(
-            subset_name,
+        for base_type, type_label, def_key in (
+            ("plate", "Plate", "plate_product_type"),
+            ("audio", "Audio", "audio_product_type"),
+        ):
+            presets_key = f"{def_key}s"
+            product_types = self.presets[presets_key]
+            if product_types:
+                output.append(
+                    EnumDef(
+                        def_key,
+                        label=f"{type_label} Product Type",
+                        tooltip=f"Select product type for {base_type}",
+                        items=product_types,
+                        default=product_types[0],
+                    )
+                )
+
+        return output
+
+    def create(self, product_name, instance_data, pre_create_data):
+        super().create(
+            product_name,
             instance_data,
             pre_create_data
         )
@@ -539,9 +575,9 @@ OTIO file.
         media_pool_folder = create_bin(self.timeline.GetName())
 
         # detect enabled creators for review, plate and audio
-        shot_creator_id = "io.ayon.creators.resolve.shot"
-        plate_creator_id = "io.ayon.creators.resolve.plate"
-        audio_creator_id = "io.ayon.creators.resolve.audio"
+        shot_creator_id = ResolveShotInstanceCreator.identifier
+        plate_creator_id = EditorialPlateInstanceCreator.identifier
+        audio_creator_id = EditorialAudioInstanceCreator.identifier
         all_creators = {
             shot_creator_id: True,
             plate_creator_id: True,
@@ -553,6 +589,14 @@ OTIO file.
         vertical_clip_match = {}
         vertical_clip_used = {}
 
+        plate_product_type = (
+            pre_create_data.get("plate_product_type")
+            or EditorialPlateInstanceCreator.product_base_type
+        )
+        audio_product_type = (
+            pre_create_data.get("audio_product_type")
+            or EditorialAudioInstanceCreator.product_base_type
+        )
         for index, track_item_data in enumerate(sorted_selected_track_items):
 
             # Compute and store resolution metadata from mediapool clip.
@@ -566,7 +610,7 @@ OTIO file.
             })
 
             # convert track item to timeline media pool item
-            publish_clip = plugin.PublishableClip(
+            publish_clip = PublishableClip(
                 track_item_data,
                 vertical_clip_match,
                 vertical_clip_used,
@@ -612,12 +656,13 @@ OTIO file.
                 pre_create_data.get("export_audio", False)
             )
 
-            enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
             shot_folder_path = segment_data["folderPath"]
             shot_instances = all_shot_instances.setdefault(
                 shot_folder_path, {})
 
-            for creator_id in enabled_creators:
+            for creator_id, enabled in all_creators.items():
+                if not enabled:
+                    continue
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = copy.deepcopy(segment_data)
                 shot_folder_path = sub_instance_data["folderPath"]
@@ -666,6 +711,8 @@ OTIO file.
                             f"{sub_instance_data['productName']}"
                         )
                     })
+                    sub_instance_data["productType"] = plate_product_type
+                    sub_instance_data["productBaseType"] = "plate"
                     creator_attributes["parentInstance"] = parenting_data[
                         "label"]
                     if sub_instance_data.get("reviewableSource"):
@@ -677,7 +724,7 @@ OTIO file.
 
                 elif creator_id == audio_creator_id:
                     sub_instance_data["variant"] = "main"
-                    sub_instance_data["productType"] = "audio"
+                    sub_instance_data["productType"] = audio_product_type
                     sub_instance_data["productBaseType"] = "audio"
                     sub_instance_data["productName"] = "audioMain"
 
@@ -697,7 +744,7 @@ OTIO file.
                     if sub_instance_data.get("reviewableSource"):
                         creator_attributes["review"] = True
 
-                instance = creator.create(sub_instance_data, None)
+                instance = creator.create(sub_instance_data)
                 instance.transient_data["track_item"] = track_item
                 self._add_instance_to_context(instance)
 
@@ -731,10 +778,11 @@ OTIO file.
 
         Returns:
             CreatedInstance: The newly created instance.
+
         """
         creator = self.create_context.creators[creator_id]
 
-        if creator_id == "io.ayon.creators.resolve.shot":
+        if creator_id == ResolveShotInstanceCreator.identifier:
             track_item_duration = timeline_item.GetDuration()
             workfileFrameStart = data["workfileFrameStart"]
             creator_attributes = {
@@ -754,7 +802,7 @@ OTIO file.
             }
             data["creator_attributes"] = creator_attributes
 
-        instance = creator.create(data, None)
+        instance = creator.create(data)
         instance.transient_data["track_item"] = timeline_item
         self._add_instance_to_context(instance)
         instances.append(instance)
@@ -776,14 +824,14 @@ OTIO file.
         })
 
         # create parent shot
-        creator_id = "io.ayon.creators.resolve.shot"
+        creator_id = ResolveShotInstanceCreator.identifier
         shot_data = tag_data.copy()
         inst = self._create_and_add_instance(
             shot_data, creator_id, timeline_item, instances)
         clip_instances[creator_id] = inst.data_to_store()
 
         # create children plate
-        creator_id = "io.ayon.creators.resolve.plate"
+        creator_id = EditorialPlateInstanceCreator.identifier
         plate_data = tag_data.copy()
         plate_data.update({
             "parent_instance_id": inst["instance_id"],

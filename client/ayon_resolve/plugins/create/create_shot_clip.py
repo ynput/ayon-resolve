@@ -116,11 +116,7 @@ class _ResolveInstanceClipCreator(HiddenResolvePublishCreator):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        instance_data.update({
-            "newHierarchyIntegration": True,
-            # Backwards compatible (Deprecated since 24/06/06)
-            "newAssetPublishing": True,
-        })
+        instance_data["newHierarchyIntegration"] = True
 
         new_instance = CreatedInstance(
             self.product_type, instance_data["productName"], instance_data, self

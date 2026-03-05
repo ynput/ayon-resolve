@@ -33,7 +33,6 @@ from .lib import (
     get_video_track_names,
     get_current_timeline_items,
     get_timeline_item_by_name,
-    get_pype_timeline_item_by_name,  # backward compatibility
     get_timeline_item_ayon_tag,
     set_timeline_item_ayon_tag,
     set_timeline_item_pype_tag,  # backward compatibility
@@ -117,7 +116,6 @@ __all__ = [
     "get_video_track_names",
     "get_current_timeline_items",
     "get_timeline_item_by_name",
-    "get_pype_timeline_item_by_name",  # backward compatibility
     "get_timeline_item_ayon_tag",
     "set_timeline_item_ayon_tag",
     "set_timeline_item_pype_tag",  # backward compatibility

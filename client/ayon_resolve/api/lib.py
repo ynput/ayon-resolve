@@ -546,10 +546,6 @@ def get_timeline_item_by_name(name: str) -> object:
     return None
 
 
-# alias for backward compatibility
-get_pype_timeline_item_by_name = get_timeline_item_by_name
-
-
 def get_timeline_item_ayon_tag(timeline_item):
     """
     Get ayon track item tag created by creator or loader plugin.

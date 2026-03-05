@@ -63,24 +63,12 @@ class CreateWorkfile(AutoCreator):
             variant=self.default_variant,
             host_name=host_name,
         )
-        data = {
+        return {
             "folderPath": folder_path,
             "task": task_name,
             "variant": variant,
             "productName": product_name,
         }
-        data.update(
-            self.get_dynamic_data(
-                variant,
-                task_name,
-                folder_entity,
-                project_name,
-                host_name,
-                False,
-            )
-        )
-
-        return data
 
     def collect_instances(self):
         """Collect from timeline marker or create a new one."""

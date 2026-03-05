@@ -450,12 +450,6 @@ OTIO file.
                 items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],
             ),
             EnumDef(
-                "productType",
-                label="Product Type",
-                tooltip="How the product will be used",
-                items=['plate'],  # it is prepared for more types
-            ),
-            EnumDef(
                 "reviewableSource",
                 label="Reviewable Source",
                 tooltip="Selecting source for reviewable files.",

@@ -533,10 +533,11 @@ def get_timeline_item_by_name(name: str) -> object:
 
     Returns:
         object: resolve.TimelineItem
+
     """
     for _ti_data in get_current_timeline_items():
         _ti_clip = _ti_data["clip"]["item"]
-        tag_data = get_timeline_item_pype_tag(_ti_clip)
+        tag_data = get_timeline_item_ayon_tag(_ti_clip)
         tag_name = tag_data.get("namespace")
         if not tag_name:
             continue
@@ -576,9 +577,6 @@ def get_timeline_item_ayon_tag(timeline_item):
                 return_tag = json.loads(data)
 
     return return_tag
-
-# alias for backward compatibility
-get_timeline_item_pype_tag = get_timeline_item_ayon_tag
 
 
 def set_timeline_item_ayon_tag(timeline_item, data=None):

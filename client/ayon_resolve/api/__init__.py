@@ -18,7 +18,6 @@ from .lib import (
     maintain_current_timeline,
     get_project_manager,
     get_current_resolve_project,
-    get_current_project, # backward compatibility
     get_current_timeline,
     get_any_timeline,
     get_new_timeline,
@@ -100,7 +99,6 @@ __all__ = [
     "maintain_current_timeline",
     "get_project_manager",
     "get_current_resolve_project",
-    "get_current_project", # backward compatibility
     "get_current_timeline",
     "get_any_timeline",
     "get_new_timeline",

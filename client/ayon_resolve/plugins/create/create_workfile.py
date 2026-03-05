@@ -32,12 +32,12 @@ class CreateWorkfile(AutoCreator):
         # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=
         # 189685&hilit=python+database#p991541
         note = json.dumps(data)
-        proj = lib.get_current_project()
+        proj = lib.get_current_resolve_project()
         proj.SetSetting("colorVersion10Name", note)
 
     def _loads_data_from_project_setting(self):
         """Retrieve workfile data from project setting."""
-        proj = lib.get_current_project()
+        proj = lib.get_current_resolve_project()
         setting_content = proj.GetSetting("colorVersion10Name")
 
         if setting_content:

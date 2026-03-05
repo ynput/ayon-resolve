@@ -35,7 +35,7 @@ class ClipLoader:
         """
         self.__dict__.update(loader_obj.__dict__)
         self.context = context
-        self.active_project = lib.get_current_project()
+        self.active_project = lib.get_current_resolve_project()
 
         # try to get value from options or evaluate key value for `handles`
         self.with_handles = options.get("handles") is True

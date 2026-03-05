@@ -9,7 +9,7 @@ from pprint import pformat
 from ayon_core.lib import Logger
 
 from .lib import (
-    get_current_project,
+    get_current_resolve_project,
     maintain_current_timeline,
     maintain_page_by_name,
 )
@@ -45,7 +45,7 @@ def _render_timelines(timelines, target_render_directory):
     Returns:
         bool: True if all renders are successful, False otherwise
     """
-    bmr_project = get_current_project()
+    bmr_project = get_current_resolve_project()
     failed_timelines = []
     for timeline_to_render in timelines:
         with maintain_current_timeline(timeline_to_render):
@@ -80,7 +80,7 @@ def render_all_timelines(target_render_directory):
     Returns:
         bool: True if all renders are successful, False otherwise
     """
-    bmr_project = get_current_project()
+    bmr_project = get_current_resolve_project()
     with maintain_page_by_name("Deliver"):
         timelineCount = bmr_project.GetTimelineCount()
         all_timelines = [
@@ -109,7 +109,7 @@ def render_single_timeline(timeline, target_render_directory):
 
 def is_rendering_in_progress():
     """Check if rendering is in progress"""
-    bmr_project = get_current_project()
+    bmr_project = get_current_resolve_project()
     if not bmr_project:
         return False
 
@@ -133,7 +133,7 @@ def apply_drx_to_all_timeline_items(timeline, path, grade_mode=0):
 
 
 def apply_drx_to_all_timelines(path, grade_mode=0):
-    bmr_project = get_current_project()
+    bmr_project = get_current_resolve_project()
     if not bmr_project:
         return False
     timelineCount = bmr_project.GetTimelineCount()
@@ -148,7 +148,7 @@ def apply_drx_to_all_timelines(path, grade_mode=0):
 
 def delete_all_processed_jobs():
     """Delete all processed jobs"""
-    bmr_project = get_current_project()
+    bmr_project = get_current_resolve_project()
     if not _PROCESSING_JOBS:
         return
 
@@ -161,7 +161,7 @@ def delete_all_processed_jobs():
 def set_render_preset_from_file(preset_file_path):
     from . import bmdvr
 
-    bmr_project = get_current_project()
+    bmr_project = get_current_resolve_project()
     preset_path = Path(preset_file_path)
 
     # make sure the file exists
@@ -184,7 +184,7 @@ def set_render_preset_from_file(preset_file_path):
 
 
 def set_format_and_codec(render_format, render_codec):
-    bmr_project = get_current_project()
+    bmr_project = get_current_resolve_project()
 
     available_render_formats = bmr_project.GetRenderFormats()
     log.debug(f"Available formats: {pformat(available_render_formats)}")

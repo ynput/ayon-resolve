@@ -163,9 +163,6 @@ def get_current_resolve_project():
     project_manager = get_project_manager()
     return project_manager.GetCurrentProject()
 
-# alias for backward compatibility
-get_current_project = get_current_resolve_project
-
 
 def get_current_timeline(new=False):
     """Get current timeline object.
@@ -1178,7 +1175,7 @@ def iter_all_media_pool_clips(root=None):
         root (Optional[resolve.Folder]): root folder / bin object.
             When None, defaults to media pool root folder.
     """
-    root = root or get_current_project().GetMediaPool().GetRootFolder()
+    root = root or get_current_resolve_project().GetMediaPool().GetRootFolder()
     queue = [root]
     for folder in queue:
         for clip in folder.GetClipList():

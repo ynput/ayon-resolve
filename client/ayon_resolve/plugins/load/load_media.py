@@ -138,11 +138,17 @@ def find_clip_usage(media_pool_item, project=None):
 class LoadMedia(LoaderPlugin):
     """Load product as media pool item."""
 
-    product_types = {"render2d", "source", "plate", "render", "review", "audio", "image"}
+    product_base_types = {
+        "render2d", "source", "plate", "render", "review", "audio", "image"
+    }
+    product_types = product_base_types
 
     representations = ["*"]
     extensions = set(
-        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS, RESOLVE_AUDIO_EXTENSIONS)
+        ext.lstrip(".")
+        for ext in (
+            IMAGE_EXTENSIONS | VIDEO_EXTENSIONS | RESOLVE_AUDIO_EXTENSIONS
+        )
     )
 
     label = "Load media"

@@ -312,10 +312,6 @@ class ResolveCreator(Creator):
             self.selected = lib.get_current_timeline_items(filter=False)
 
 
-# alias for backward compatibility
-Creator = ResolveCreator  # noqa
-
-
 class PublishableClip:
     """
     Convert a track item to publishable instance
@@ -729,9 +725,6 @@ class PublishableClip:
         for key in par_split:
             parent = self._convert_to_entity(key)
             self.parents.append(parent)
-
-# alias for backward compatibility
-PublishClip = PublishableClip  # noqa
 
 
 class HiddenResolvePublishCreator(HiddenCreator):

@@ -685,6 +685,8 @@ OTIO file.
                             f"{sub_instance_data['productName']}"
                         )
                     })
+                    sub_instance_data["productType"] = "plate"
+                    sub_instance_data["productBaseType"] = "plate"
                     creator_attributes["parentInstance"] = parenting_data[
                         "label"]
                     if sub_instance_data.get("reviewableSource"):

@@ -118,8 +118,15 @@ class _ResolveInstanceClipCreator(HiddenResolvePublishCreator):
         """
         instance_data["newHierarchyIntegration"] = True
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         new_instance = CreatedInstance(
-            self.product_type, instance_data["productName"], instance_data, self
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=instance_data["productName"],
+            data=instance_data,
+            creator=self,
         )
         self._add_instance_to_context(new_instance)
         new_instance.transient_data["has_promised_context"] = True

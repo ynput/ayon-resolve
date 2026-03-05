@@ -748,7 +748,7 @@ class HiddenResolvePublishCreator(HiddenCreator):
         pass
 
 
-class ResolvePublishCreator(Creator):
+class ResolvePublishCreator(ResolveCreator):
     create_allow_context_change = True
     host_name = "resolve"
     settings_category = "resolve"

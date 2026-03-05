@@ -18,7 +18,6 @@ from .lib import (
     maintain_current_timeline,
     get_project_manager,
     get_current_resolve_project,
-    get_current_project, # backward compatibility
     get_current_timeline,
     get_any_timeline,
     get_new_timeline,
@@ -33,11 +32,8 @@ from .lib import (
     get_video_track_names,
     get_current_timeline_items,
     get_timeline_item_by_name,
-    get_pype_timeline_item_by_name,  # backward compatibility
     get_timeline_item_ayon_tag,
-    get_timeline_item_pype_tag,  # backward compatibility
     set_timeline_item_ayon_tag,
-    set_timeline_item_pype_tag,  # backward compatibility
     imprint,
     set_publish_attribute,
     get_publish_attribute,
@@ -103,7 +99,6 @@ __all__ = [
     "maintain_current_timeline",
     "get_project_manager",
     "get_current_resolve_project",
-    "get_current_project", # backward compatibility
     "get_current_timeline",
     "get_any_timeline",
     "get_new_timeline",
@@ -118,11 +113,8 @@ __all__ = [
     "get_video_track_names",
     "get_current_timeline_items",
     "get_timeline_item_by_name",
-    "get_pype_timeline_item_by_name",  # backward compatibility
     "get_timeline_item_ayon_tag",
-    "get_timeline_item_pype_tag",  # backward compatibility
     "set_timeline_item_ayon_tag",
-    "set_timeline_item_pype_tag",  # backward compatibility
     "imprint",
     "set_publish_attribute",
     "get_publish_attribute",

@@ -52,7 +52,7 @@ def project_color_science_mode(project=None, mode="davinciYRGBColorManagedv2"):
     """
 
     if project is None:
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
 
     original_mode = project.GetSetting("colorScienceMode")
     if original_mode != mode:
@@ -107,7 +107,7 @@ def find_clip_usage(media_pool_item, project=None):
         return []
 
     if project is None:
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
 
     matching_items = []
     unique_id = media_pool_item.GetUniqueId()
@@ -196,7 +196,7 @@ class LoadMedia(LoaderPlugin):
         representation = context["representation"]
         self._project_name = context["project"]["name"]
 
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
         media_pool = project.GetMediaPool()
 
         # Allow to use an existing media pool item and re-use it
@@ -340,7 +340,7 @@ class LoadMedia(LoaderPlugin):
 
     def remove(self, container):
         # Remove MediaPoolItem entry
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
         media_pool = project.GetMediaPool()
         item = container["_item"]
 

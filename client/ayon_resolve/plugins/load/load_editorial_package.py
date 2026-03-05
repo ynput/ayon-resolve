@@ -36,7 +36,7 @@ class LoadEditorialPackage(load.LoaderPlugin):
         if not search_folder_path.exists():
             search_folder_path = Path(files).parent
 
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
         media_pool = project.GetMediaPool()
         folder_path = context["folder"]["path"]
 

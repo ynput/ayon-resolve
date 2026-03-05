@@ -6,7 +6,7 @@ import opentimelineio as otio
 from ayon_core.pipeline import publish
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
-    get_current_project,
+    get_current_resolve_project,
     export_timeline_otio_native
 )
 from ayon_resolve.otio import davinci_export
@@ -61,7 +61,7 @@ class ExtractEditorialPackage(publish.Extractor):
 
             # export otio representation
             self.export_otio_representation(
-                get_current_project(), timeline, otio_file_path
+                get_current_resolve_project(), timeline, otio_file_path
             )
 
         # Find Intermediate file representation file name

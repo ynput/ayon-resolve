@@ -467,7 +467,7 @@ OTIO file.
             BoolDef(
                 "export_audio",
                 label="Include audio",
-                tooltip="Process subsets with corresponding audio",
+                tooltip="Process products with corresponding audio",
                 default=False,
             ),
             BoolDef(
@@ -501,9 +501,9 @@ OTIO file.
             ),
         ]
 
-    def create(self, subset_name, instance_data, pre_create_data):
-        super(CreateShotClip, self).create(
-            subset_name,
+    def create(self, product_name, instance_data, pre_create_data):
+        super().create(
+            product_name,
             instance_data,
             pre_create_data
         )

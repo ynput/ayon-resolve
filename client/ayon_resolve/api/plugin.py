@@ -304,7 +304,7 @@ class ResolveCreator(Creator):
             self.__class__.__name__, {}
         )
 
-    def create(self, subset_name, instance_data, pre_create_data):
+    def create(self, product_name, instance_data, pre_create_data):
         # adding basic current context resolve objects
         self.project = lib.get_current_resolve_project()
         self.timeline = lib.get_current_timeline()
@@ -510,12 +510,12 @@ class PublishableClip:
             for key in ["folder", "episode", "sequence", "track", "shot"]
         }
 
-        # build subset name from layer name
+        # build product name from layer name
         if self.variant == "<track_name>":
             self.variant = self.track_name
 
-        # create subset for publishing
-        # TODO: Use creator `get_subset_name` to correctly define name
+        # create product name for publishing
+        # TODO: Use creator `get_product_name` to correctly define name
         self.product_name = self.product_base_type + self.variant.capitalize()
 
     def _replace_hash_to_expression(self, name, text):

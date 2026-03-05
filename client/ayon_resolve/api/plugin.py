@@ -294,15 +294,6 @@ class ResolveCreator(Creator):
     settings_category = "resolve"
     host_name = "resolve"
     marker_color = "Purple"
-    presets = {}
-
-    def apply_settings(self, project_settings):
-        resolve_create_settings = (
-            project_settings[self.settings_category]["create"]
-        )
-        self.presets = resolve_create_settings.get(
-            self.__class__.__name__, {}
-        )
 
     def create(self, product_name, instance_data, pre_create_data):
         # adding basic current context resolve objects

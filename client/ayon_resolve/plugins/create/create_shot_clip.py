@@ -311,6 +311,16 @@ OTIO file.
 """
     create_allow_thumbnail = False
 
+    presets = {}
+
+    def apply_settings(self, project_settings):
+        self.presets = (
+            project_settings
+            [self.settings_category]
+            ["create"]
+            [self.__class__.__name__]
+        )
+
     def get_pre_create_attr_defs(self):
 
         def header_label(text):

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 
 from ayon_resolve.api import lib, constants
@@ -12,8 +14,14 @@ from ayon_resolve.api.lib import (
     create_bin,
 )
 from ayon_core.pipeline.create import CreatorError, CreatedInstance
-from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
-
+from ayon_core.lib import (
+    BoolDef,
+    EnumDef,
+    TextDef,
+    UILabelDef,
+    NumberDef,
+    AbstractAttrDef
+)
 
 # Used as a key by the creators in order to
 # retrieve the instances data into clip markers.
@@ -21,7 +29,7 @@ _CONTENT_ID = "resolve_sub_products"
 
 
 # Shot attributes
-CLIP_ATTR_DEFS = [
+CLIP_ATTR_DEFS: list[AbstractAttrDef] = [
     EnumDef(
         "fps",
         items=[
@@ -226,7 +234,7 @@ class _ResolveInstanceClipCreatorBase(_ResolveInstanceClipCreator):
             for tr_name in get_video_track_names()
         ]
 
-        instance_attributes = [
+        instance_attributes: list[AbstractAttrDef] = [
             TextDef(
                 "parentInstance",
                 label="Linked to",

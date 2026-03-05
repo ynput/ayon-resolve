@@ -507,7 +507,8 @@ def get_current_timeline_items(
             "track": {
                 "name": _track_name,
                 "index": track_index,
-                "type": track_type}
+                "type": track_type,
+            }
         }
         # get track item object and its color
         for clip_index, ti in enumerate(_clips[track_index]):
@@ -547,11 +548,12 @@ def get_timeline_item_ayon_tag(timeline_item):
     """
     Get ayon track item tag created by creator or loader plugin.
 
-    Attributes:
-        trackItem (resolve.TimelineItem): resolve object
+    Args:
+        timeline_item (resolve.TimelineItem): resolve object
 
     Returns:
         dict: ayon tag data
+
     """
     return_tag = None
 

@@ -298,7 +298,7 @@ class ResolveCreator(Creator):
 
     def apply_settings(self, project_settings):
         resolve_create_settings = (
-            project_settings.get("resolve", {}).get("create")
+            project_settings[self.settings_category]["create"]
         )
         self.presets = resolve_create_settings.get(
             self.__class__.__name__, {}

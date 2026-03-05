@@ -335,7 +335,7 @@ OTIO file.
             for tr_name in get_video_track_names()
         ]
 
-        return [
+        output = [
             BoolDef(
                 "use_selection",
                 label="Use only clips with <b>Chocolate</b>  clip color",
@@ -503,6 +503,25 @@ OTIO file.
             ),
         ]
 
+        for base_type, type_label, def_key in (
+            ("plate", "Plate", "plate_product_type"),
+            ("audio", "Audio", "audio_product_type"),
+        ):
+            presets_key = f"{def_key}s"
+            product_types = self.presets[presets_key]
+            if product_types:
+                output.append(
+                    EnumDef(
+                        def_key,
+                        label=f"{type_label} Product Type",
+                        tooltip=f"Select product type for {base_type}",
+                        items=product_types,
+                        default=product_types[0],
+                    )
+                )
+
+        return output
+
     def create(self, product_name, instance_data, pre_create_data):
         super().create(
             product_name,
@@ -570,6 +589,14 @@ OTIO file.
         vertical_clip_match = {}
         vertical_clip_used = {}
 
+        plate_product_type = (
+            pre_create_data.get("plate_product_type")
+            or EditorialPlateInstanceCreator.product_base_type
+        )
+        audio_product_type = (
+            pre_create_data.get("audio_product_type")
+            or EditorialAudioInstanceCreator.product_base_type
+        )
         for index, track_item_data in enumerate(sorted_selected_track_items):
 
             # Compute and store resolution metadata from mediapool clip.
@@ -684,7 +711,7 @@ OTIO file.
                             f"{sub_instance_data['productName']}"
                         )
                     })
-                    sub_instance_data["productType"] = "plate"
+                    sub_instance_data["productType"] = plate_product_type
                     sub_instance_data["productBaseType"] = "plate"
                     creator_attributes["parentInstance"] = parenting_data[
                         "label"]
@@ -697,7 +724,7 @@ OTIO file.
 
                 elif creator_id == audio_creator_id:
                     sub_instance_data["variant"] = "main"
-                    sub_instance_data["productType"] = "audio"
+                    sub_instance_data["productType"] = audio_product_type
                     sub_instance_data["productBaseType"] = "audio"
                     sub_instance_data["productName"] = "audioMain"
 

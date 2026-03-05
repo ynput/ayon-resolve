@@ -97,7 +97,7 @@ class CreateWorkfile(AutoCreator):
         )
         self._add_instance_to_context(current_instance)
 
-    def create(self, options=None):
+    def create(self):
         """Auto-create an instance by default."""
         data = self._loads_data_from_project_setting()
         if data:

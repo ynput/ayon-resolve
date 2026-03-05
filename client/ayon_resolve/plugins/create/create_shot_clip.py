@@ -107,7 +107,7 @@ class _ResolveInstanceClipCreator(HiddenResolvePublishCreator):
     """
     skip_discovery = True
 
-    def create(self, instance_data, _):
+    def create(self, instance_data):
         """Return a new CreateInstance for new shot from Resolve.
 
         Args:
@@ -716,7 +716,7 @@ OTIO file.
                     if sub_instance_data.get("reviewableSource"):
                         creator_attributes["review"] = True
 
-                instance = creator.create(sub_instance_data, None)
+                instance = creator.create(sub_instance_data)
                 instance.transient_data["track_item"] = track_item
                 self._add_instance_to_context(instance)
 
@@ -773,7 +773,7 @@ OTIO file.
             }
             data["creator_attributes"] = creator_attributes
 
-        instance = creator.create(data, None)
+        instance = creator.create(data)
         instance.transient_data["track_item"] = timeline_item
         self._add_instance_to_context(instance)
         instances.append(instance)

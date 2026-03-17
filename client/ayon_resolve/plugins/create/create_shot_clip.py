@@ -597,6 +597,10 @@ OTIO file.
             pre_create_data.get("audio_product_type")
             or EditorialAudioInstanceCreator.product_base_type
         )
+
+        pre_create_data["plate_product_type"] = plate_product_type
+        pre_create_data["audio_product_type"] = audio_product_type
+
         for index, track_item_data in enumerate(sorted_selected_track_items):
 
             # Compute and store resolution metadata from mediapool clip.

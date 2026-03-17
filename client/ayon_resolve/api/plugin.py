@@ -479,27 +479,28 @@ class PublishableClip:
         self.shot_num = self.ti_index
 
         # publisher ui attribute inputs or default values if gui was not used
-        def get(key):
+        def get(key, default):
             """Shorthand access for code readability"""
-            return self.pre_create_data.get(key)
+            return self.pre_create_data.get(key) or default
 
-        self.rename = get("clipRename") or self.rename_default
-        self.clip_name = get("clipName") or self.clip_name_default
-        self.hierarchy = get("hierarchy") or self.hierarchy_default
-        self.count_from = get("countFrom") or self.count_from_default
-        self.count_steps = get("countSteps") or self.count_steps_default
-        self.variant = get("clip_variant") or self.variant_default
-        self.plate_product_type = (
-            get("plate_product_type") or self.plate_product_type_default
+        self.rename = get("clipRename", self.rename_default)
+        self.clip_name = get("clipName", self.clip_name_default)
+        self.hierarchy = get("hierarchy", self.hierarchy_default)
+        self.count_from = get("countFrom", self.count_from_default)
+        self.count_steps = get("countSteps", self.count_steps_default)
+        self.variant = get("clip_variant", self.variant_default)
+        self.plate_product_type = get(
+            "plate_product_type", self.plate_product_type_default
         )
-        self.vertical_sync = get("vSyncOn") or self.vertical_sync_default
-        self.hero_track = get("vSyncTrack") or self.driving_layer_default
+        self.vertical_sync = get("vSyncOn", self.vertical_sync_default)
+        self.hero_track = get("vSyncTrack", self.driving_layer_default)
         self.hero_track = self.hero_track.replace(" ", "_")
-        self.review_source = (
-            get("reviewableSource") or self.review_source_default)
+        self.review_source = get(
+            "reviewableSource", self.review_source_default
+        )
 
         self.hierarchy_data = {
-            key: get(key) or self.timeline_item_default_data[key]
+            key: get(key, self.timeline_item_default_data[key])
             for key in ["folder", "episode", "sequence", "track", "shot"]
         }
 

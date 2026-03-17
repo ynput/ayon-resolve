@@ -335,7 +335,7 @@ class PublishableClip:
     clip_name_default = "shot_{_trackIndex_:0>3}_{_clipIndex_:0>4}"
     variant_default = "<track_name>"
     review_source_default = None
-    product_type_default = "plate"
+    plate_product_type_default = "plate"
     count_from_default = 10
     count_steps_default = 10
     vertical_sync_default = False
@@ -489,7 +489,9 @@ class PublishableClip:
         self.count_from = get("countFrom") or self.count_from_default
         self.count_steps = get("countSteps") or self.count_steps_default
         self.variant = get("clip_variant") or self.variant_default
-        self.product_type = get("productType") or self.product_type_default
+        self.plate_product_type = (
+            get("plate_product_type") or self.plate_product_type_default
+        )
         self.vertical_sync = get("vSyncOn") or self.vertical_sync_default
         self.hero_track = get("vSyncTrack") or self.driving_layer_default
         self.hero_track = self.hero_track.replace(" ", "_")
@@ -689,7 +691,7 @@ class PublishableClip:
             "parents": self.parents,
             "hierarchyData": hierarchy_formatting_data,
             "productName": self.product_name,
-            "productType": self.product_type
+            "productType": self.plate_product_type
         }
 
     def _convert_to_entity(self, key):

@@ -547,7 +547,6 @@ class PublishableClip:
         self.count_steps *= self.rename_index
 
         hierarchy_formatting_data = {}
-        _data = self.timeline_item_default_data.copy()
         if self.pre_create_data:
 
             # adding tag metadata from ui
@@ -574,9 +573,6 @@ class PublishableClip:
                     self.shot_num = self.count_from
                 else:
                     self.shot_num = self.count_from + self.count_steps
-
-            # clip name sequence number
-            _data.update({"shot": self.shot_num})
 
             # solve # in test to pythonic expression
             for _key, _value in self.hierarchy_data.items():

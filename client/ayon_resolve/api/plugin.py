@@ -373,7 +373,7 @@ class PublishableClip:
             data (dict): additional data
 
         """
-        self.vertical_clip_match = vertical_clip_match 
+        self.vertical_clip_match = vertical_clip_match
         self.vertical_clip_used = vertical_clip_used
 
         self.rename_index = rename_index
@@ -500,7 +500,7 @@ class PublishableClip:
         )
 
         self.hierarchy_data = {
-            key: get(key, self.timeline_item_default_data[key])
+            key: get(key, self.timeline_item_default_data.get(f"_{key}_", ""))
             for key in ["folder", "episode", "sequence", "track", "shot"]
         }
 
@@ -510,7 +510,7 @@ class PublishableClip:
 
         # create product name for publishing
         # TODO: Use creator `get_product_name` to correctly define name
-        self.product_name = self.product_base_type + self.variant.capitalize()
+        self.product_name = self.plate_product_type + self.variant.capitalize()
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """

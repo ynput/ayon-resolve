@@ -169,7 +169,7 @@ class _ResolveInstanceClipCreator(HiddenResolvePublishCreator):
             self._remove_instance_from_context(instance)
 
             # Remove markers if deleted all of the instances
-            if not instances_data: 
+            if not instances_data:
                 track_item.DeleteMarkersByColor(constants.AYON_MARKER_COLOR)
                 if track_item.GetClipColor() != constants.SELECTED_CLIP_COLOR:
                     track_item.ClearClipColor()
@@ -306,7 +306,7 @@ class CreateShotClip(ResolveCreator):
 
     detailed_description = """
 Publishing clips/plate, audio for new shots to project
-or updating already created from Resolve. Publishing will create 
+or updating already created from Resolve. Publishing will create
 OTIO file.
 """
     create_allow_thumbnail = False
@@ -446,6 +446,9 @@ OTIO file.
             UILabelDef(
                 label=header_label("Clip Publish Settings")
             ),
+            self._add_product_type_enum(
+                ("plate", "Plate", "plate_product_type")
+            ),
             EnumDef(
                 "clip_variant",
                 label="Product Variant",
@@ -471,6 +474,9 @@ OTIO file.
                 label="Include audio",
                 tooltip="Process products with corresponding audio",
                 default=False,
+            ),
+            self._add_product_type_enum(
+                ("audio", "Audio", "audio_product_type")
             ),
             BoolDef(
                 "sourceResolution",
@@ -502,25 +508,37 @@ OTIO file.
                 default=self.presets["handleEnd"],
             ),
         ]
-
-        for base_type, type_label, def_key in (
-            ("plate", "Plate", "plate_product_type"),
-            ("audio", "Audio", "audio_product_type"),
-        ):
-            presets_key = f"{def_key}s"
-            product_types = self.presets[presets_key]
-            if product_types:
-                output.append(
-                    EnumDef(
-                        def_key,
-                        label=f"{type_label} Product Type",
-                        tooltip=f"Select product type for {base_type}",
-                        items=product_types,
-                        default=product_types[0],
-                    )
-                )
-
         return output
+
+    def _add_product_type_enum(
+            self, type_def: tuple[str, str, str]) -> EnumDef:
+        """Add product type enum definition for a given type.
+
+        Args:
+            type_def (tuple[str, str, str]): A tuple containing
+                the base type, type label, and definition key.
+
+        Returns:
+            EnumDef: The enum definition for the product type.
+        """
+        base_type, type_label, def_key = type_def
+        presets_key = f"{def_key}s"
+        product_types = self.presets[presets_key]
+        if not product_types:
+            return EnumDef(
+                def_key,
+                label=f"{type_label} Product Type",
+                tooltip=f"Select product type for {base_type}",
+                items=[base_type],
+                default=base_type,
+            )
+        return EnumDef(
+            def_key,
+            label=f"{type_label} Product Type",
+            tooltip=f"Select product type for {base_type}",
+            items=product_types,
+            default=product_types[0],
+        )
 
     def create(self, product_name, instance_data, pre_create_data):
         super().create(
@@ -876,7 +894,7 @@ OTIO file.
                     tag_data, timeline_item, instances)
                 continue
 
-            # get AyonData tag data 
+            # get AyonData tag data
             tag_data = lib.get_timeline_item_ayon_tag(timeline_item)
             if not tag_data:
                 continue

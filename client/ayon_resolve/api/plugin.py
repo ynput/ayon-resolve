@@ -462,11 +462,13 @@ class PublishableClip:
 
         self.timeline_item_default_data = {
             "_folder_": "shots",
+            "_episode_": "sq01",
             "_sequence_": self.timeline_name,
+            "_shot_": "sh###",
             "_track_": self.track_name,
             "_clip_": self.ti_name,
             "_trackIndex_": self.track_index,
-            "_clipIndex_": self.ti_index
+            "_clipIndex_": self.ti_index,
         }
 
     def _populate_attributes(self):
@@ -500,8 +502,14 @@ class PublishableClip:
         )
 
         self.hierarchy_data = {
-            key: get(key, self.timeline_item_default_data.get(f"_{key}_", ""))
-            for key in ["folder", "episode", "sequence", "track", "shot"]
+            key: get(key, self.timeline_item_default_data[default_key])
+            for key, default_key in [
+                ("folder", "_folder_"),
+                ("episode", "_epidose_"),
+                ("sequence", "_sequence_"),
+                ("track", "_track_"),
+                ("shot", "_shot_"),
+            ]
         }
 
         # build product name from layer name

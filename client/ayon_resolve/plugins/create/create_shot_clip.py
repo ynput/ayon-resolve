@@ -446,7 +446,7 @@ OTIO file.
             UILabelDef(
                 label=header_label("Clip Publish Settings")
             ),
-            self._add_product_type_enum(
+            self._get_product_type_enum(
                 "plate", "Plate", "plate_product_type"
             ),
             EnumDef(
@@ -475,7 +475,7 @@ OTIO file.
                 tooltip="Process products with corresponding audio",
                 default=False,
             ),
-            self._add_product_type_enum(
+            self._get_product_type_enum(
                 "audio", "Audio", "audio_product_type"
             ),
             BoolDef(
@@ -510,14 +510,15 @@ OTIO file.
         ]
         return output
 
-    def _add_product_type_enum(
-        self, base_type: str, type_label: str, def_key: str
+    def _get_product_type_enum(
+        self, product_base_type: str, label: str, def_key: str
     ) -> EnumDef:
         """Add product type enum definition for a given type.
 
         Args:
-            base_type (str): A tuple containing
-                the base type, type label, and definition key.
+            product_base_type (str): Product base type.
+            label (str): Product type label.
+            def_key (str): Definition key for product type.
 
         Returns:
             EnumDef: The enum definition for the product type.
@@ -525,11 +526,11 @@ OTIO file.
         presets_key = f"{def_key}s"
         product_types = self.presets[presets_key]
         if not product_types:
-            product_types = [base_type]
+            product_types = [product_base_type]
         return EnumDef(
             def_key,
-            label=f"{type_label} Product Type",
-            tooltip=f"Select product type for {base_type}",
+            label=f"{label} Product Type",
+            tooltip=f"Select product type for {product_base_type}",
             items=product_types,
             default=product_types[0],
         )

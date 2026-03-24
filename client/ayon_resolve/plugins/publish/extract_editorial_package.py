@@ -86,7 +86,12 @@ class ExtractEditorialPackage(publish.Extractor):
                 if isinstance(clip, otio.schema.Gap):
                     # get duration of gap
                     continue
+                # skip stacks (nested timelines)
+                if isinstance(clip, otio.schema.Stack):
+                    continue
 
+                # TODO: Instead of skipping other class types should we just
+                #  check for isinstance(clip, otio.schema.Clip)?
                 if hasattr(clip.media_reference, "target_url"):
                     path_to_media = Path(published_file_path)
                     # remove root from path

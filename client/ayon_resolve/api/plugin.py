@@ -502,14 +502,8 @@ class PublishableClip:
         )
 
         self.hierarchy_data = {
-            key: get(key, self.timeline_item_default_data[default_key])
-            for key, default_key in [
-                ("folder", "_folder_"),
-                ("episode", "_epidose_"),
-                ("sequence", "_sequence_"),
-                ("track", "_track_"),
-                ("shot", "_shot_"),
-            ]
+            key: get(key, self.timeline_item_default_data[f"_{key}_"])
+            for key in ["folder", "episode", "sequence", "track", "shot"]
         }
 
         # build product name from layer name

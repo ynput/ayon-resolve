@@ -447,7 +447,7 @@ OTIO file.
                 label=header_label("Clip Publish Settings")
             ),
             self._add_product_type_enum(
-                ("plate", "Plate", "plate_product_type")
+                "plate", "Plate", "plate_product_type"
             ),
             EnumDef(
                 "clip_variant",
@@ -476,7 +476,7 @@ OTIO file.
                 default=False,
             ),
             self._add_product_type_enum(
-                ("audio", "Audio", "audio_product_type")
+                "audio", "Audio", "audio_product_type"
             ),
             BoolDef(
                 "sourceResolution",
@@ -511,27 +511,21 @@ OTIO file.
         return output
 
     def _add_product_type_enum(
-            self, type_def: tuple[str, str, str]) -> EnumDef:
+        self, base_type: str, type_label: str, def_key: str
+    ) -> EnumDef:
         """Add product type enum definition for a given type.
 
         Args:
-            type_def (tuple[str, str, str]): A tuple containing
+            base_type (str): A tuple containing
                 the base type, type label, and definition key.
 
         Returns:
             EnumDef: The enum definition for the product type.
         """
-        base_type, type_label, def_key = type_def
         presets_key = f"{def_key}s"
         product_types = self.presets[presets_key]
         if not product_types:
-            return EnumDef(
-                def_key,
-                label=f"{type_label} Product Type",
-                tooltip=f"Select product type for {base_type}",
-                items=[base_type],
-                default=base_type,
-            )
+            product_types = [base_type]
         return EnumDef(
             def_key,
             label=f"{type_label} Product Type",

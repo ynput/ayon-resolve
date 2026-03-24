@@ -86,7 +86,7 @@ class ExtractEditorialPackage(publish.Extractor):
                 if isinstance(clip, otio.schema.Gap):
                     # get duration of gap
                     continue
-                # skip stacks (nested timelines)
+                # skip stacks (nested timelines, Fusion clips, etc.)
                 if isinstance(clip, otio.schema.Stack):
                     continue
 

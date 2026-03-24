@@ -4,6 +4,7 @@ import pyblish.api
 import opentimelineio as otio
 
 from ayon_core.pipeline import publish
+from ayon_core.pipeline.publish.lib import get_instance_expected_output_path
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
     get_current_project,
@@ -65,13 +66,18 @@ class ExtractEditorialPackage(publish.Extractor):
             )
 
         # Find Intermediate file representation file name
-        published_file_path = None
         for repre in instance.data["representations"]:
-            if repre["name"] == "intermediate":
-                published_file_path = self._get_published_path(instance, repre)
-                break
+            if repre["name"] != "intermediate":
+                continue
 
-        if published_file_path is None:
+            published_file_path = get_instance_expected_output_path(
+                instance,
+                representation_name=repre["name"],
+                ext=repre["ext"],
+            )
+            break
+
+        else:
             raise ValueError("Intermediate representation not found")
 
         # Finding clip references and replacing them with rootless paths
@@ -166,19 +172,3 @@ class ExtractEditorialPackage(publish.Extractor):
         # check if file exists
         if not filepath.exists():
             raise FileNotFoundError(f"OTIO file not found: {filepath}")
-
-    def _get_published_path(self, instance, representation):
-        """Calculates expected `publish` folder"""
-        # determine published path from Anatomy.
-        template_data = instance.data.get("anatomyData")
-
-        template_data["representation"] = representation["name"]
-        template_data["ext"] = representation["ext"]
-        template_data["comment"] = None
-
-        anatomy = instance.context.data["anatomy"]
-        template_data["root"] = anatomy.roots
-        template = anatomy.get_template_item("publish", "default", "path")
-        template_filled = template.format_strict(template_data)
-        file_path = Path(template_filled)
-        return file_path.as_posix()

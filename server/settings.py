@@ -3,9 +3,33 @@ from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
     ensure_unique_names,
+    task_types_enum
 )
 
 from .imageio import ResolveImageIOModel
+
+
+def intermediate_format_enum():
+    return [
+        {"value": "AVI", "label": "AVI"},
+        {"value": "Cineon", "label": "Cineon"},
+        {"value": "DCP", "label": "DCP"},
+        {"value": "DPX", "label": "DPX"},
+        {"value": "EXR", "label": "EXR"},
+        {"value": "GIF", "label": "GIF"},
+        {"value": "IMF", "label": "IMF"},
+        {"value": "JPEG", "label": "JPEG"},
+        {"value": "JPEG 2000", "label": "JPEG 2000"},
+        {"value": "MJ2", "label": "MJ2"},
+        {"value": "MKV", "label": "MKV"},
+        {"value": "MP4", "label": "MP4"},
+        {"value": "MXF OP-Atom", "label": "MXF OP-Atom"},
+        {"value": "MXF OP1A", "label": "MXF OP1A"},
+        {"value": "PNG", "label": "PNG"},
+        {"value": "Quicktime", "label": "Quicktime"},
+        {"value": "TIFF", "label": "TIFF"},
+        {"value": "WebP", "label": "WebP"}
+    ]
 
 
 class CreateShotClipModels(BaseSettingsModel):
@@ -74,10 +98,83 @@ class CreateShotClipModels(BaseSettingsModel):
     )
 
 
+class IntermediatePresetModel(BaseSettingsModel):
+    """Intermediate Preset
+
+    - Preset Name
+    - Filter by task Types
+    - Filter by task names
+    - Path to Preset
+    - Format
+    - Codec
+
+    """
+    name: str = SettingsField(
+        "",
+        title="Name"
+    )
+    export_otio: bool = SettingsField(
+        title="Export OTIO",
+        description="When enabled AYON will export OTIO file along with intermediate file.",
+    )
+    otio_rootless: bool = SettingsField(
+        title="Use rootless OTIO paths",
+        description="When enabled AYON will convert all paths in OTIO to be rootless.",
+    )
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task types",
+        enum_resolver=task_types_enum
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task names"
+    )
+    value: str = SettingsField(
+        "",
+        title="Path to template"
+    )
+    name: str = SettingsField(
+        default_factory=list,
+        title="File Format",
+        enum_resolver=intermediate_format_enum
+    )
+    value: str = SettingsField(
+        "",
+        title="Codec"
+    )
+
+
+class EditorialPackageModels(BaseSettingsModel):
+    """Editorial Package
+    """
+    default_preset: bool = SettingsField(
+        title="Add Default Preset",
+        description="When enabled AYON will add default preset to intermediate presets list.",
+    )
+    intermediate_presets: list[IntermediatePresetModel] = SettingsField(
+        default_factory=list,
+        title="Intermediate presets",
+        description=(
+            "Intermediate presets to be used in Editorial Package creator. The"
+            " name must be unique."
+        )
+    )
+
+    @validator("intermediate_presets")
+    def validate_unique_outputs(cls, value):
+        ensure_unique_names(value)
+        return value
+
+
 class CreatorPluginsModel(BaseSettingsModel):
     CreateShotClip: CreateShotClipModels = SettingsField(
         default_factory=CreateShotClipModels,
         title="Create Shot Clip"
+    )
+    EditorialPackage: EditorialPackageModels = SettingsField(
+        default_factory=EditorialPackageModels,
+        title="Editorial Package"
     )
 
 
@@ -177,6 +274,21 @@ DEFAULT_VALUES = {
             "workfileFrameStart": 1001,
             "handleStart": 10,
             "handleEnd": 10
+        },
+        "EditorialPackage": {
+            "default_preset": True,
+            "intermediate_presets": [
+                {
+                    "Name": "AYON_custom_intermediate",
+                    "export_otio": True,
+                    "otio_rootless": True,
+                    "Task types": [],
+                    "Task names": [],
+                    "Path to template": "/path/to/Custom_intermediate.xml",
+                    "File Format": "Quicktime",
+                    "Codec": "H.264"
+                }
+            ]
         }
     },
     "load": {

@@ -9,7 +9,7 @@ class CollectResolveProject(pyblish.api.ContextPlugin):
     """Collect the current Resolve project and current timeline data"""
 
     label = "Collect Project and Current Timeline"
-    order = pyblish.api.CollectorOrder - 0.499
+    order = pyblish.api.CollectorOrder - 0.5
     hosts = ["resolve"]
 
     def process(self, context):

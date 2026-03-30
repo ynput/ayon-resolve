@@ -83,8 +83,12 @@ def unwrap_resolve_otio_marker(marker):
     # dict metadata for some reasons.
     # {dict_info} -> {"Resolve_OTIO": {"Note": "string_dict_info"}}
     try:
-        marker_note = marker.metadata["Resolve_OTIO"]["Note"]
-    except KeyError:
+        resolve_otio = marker.metadata.get("Resolve_OTIO")
+        marker_note = resolve_otio.get("Note")
+    except (KeyError, AttributeError):
+        return marker
+
+    if not marker_note:
         return marker
 
     marker_note_dict = json.loads(marker_note)
@@ -111,8 +115,8 @@ def get_marker_from_clip_index(otio_timeline, clip_index):
     # See collect_current_project
     for otio_clip in all_clips:
         for marker in otio_clip.markers:
-            marker = unwrap_resolve_otio_marker(marker)
-            if marker.metadata.get("clip_index") == clip_index:
-                return  otio_clip, marker
+            marker_ = unwrap_resolve_otio_marker(marker)
+            if marker_.metadata.get("clip_index") == clip_index:
+                return otio_clip, marker_
 
     return None, None

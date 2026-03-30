@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pyblish.api
 
-from ayon_core.pipeline import publish
+from ayon_core.pipeline import publish, get_current_project_name
+from ayon_core.pipeline.context_tools import get_current_task_entity
+
+from ayon_core.settings import get_project_settings
+
+from ayon_core.lib import filter_profiles
+
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
     maintain_page_by_name,
@@ -15,6 +21,7 @@ from ayon_resolve.api.rendering import (
 )
 
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
+from server import settings
 
 
 class ExtractIntermediateRepresentation(publish.Extractor):
@@ -22,15 +29,51 @@ class ExtractIntermediateRepresentation(publish.Extractor):
     Extract and Render intermediate file for Editorial Package
 
     """
+    def __init__(self):
+        super().__init__()
 
-    label = "Extract Intermediate Representation"
-    order = pyblish.api.ExtractorOrder - 0.45
-    families = ["editorial_pkg"]
+        self.label = "Extract Intermediate Representation"
+        self.order = pyblish.api.ExtractorOrder - 0.45
+        self.families = ["editorial_pkg"]
+        
+        i_s = self.get_settings()
+        self.export_otio = i_s["export_otio"]
+        self.otio_rootless = i_s["otio_rootless"]
+        self.preset_path = i_s["preset_path"]
+        self.file_format = i_s["file_format"]
+        self.codec = i_s["codec"]
 
-    # Settings
-    file_format = "QuickTime"
-    codec = "H.264"
-    preset_name = "AYON_intermediates"
+    def get_default_settings(self):
+        preset_name = "AYON_intermediates"
+        preset_path = Path(
+            RESOLVE_ADDON_ROOT, "presets", "render", f"{preset_name}.xml"
+        )
+
+        return {
+            "name": "AYON_custom_intermediate",
+            "export_otio": True,
+            "otio_rootless": True,
+            "task_types": [],
+            "task_names": [],
+            "preset_path": preset_path,
+            "file_format": "Quicktime",
+            "codec": "H.264"
+        }
+
+    def get_settings(self):
+        project_settings = get_project_settings(get_current_project_name())
+        ep_settings = project_settings.get("ayon_resolve", {}).get("create", {}).get("EditorialPackage", {})
+        ep_profiles = ep_settings.get("intermediate_presets", [])
+        entity = get_current_task_entity()
+        if not entity:
+            self.log.warning("No current task entity found. Using default settings.")
+            return self.get_default_settings()
+        task_type = entity.get("taskType")
+        profile = filter_profiles(ep_profiles, task_type)
+        if profile and len(profile) > 0:
+            return profile
+        else:
+            return self.get_default_settings()
 
     def process(self, instance):
         # create representation data
@@ -72,7 +115,9 @@ class ExtractIntermediateRepresentation(publish.Extractor):
             "ext": os.path.splitext(rendered_file)[1][1:],
             "files": rendered_file.name,
             "stagingDir": staging_dir,
-            "tags": ["review"]
+            "tags": ["review"],
+            "export_otio": self.export_otio,
+            "otio_rootless": self.otio_rootless
         }
         self.log.debug(f"Video representation: {representation_intermediate}")
         instance.data["representations"].append(representation_intermediate)
@@ -94,15 +139,12 @@ class ExtractIntermediateRepresentation(publish.Extractor):
         for conversion to review file.
         """
         # get path to ayon_resolve module and get path to render presets
-        render_preset_path = Path(
-            RESOLVE_ADDON_ROOT, "presets", "render", f"{self.preset_name}.xml"
-        )
 
         self.log.info(f"Rendering timeline to '{target_render_directory}'")
 
         with maintain_page_by_name("Deliver"):
             # first we need to maintain rendering preset
-            if not set_render_preset_from_file(render_preset_path.as_posix()):
+            if not set_render_preset_from_file(self.preset_path.as_posix()):
                 raise Exception("Unable to add render preset.")
 
             # set render format and codec

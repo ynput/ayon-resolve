@@ -42,6 +42,18 @@ class ExtractEditorialPackage(publish.Extractor):
         staging_dir = staging_dir / subfolder_name
         self.log.info(f"Staging directory: {staging_dir}")
 
+        # Find Intermediate file representation file name
+        published_file_path = None
+        for repre in instance.data["representations"]:
+            if repre["name"] == "intermediate":
+                published_file_path = self._get_published_path(instance, repre)
+                export_otio = repre.get("export_otio", True)
+                otio_rootless = repre.get("otio_rootless", True)
+                break
+
+        if published_file_path is None:
+            raise ValueError("Intermediate representation not found")
+
         # otio file path
         otio_file_path = staging_dir / f"{subfolder_name}.otio"
 
@@ -60,22 +72,20 @@ class ExtractEditorialPackage(publish.Extractor):
             )
 
             # export otio representation
-            self.export_otio_representation(
-                get_current_project(), timeline, otio_file_path
-            )
-
-        # Find Intermediate file representation file name
-        published_file_path = None
-        for repre in instance.data["representations"]:
-            if repre["name"] == "intermediate":
-                published_file_path = self._get_published_path(instance, repre)
-                break
-
-        if published_file_path is None:
-            raise ValueError("Intermediate representation not found")
+            if export_otio:
+                self.export_otio_representation(
+                    get_current_project(), timeline, otio_file_path
+                )
+            else:
+                self.log.info("OTIO export not enabled, skipping OTIO export.")
+                return
 
         # Finding clip references and replacing them with rootless paths
         # of video files
+        if not export_otio or not otio_rootless:
+            self.log.info("OTIO export or rootless paths not enabled, skipping OTIO remapping.")
+            return
+
         otio_timeline = otio.adapters.read_from_file(otio_file_path.as_posix())
         for track in otio_timeline.tracks:
             for clip in track:

@@ -422,7 +422,20 @@ class LoadMedia(LoaderPlugin):
             clip_property = meta_item["name"]
             value = meta_item["value"]
             value_formatted = StringTemplate(value).format_strict(context)
-            media_pool_item.SetClipProperty(clip_property, value_formatted)
+            is_set = media_pool_item.SetClipProperty(
+                clip_property,
+                value_formatted
+            )
+            if not is_set:
+                # Allow to set metadata instead of clip property using the same
+                # configuration in settings.
+                is_set = media_pool_item.SetMetadata(clip_property,
+                                                     value_formatted)
+                if not is_set:
+                    self.log.warning(
+                        "Failed to set clip property or metadata"
+                        f" '{clip_property}': '{value_formatted}'"
+                    )
 
     def _get_file_info(self, context: dict) -> Tuple[bool, Union[str, dict]]:
         """Return file info for Resolve ImportMedia.

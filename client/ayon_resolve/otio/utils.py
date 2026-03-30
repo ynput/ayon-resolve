@@ -1,6 +1,9 @@
 import json
 import re
 import opentimelineio as otio
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def timecode_to_frames(timecode, framerate):
@@ -86,8 +89,11 @@ def unwrap_resolve_otio_marker(marker):
         marker_note = marker.metadata["Resolve_OTIO"]["Note"]
     except KeyError:
         return marker
-
-    marker_note_dict = json.loads(marker_note)
+    try:
+        marker_note_dict = json.loads(marker_note)
+    except json.decoder.JSONDecodeError:
+        log.warning("Failed to decode marker note as JSON: %s", marker_note)
+        return marker
     marker.metadata.update(marker_note_dict)  # prevent additional resolve keys
     return marker
 

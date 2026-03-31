@@ -218,10 +218,8 @@ def get_local_database_root() -> Path:
             / "Resolve Project Library" / "Resolve Projects"
             / "Users" / "guest" / "Projects"
         )
-    if sys.platform == "darwin":
-        raise NotImplementedError("MacOS database path is not implemented yet.")
-    if sys.platform == "linux":
-        raise NotImplementedError("Linux database path is not implemented yet.")
+    else:
+        raise NotImplementedError(f"Database path for platform {sys.platform} is not implemented yet.")
     return result
 
 

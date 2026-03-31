@@ -615,7 +615,7 @@ def set_timeline_item_ayon_tag(timeline_item, data=None):
 
 def imprint(timeline_item, data=None):
     """
-    Adding `Ayon data` into a timeline item track item tag.
+    Adding `AYON data` into a timeline item track item tag.
 
     Also including publish attribute into tag.
 
@@ -625,9 +625,9 @@ def imprint(timeline_item, data=None):
 
     Examples:
         data = {
-            'asset': 'sq020sh0280',
-            'family': 'render',
-            'subset': 'subsetMain'
+            'folderPath': '/shots/sq020sh0280',
+            'productBaseType': 'render',
+            'productName': 'renderMain'
         }
     """
     data = data or {}

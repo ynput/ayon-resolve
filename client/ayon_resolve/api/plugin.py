@@ -290,18 +290,12 @@ class TimelineItemLoader(LoaderPlugin):
 class ResolveCreator(Creator):
     """ Resolve Creator class wrapper"""
 
+    skip_discovery = True
+    settings_category = "resolve"
+    host_name = "resolve"
     marker_color = "Purple"
-    presets = {}
 
-    def apply_settings(self, project_settings):
-        resolve_create_settings = (
-            project_settings.get("resolve", {}).get("create")
-        )
-        self.presets = resolve_create_settings.get(
-            self.__class__.__name__, {}
-        )
-
-    def create(self, subset_name, instance_data, pre_create_data):
+    def create(self, product_name, instance_data, pre_create_data):
         # adding basic current context resolve objects
         self.project = lib.get_current_resolve_project()
         self.timeline = lib.get_current_timeline()
@@ -310,10 +304,6 @@ class ResolveCreator(Creator):
             self.selected = lib.get_current_timeline_items(filter=True)
         else:
             self.selected = lib.get_current_timeline_items(filter=False)
-
-
-# alias for backward compatibility
-Creator = ResolveCreator  # noqa
 
 
 class PublishableClip:
@@ -345,7 +335,7 @@ class PublishableClip:
     clip_name_default = "shot_{_trackIndex_:0>3}_{_clipIndex_:0>4}"
     variant_default = "<track_name>"
     review_source_default = None
-    product_type_default = "plate"
+    plate_product_type_default = "plate"
     count_from_default = 10
     count_steps_default = 10
     vertical_sync_default = False
@@ -383,7 +373,7 @@ class PublishableClip:
             data (dict): additional data
 
         """
-        self.vertical_clip_match = vertical_clip_match 
+        self.vertical_clip_match = vertical_clip_match
         self.vertical_clip_used = vertical_clip_used
 
         self.rename_index = rename_index
@@ -472,11 +462,13 @@ class PublishableClip:
 
         self.timeline_item_default_data = {
             "_folder_": "shots",
+            "_episode_": "sq01",
             "_sequence_": self.timeline_name,
+            "_shot_": "sh###",
             "_track_": self.track_name,
             "_clip_": self.ti_name,
             "_trackIndex_": self.track_index,
-            "_clipIndex_": self.ti_index
+            "_clipIndex_": self.ti_index,
         }
 
     def _populate_attributes(self):
@@ -489,35 +481,38 @@ class PublishableClip:
         self.shot_num = self.ti_index
 
         # publisher ui attribute inputs or default values if gui was not used
-        def get(key):
+        def get(key, default):
             """Shorthand access for code readability"""
-            return self.pre_create_data.get(key)
+            return self.pre_create_data.get(key) or default
 
-        self.rename = get("clipRename") or self.rename_default
-        self.clip_name = get("clipName") or self.clip_name_default
-        self.hierarchy = get("hierarchy") or self.hierarchy_default
-        self.count_from = get("countFrom") or self.count_from_default
-        self.count_steps = get("countSteps") or self.count_steps_default
-        self.variant = get("clip_variant") or self.variant_default
-        self.product_type = get("productType") or self.product_type_default
-        self.vertical_sync = get("vSyncOn") or self.vertical_sync_default
-        self.hero_track = get("vSyncTrack") or self.driving_layer_default
+        self.rename = get("clipRename", self.rename_default)
+        self.clip_name = get("clipName", self.clip_name_default)
+        self.hierarchy = get("hierarchy", self.hierarchy_default)
+        self.count_from = get("countFrom", self.count_from_default)
+        self.count_steps = get("countSteps", self.count_steps_default)
+        self.variant = get("clip_variant", self.variant_default)
+        self.plate_product_type = get(
+            "plate_product_type", self.plate_product_type_default
+        )
+        self.vertical_sync = get("vSyncOn", self.vertical_sync_default)
+        self.hero_track = get("vSyncTrack", self.driving_layer_default)
         self.hero_track = self.hero_track.replace(" ", "_")
-        self.review_source = (
-            get("reviewableSource") or self.review_source_default)
+        self.review_source = get(
+            "reviewableSource", self.review_source_default
+        )
 
         self.hierarchy_data = {
-            key: get(key) or self.timeline_item_default_data[key]
+            key: get(key, self.timeline_item_default_data[f"_{key}_"])
             for key in ["folder", "episode", "sequence", "track", "shot"]
         }
 
-        # build subset name from layer name
+        # build product name from layer name
         if self.variant == "<track_name>":
             self.variant = self.track_name
 
-        # create subset for publishing
-        # TODO: Use creator `get_subset_name` to correctly define name
-        self.product_name = self.product_type + self.variant.capitalize()
+        # create product name for publishing
+        # TODO: Use creator `get_product_name` to correctly define name
+        self.product_name = self.plate_product_type + self.variant.capitalize()
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """
@@ -699,7 +694,7 @@ class PublishableClip:
             "parents": self.parents,
             "hierarchyData": hierarchy_formatting_data,
             "productName": self.product_name,
-            "productType": self.product_type
+            "productType": self.plate_product_type
         }
 
     def _convert_to_entity(self, key):
@@ -730,11 +725,9 @@ class PublishableClip:
             parent = self._convert_to_entity(key)
             self.parents.append(parent)
 
-# alias for backward compatibility
-PublishClip = PublishableClip  # noqa
-
 
 class HiddenResolvePublishCreator(HiddenCreator):
+    skip_discovery = True
     host_name = "resolve"
     settings_category = "resolve"
 
@@ -748,10 +741,9 @@ class HiddenResolvePublishCreator(HiddenCreator):
         pass
 
 
-class ResolvePublishCreator(Creator):
+class ResolvePublishCreator(ResolveCreator):
+    skip_discovery = True
     create_allow_context_change = True
-    host_name = "resolve"
-    settings_category = "resolve"
 
     def collect_instances(self):
         pass

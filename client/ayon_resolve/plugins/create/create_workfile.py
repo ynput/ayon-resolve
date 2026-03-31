@@ -16,8 +16,8 @@ class CreateWorkfile(AutoCreator):
 
     identifier = "io.ayon.creators.resolve.workfile"
     label = "Workfile"
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
 
     default_variant = "Main"
 
@@ -32,12 +32,12 @@ class CreateWorkfile(AutoCreator):
         # https://forum.blackmagicdesign.com/viewtopic.php?f=21&t=
         # 189685&hilit=python+database#p991541
         note = json.dumps(data)
-        proj = lib.get_current_project()
+        proj = lib.get_current_resolve_project()
         proj.SetSetting("colorVersion10Name", note)
 
     def _loads_data_from_project_setting(self):
         """Retrieve workfile data from project setting."""
-        proj = lib.get_current_project()
+        proj = lib.get_current_resolve_project()
         setting_content = proj.GetSetting("colorVersion10Name")
 
         if setting_content:
@@ -63,24 +63,12 @@ class CreateWorkfile(AutoCreator):
             variant=self.default_variant,
             host_name=host_name,
         )
-        data = {
+        return {
             "folderPath": folder_path,
             "task": task_name,
             "variant": variant,
             "productName": product_name,
         }
-        data.update(
-            self.get_dynamic_data(
-                variant,
-                task_name,
-                folder_entity,
-                project_name,
-                host_name,
-                False,
-            )
-        )
-
-        return data
 
     def collect_instances(self):
         """Collect from timeline marker or create a new one."""
@@ -89,10 +77,15 @@ class CreateWorkfile(AutoCreator):
             return
 
         current_instance = CreatedInstance(
-            self.product_type, data["productName"], data, self)
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=data["productName"],
+            data=data,
+            creator=self,
+        )
         self._add_instance_to_context(current_instance)
 
-    def create(self, options=None):
+    def create(self):
         """Auto-create an instance by default."""
         data = self._loads_data_from_project_setting()
         if data:
@@ -101,7 +94,12 @@ class CreateWorkfile(AutoCreator):
         self.log.info("Auto-creating workfile instance...")
         data = self._create_new_instance()
         current_instance = CreatedInstance(
-            self.product_type, data["productName"], data, self)
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=data["productName"],
+            data=data,
+            creator=self,
+        )
         self._add_instance_to_context(current_instance)
 
     def update_instances(self, update_list):

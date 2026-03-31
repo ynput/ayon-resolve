@@ -7,7 +7,7 @@ from pathlib import Path
 from ayon_core.lib import Logger
 
 from ayon_resolve.api.lib import (
-    get_current_project,
+    get_current_resolve_project,
     maintain_page_by_name,
 )
 from ayon_resolve.api.rendering import (
@@ -47,7 +47,7 @@ def main(
             log.error("Unable to set render format and codec.")
             sys.exit()
 
-        timeline = get_current_project().GetCurrentTimeline()
+        timeline = get_current_resolve_project().GetCurrentTimeline()
 
         if not render_single_timeline(
             timeline,

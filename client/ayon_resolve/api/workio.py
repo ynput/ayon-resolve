@@ -145,6 +145,10 @@ def handle_local_vs_exported_project(settings, project_name, file_path):
     else:
         db_project = get_local_database_root() / file_name / "Project.db"
 
+    if not db_project.exists():
+        log.error(f"Project `{file_name}` does not exist in local database. Aborting timestamp comparison.")
+        return
+
     mtime_drp = Path(file_path).stat().st_mtime
     mtime_dbp = db_project.stat().st_mtime if db_project.exists() else 0
     if mtime_drp > mtime_dbp:

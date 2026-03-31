@@ -20,13 +20,21 @@ class PreWorkfileLoadingSplash(PreLaunchHook):
         # inject current PYTHONPATH so process finds Qt
         env["PYTHONPATH"] = os.pathsep.join(sys.path)
 
-        creation_flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
-        proc = subprocess.Popen(
-            [sys.executable, splash_script.as_posix()],
-            env=env,
-            creationflags=creation_flags,
-            close_fds=True
-        )
+        if os.name == "nt":
+            creation_flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
+            proc = subprocess.Popen(
+                [sys.executable, splash_script.as_posix()],
+                env=env,
+                creationflags=creation_flags,
+                close_fds=True
+            )
+        else:
+            proc = subprocess.Popen(
+                [sys.executable, splash_script.as_posix()],
+                env=env,
+                close_fds=True,
+                start_new_session=True,
+            )
         if not proc.pid:
             raise RuntimeError("Failed to launch splash screen subprocess")
 

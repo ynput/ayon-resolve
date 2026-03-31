@@ -148,9 +148,9 @@ class AYONMenu(QtWidgets.QWidget):
 
 class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):
     def __init__(self, requested_db, available_dbs, parent=None):
-        app = QtWidgets.QApplication.instance()
-        if not app:
-            app = QtWidgets.QApplication([])
+        _app = QtWidgets.QApplication.instance()
+        if not _app:
+            _app = QtWidgets.QApplication([])
         super(DatabaseMisconfigurationWarning, self).__init__(parent)
 
         self.parent = parent
@@ -190,9 +190,9 @@ class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):
 
 class ProjectImportChooser(QtWidgets.QMessageBox):
     def __init__(self, datemod_drp, datemod_dbp, parent=None):
-        app = QtWidgets.QApplication.instance()
-        if not app:
-            app = QtWidgets.QApplication([])
+        _app = QtWidgets.QApplication.instance()
+        if not _app:
+            _app = QtWidgets.QApplication([])
         super().__init__(parent)
 
         self.parent = parent

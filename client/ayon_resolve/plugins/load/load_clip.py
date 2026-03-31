@@ -18,7 +18,8 @@ class LoadClip(plugin.TimelineItemLoader):
     during conforming to project
     """
 
-    product_types = {"render2d", "source", "plate", "render", "review"}
+    product_base_types = {"render2d", "source", "plate", "render", "review"}
+    product_types = product_base_types
 
     representations = {"*"}
     extensions = set(

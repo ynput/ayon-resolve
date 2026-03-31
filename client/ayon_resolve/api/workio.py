@@ -170,7 +170,6 @@ def handle_project_db_override(project_name, settings) -> bool:
 
     available_dbs = project_manager.GetDatabaseList() or []
     curr_db = project_manager.GetCurrentDatabase()
-    db_names = [db["DbName"] for db in available_dbs]
 
     valid_db_settings = False
     for available_db in available_dbs:

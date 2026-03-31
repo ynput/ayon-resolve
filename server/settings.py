@@ -143,7 +143,38 @@ class IntermediatePresetModel(BaseSettingsModel):
         "",
         title="Codec"
     )
-
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task types",
+        enum_resolver=task_types_enum
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task names"
+    )
+    path: str = SettingsField(
+        "",
+        title="Path to output preset",
+        section="Resolve preset properties",
+    )
+    file_format: str = SettingsField(
+        default_factory=list,
+        title="File Format",
+        enum_resolver=intermediate_format_enum
+    )
+    codec: str = SettingsField(
+        "",
+        title="Codec"
+    )
+    export_otio: bool = SettingsField(
+        title="Export OTIO",
+        description="When enabled AYON will export OTIO file along with intermediate file.",
+        section="OTIO file properties",
+    )
+    otio_rootless: bool = SettingsField(
+        title="Use rootless OTIO paths",
+        description="When enabled AYON will convert all paths in OTIO to be rootless.",
+    )
 
 class EditorialPackageModels(BaseSettingsModel):
     """Editorial Package

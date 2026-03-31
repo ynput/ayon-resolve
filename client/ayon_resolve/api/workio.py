@@ -5,7 +5,6 @@ import sys
 import time
 import hashlib
 from pathlib import Path
-from datetime import datetime as dt
 
 from qtpy import QtWidgets
 

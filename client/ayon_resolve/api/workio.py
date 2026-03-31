@@ -175,8 +175,9 @@ def handle_project_db_override(project_name, settings) -> bool:
     for available_db in available_dbs:
         if available_db["DbType"] == settings["db_type"]:
             if available_db["DbName"] == settings["db_name"]:
-                valid_db_settings = True
-                break
+                if available_db.get("IpAddress", "") == settings.get("db_ip", ""):
+                    valid_db_settings = True
+                    break
 
     if not valid_db_settings:
         DatabaseMisconfigurationWarning(

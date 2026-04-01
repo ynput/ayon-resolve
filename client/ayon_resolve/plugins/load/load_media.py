@@ -52,7 +52,7 @@ def project_color_science_mode(project=None, mode="davinciYRGBColorManagedv2"):
     """
 
     if project is None:
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
 
     original_mode = project.GetSetting("colorScienceMode")
     if original_mode != mode:
@@ -107,7 +107,7 @@ def find_clip_usage(media_pool_item, project=None):
         return []
 
     if project is None:
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
 
     matching_items = []
     unique_id = media_pool_item.GetUniqueId()
@@ -138,11 +138,17 @@ def find_clip_usage(media_pool_item, project=None):
 class LoadMedia(LoaderPlugin):
     """Load product as media pool item."""
 
-    product_types = {"render2d", "source", "plate", "render", "review", "audio", "image"}
+    product_base_types = {
+        "render2d", "source", "plate", "render", "review", "audio", "image"
+    }
+    product_types = product_base_types
 
     representations = ["*"]
     extensions = set(
-        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS, RESOLVE_AUDIO_EXTENSIONS)
+        ext.lstrip(".")
+        for ext in (
+            IMAGE_EXTENSIONS | VIDEO_EXTENSIONS | RESOLVE_AUDIO_EXTENSIONS
+        )
     )
 
     label = "Load media"
@@ -196,7 +202,7 @@ class LoadMedia(LoaderPlugin):
         representation = context["representation"]
         self._project_name = context["project"]["name"]
 
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
         media_pool = project.GetMediaPool()
 
         # Allow to use an existing media pool item and re-use it
@@ -340,7 +346,7 @@ class LoadMedia(LoaderPlugin):
 
     def remove(self, container):
         # Remove MediaPoolItem entry
-        project = lib.get_current_project()
+        project = lib.get_current_resolve_project()
         media_pool = project.GetMediaPool()
         item = container["_item"]
 
@@ -416,7 +422,20 @@ class LoadMedia(LoaderPlugin):
             clip_property = meta_item["name"]
             value = meta_item["value"]
             value_formatted = StringTemplate(value).format_strict(context)
-            media_pool_item.SetClipProperty(clip_property, value_formatted)
+            is_set = media_pool_item.SetClipProperty(
+                clip_property,
+                value_formatted
+            )
+            if not is_set:
+                # Allow to set metadata instead of clip property using the same
+                # configuration in settings.
+                is_set = media_pool_item.SetMetadata(clip_property,
+                                                     value_formatted)
+                if not is_set:
+                    self.log.warning(
+                        "Failed to set clip property or metadata"
+                        f" '{clip_property}': '{value_formatted}'"
+                    )
 
     def _get_file_info(self, context: dict) -> Tuple[bool, Union[str, dict]]:
         """Return file info for Resolve ImportMedia.

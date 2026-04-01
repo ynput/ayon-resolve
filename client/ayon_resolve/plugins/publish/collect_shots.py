@@ -91,7 +91,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
             except KeyError:
                 # Retrieve resolution for project.
-                project = lib.get_current_project()
+                project = lib.get_current_resolve_project()
                 project_settings = project.GetSetting()
                 try:
                     pixel_aspect = int(project_settings["timelinePixelAspectRatio"])

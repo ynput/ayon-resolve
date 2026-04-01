@@ -72,19 +72,14 @@ class ExtractEditorialPackage(publish.Extractor):
                 f"FPS: {timeline_fps}"
             )
 
-            # export otio representation
-<<<<<<< HEAD
             if export_otio:
+                # export otio representation
                 self.export_otio_representation(
-                    get_current_project(), timeline, otio_file_path
+                    get_current_resolve_project(), timeline, otio_file_path
                 )
             else:
                 self.log.info("OTIO export not enabled, skipping OTIO export.")
                 return
-=======
-            self.export_otio_representation(
-                get_current_resolve_project(), timeline, otio_file_path
-            )
 
         # Find Intermediate file representation file name
         for repre in instance.data["representations"]:
@@ -100,91 +95,97 @@ class ExtractEditorialPackage(publish.Extractor):
 
         else:
             raise ValueError("Intermediate representation not found")
->>>>>>> upstream/main
 
         # Finding clip references and replacing them with rootless paths
         # of video files
-        if not export_otio or not otio_rootless:
-            self.log.info("OTIO export or rootless paths not enabled, skipping OTIO remapping.")
-            return
+        otio_file_path_replaced = otio_file_path
+        if export_otio and otio_rootless:
+            otio_timeline = otio.adapters.read_from_file(
+                otio_file_path.as_posix())
+            for track in otio_timeline.tracks:
+                for clip in track:
+                    # skip transitions
+                    if isinstance(clip, otio.schema.Transition):
+                        continue
+                    # skip gaps
+                    if isinstance(clip, otio.schema.Gap):
+                        # get duration of gap
+                        continue
+                    # skip stacks (nested timelines, Fusion clips, etc.)
+                    if isinstance(clip, otio.schema.Stack):
+                        continue
 
-        otio_timeline = otio.adapters.read_from_file(otio_file_path.as_posix())
-        for track in otio_timeline.tracks:
-            for clip in track:
-                # skip transitions
-                if isinstance(clip, otio.schema.Transition):
-                    continue
-                # skip gaps
-                if isinstance(clip, otio.schema.Gap):
-                    # get duration of gap
-                    continue
-                # skip stacks (nested timelines, Fusion clips, etc.)
-                if isinstance(clip, otio.schema.Stack):
-                    continue
+                    # TODO: Instead of skipping other class types should we
+                    #  just check for isinstance(clip, otio.schema.Clip)?
+                    if hasattr(clip.media_reference, "target_url"):
+                        path_to_media = Path(published_file_path)
+                        # remove root from path
+                        success, rootless_path = anatomy.find_root_template_from_path(  # noqa
+                            path_to_media.as_posix()
+                        )
+                        if success:
+                            media_source_path = rootless_path
+                        else:
+                            media_source_path = path_to_media.as_posix()
 
-                # TODO: Instead of skipping other class types should we just
-                #  check for isinstance(clip, otio.schema.Clip)?
-                if hasattr(clip.media_reference, "target_url"):
-                    path_to_media = Path(published_file_path)
-                    # remove root from path
-                    success, rootless_path = anatomy.find_root_template_from_path(  # noqa
-                        path_to_media.as_posix()
-                    )
-                    if success:
-                        media_source_path = rootless_path
-                    else:
-                        media_source_path = path_to_media.as_posix()
+                        new_media_reference = otio.schema.ExternalReference(
+                            target_url=media_source_path,
+                            available_range=otio.opentime.TimeRange(
+                                start_time=otio.opentime.RationalTime(
+                                    value=timeline_start_frame,
+                                    rate=timeline_fps
+                                ),
+                                duration=otio.opentime.RationalTime(
+                                    value=timeline_duration, rate=timeline_fps
+                                ),
+                            ),
+                        )
+                        clip.media_reference = new_media_reference
 
-                    new_media_reference = otio.schema.ExternalReference(
-                        target_url=media_source_path,
-                        available_range=otio.opentime.TimeRange(
+                        # replace clip source range with track parent range
+                        clip.source_range = otio.opentime.TimeRange(
                             start_time=otio.opentime.RationalTime(
-                                value=timeline_start_frame, rate=timeline_fps
+                                value=(
+                                    timeline_start_frame
+                                    + clip.range_in_parent().start_time.value
+                                ),
+                                rate=timeline_fps,
                             ),
-                            duration=otio.opentime.RationalTime(
-                                value=timeline_duration, rate=timeline_fps
-                            ),
-                        ),
-                    )
-                    clip.media_reference = new_media_reference
+                            duration=clip.range_in_parent().duration,
+                        )
+            # reference video representations also needs to reframe available
+            # frames and clip source
 
-                    # replace clip source range with track parent range
-                    clip.source_range = otio.opentime.TimeRange(
-                        start_time=otio.opentime.RationalTime(
-                            value=(
-                                timeline_start_frame
-                                + clip.range_in_parent().start_time.value
-                            ),
-                            rate=timeline_fps,
-                        ),
-                        duration=clip.range_in_parent().duration,
-                    )
+            # new otio file needs to be saved as new file
+            otio_filename = f"{subfolder_name}_remap.otio"
+            otio_file_path_replaced = staging_dir / otio_filename
+            otio.adapters.write_to_file(
+                otio_timeline, otio_file_path_replaced.as_posix())
 
-        # reference video representations also needs to reframe available
-        # frames and clip source
+            self.log.debug(
+                "OTIO file with replaced references: "
+                f"{otio_file_path_replaced}")
+        else:
+            self.log.info(
+                "OTIO rootless paths not enabled, "
+                "skipping OTIO remapping."
+            )
 
-        # new otio file needs to be saved as new file
-        otio_file_path_replaced = staging_dir / f"{subfolder_name}_remap.otio"
-        otio.adapters.write_to_file(
-            otio_timeline, otio_file_path_replaced.as_posix())
+        if export_otio:
+            # create drp workfile representation
+            representation_otio = {
+                "name": "editorial_pkg",
+                "ext": "otio",
+                "files": otio_file_path_replaced,
+                "stagingDir": staging_dir.as_posix(),
+            }
+            self.log.debug(f"OTIO representation: {representation_otio}")
+            instance.data["representations"].append(representation_otio)
 
-        self.log.debug(
-            f"OTIO file with replaced references: {otio_file_path_replaced}")
-
-        # create drp workfile representation
-        representation_otio = {
-            "name": "editorial_pkg",
-            "ext": "otio",
-            "files": f"{subfolder_name}_remap.otio",
-            "stagingDir": staging_dir.as_posix(),
-        }
-        self.log.debug(f"OTIO representation: {representation_otio}")
-        instance.data["representations"].append(representation_otio)
-
-        self.log.info(
-            "Added OTIO file representation: "
-            f"{otio_file_path}"
-        )
+            self.log.info(
+                "Added OTIO file representation: "
+                f"{otio_file_path_replaced}"
+            )
 
     def export_otio_representation(self, resolve_project, timeline, filepath):
         # Native otio export is available from Resolve 18.5

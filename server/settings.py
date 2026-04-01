@@ -117,19 +117,13 @@ class IntermediatePresetModel(BaseSettingsModel):
     - Path to Preset
     - Format
     - Codec
+    - export_otio
+    - otio_rootless
 
     """
     name: str = SettingsField(
         "",
         title="Name"
-    )
-    export_otio: bool = SettingsField(
-        title="Export OTIO",
-        description="When enabled AYON will export OTIO file along with intermediate file.",
-    )
-    otio_rootless: bool = SettingsField(
-        title="Use rootless OTIO paths",
-        description="When enabled AYON will convert all paths in OTIO to be rootless.",
     )
     task_types: list[str] = SettingsField(
         default_factory=list,
@@ -178,21 +172,19 @@ class IntermediatePresetModel(BaseSettingsModel):
     )
     export_otio: bool = SettingsField(
         title="Export OTIO",
-        description="When enabled AYON will export OTIO file along with intermediate file.",
-        section="OTIO file properties",
+        description="When enabled AYON will export OTIO file"
+        " along with intermediate file.",
     )
     otio_rootless: bool = SettingsField(
         title="Use rootless OTIO paths",
-        description="When enabled AYON will convert all paths in OTIO to be rootless.",
+        description="When enabled AYON will convert all paths"
+        " in OTIO to be rootless.",
     )
+
 
 class EditorialPackageModels(BaseSettingsModel):
     """Editorial Package
     """
-    default_preset: bool = SettingsField(
-        title="Add Default Preset",
-        description="When enabled AYON will add default preset to intermediate presets list.",
-    )
     intermediate_presets: list[IntermediatePresetModel] = SettingsField(
         default_factory=list,
         title="Intermediate presets",
@@ -317,17 +309,18 @@ DEFAULT_VALUES = {
             "handleEnd": 10
         },
         "EditorialPackage": {
-            "default_preset": True,
             "intermediate_presets": [
                 {
-                    "Name": "AYON_custom_intermediate",
+                    "name": "AYON_intermediates",
+                    "task_types": [],
+                    "task_names": [],
+                    "path": (
+                        "{ayon_render_presets}/AYON_intermediates.xml"
+                    ),
+                    "file_format": "Quicktime",
+                    "codec": "H.264",
                     "export_otio": True,
                     "otio_rootless": True,
-                    "Task types": [],
-                    "Task names": [],
-                    "Path to template": "/path/to/Custom_intermediate.xml",
-                    "File Format": "Quicktime",
-                    "Codec": "H.264"
                 }
             ]
         }

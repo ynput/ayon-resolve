@@ -3,12 +3,12 @@ from pathlib import Path
 
 import pyblish.api
 
-from ayon_core.pipeline import publish, get_current_project_name
+from ayon_core.pipeline import Anatomy, get_current_project_name, publish
 from ayon_core.pipeline.context_tools import get_current_task_entity
 
 from ayon_core.settings import get_project_settings
 
-from ayon_core.lib import filter_profiles
+from ayon_core.lib import StringTemplate, filter_profiles
 
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
@@ -21,7 +21,6 @@ from ayon_resolve.api.rendering import (
 )
 
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
-from server import settings
 
 
 class ExtractIntermediateRepresentation(publish.Extractor):
@@ -35,19 +34,87 @@ class ExtractIntermediateRepresentation(publish.Extractor):
         self.label = "Extract Intermediate Representation"
         self.order = pyblish.api.ExtractorOrder - 0.45
         self.families = ["editorial_pkg"]
-        
+
         i_s = self.get_settings()
-        self.export_otio = i_s["export_otio"]
-        self.otio_rootless = i_s["otio_rootless"]
-        self.preset_path = i_s["preset_path"]
-        self.file_format = i_s["file_format"]
-        self.codec = i_s["codec"]
+        if not i_s:
+            self.log.error(
+                "No settings found for "
+                "ExtractIntermediateRepresentation plugin."
+            )
+        else:
+            self.export_otio = i_s["export_otio"]
+            self.otio_rootless = i_s["otio_rootless"]
+            self.file_format = i_s["file_format"]
+            self.codec = i_s["codec"]
+            self.preset_path = self.resolve_preset_path(i_s["preset_path"])
+
+    def resolve_preset_path(self, preset_path):
+        """Resolve the path to a render preset file.
+
+        The path can be defined in settings and can contain template keys
+        and environment variables. This method will try to resolve the path
+        and return the first valid path found. If no valid path is found,
+        it will return the original path.
+        """
+
+        # If the path is set and it's found on disk, return it directly
+        if preset_path and os.path.exists(preset_path):
+            return preset_path
+
+        # We may have path for another platform, like C:/path/to/file
+        # or a path with template keys, like {project[code]} or both.
+        # Try to fill path with environments and anatomy roots
+        project_name = get_current_project_name()
+        anatomy = Anatomy(project_name)
+
+        # Simple check whether the path contains any template keys
+        if "{" in preset_path:
+            fill_data = {
+                key: value
+                for key, value in os.environ.items()
+            }
+            fill_data["root"] = anatomy.roots
+            fill_data["project"] = {
+                "name": project_name,
+                "code": anatomy.project_code,
+            }
+            # Add custom key for AYON bundled presets
+            fill_data["ayon_render_presets"] = os.path.join(
+                RESOLVE_ADDON_ROOT, "presets", "render")
+
+            # Format the template using local fill data
+            result = StringTemplate.format_template(preset_path, fill_data)
+            if not result.solved:
+                return preset_path
+
+            preset_path = result.normalized()
+            if os.path.exists(preset_path):
+                return preset_path
+
+        # If the path were set in settings using a Windows path and we
+        # are now on a Linux system, we try to convert the solved path to
+        # the current platform.
+        while True:
+            try:
+                solved_path = anatomy.path_remapper(preset_path)
+            except KeyError as missing_key:
+                raise KeyError(
+                    f"Could not solve key '{missing_key}'"
+                    f" in template path '{preset_path}'"
+                )
+
+            if solved_path is None:
+                solved_path = preset_path
+            if solved_path == preset_path:
+                break
+            preset_path = solved_path
+
+        solved_path = os.path.normpath(solved_path)
+        return solved_path
 
     def get_default_settings(self):
         preset_name = "AYON_intermediates"
-        preset_path = Path(
-            RESOLVE_ADDON_ROOT, "presets", "render", f"{preset_name}.xml"
-        )
+        preset_path = f"{{ayon_render_presets}}/{preset_name}.xml"
 
         return {
             "name": "AYON_custom_intermediate",
@@ -61,12 +128,20 @@ class ExtractIntermediateRepresentation(publish.Extractor):
         }
 
     def get_settings(self):
-        project_settings = get_project_settings(get_current_project_name())
-        ep_settings = project_settings.get("ayon_resolve", {}).get("create", {}).get("EditorialPackage", {})
+        project_name = get_current_project_name()
+        project_settings = get_project_settings(project_name)
+        ep_settings = (
+            project_settings
+            .get("ayon_resolve", {})
+            .get("create", {})
+            .get("EditorialPackage", {})
+        )
         ep_profiles = ep_settings.get("intermediate_presets", [])
         entity = get_current_task_entity()
         if not entity:
-            self.log.warning("No current task entity found. Using default settings.")
+            self.log.warning(
+                "No current task entity found. Using default settings."
+            )
             return self.get_default_settings()
         task_type = entity.get("taskType")
         profile = filter_profiles(ep_profiles, task_type)
@@ -117,7 +192,8 @@ class ExtractIntermediateRepresentation(publish.Extractor):
             "stagingDir": staging_dir,
             "tags": ["review"],
             "export_otio": self.export_otio,
-            "otio_rootless": self.otio_rootless
+            "otio_rootless": self.otio_rootless,
+            "thumbnail_source": rendered_file,
         }
         self.log.debug(f"Video representation: {representation_intermediate}")
         instance.data["representations"].append(representation_intermediate)

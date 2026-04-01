@@ -26,7 +26,7 @@ def intermediate_format_enum():
         {"value": "MXF OP-Atom", "label": "MXF OP-Atom"},
         {"value": "MXF OP1A", "label": "MXF OP1A"},
         {"value": "PNG", "label": "PNG"},
-        {"value": "Quicktime", "label": "Quicktime"},
+        {"value": "QuickTime", "label": "QuickTime"},
         {"value": "TIFF", "label": "TIFF"},
         {"value": "WebP", "label": "WebP"}
     ]
@@ -317,7 +317,7 @@ DEFAULT_VALUES = {
                     "path": (
                         "{ayon_render_presets}/AYON_intermediates.xml"
                     ),
-                    "file_format": "Quicktime",
+                    "file_format": "QuickTime",
                     "codec": "H.264",
                     "export_otio": True,
                     "otio_rootless": True,

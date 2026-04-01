@@ -3,8 +3,12 @@ from pathlib import Path
 import pyblish.api
 import opentimelineio as otio
 
-from ayon_core.pipeline import publish
+from ayon_core.lib import filter_profiles
+from ayon_core.pipeline import get_current_project_name, publish
+from ayon_core.pipeline.context_tools import get_current_task_entity
 from ayon_core.pipeline.publish.lib import get_instance_expected_output_path
+from ayon_core.settings import get_project_settings
+
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
     get_current_resolve_project,
@@ -25,6 +29,35 @@ class ExtractEditorialPackage(publish.Extractor):
     order = pyblish.api.ExtractorOrder + 0.45
     families = ["editorial_pkg"]
 
+    def get_default_settings(self):
+        return {
+            "export_otio": True,
+            "otio_rootless": True
+        }
+
+    def get_settings(self):
+        project_name = get_current_project_name()
+        project_settings = get_project_settings(project_name)
+        ep_settings = (
+            project_settings
+            .get("ayon_resolve", {})
+            .get("create", {})
+            .get("EditorialPackage", {})
+        )
+        ep_profiles = ep_settings.get("intermediate_presets", [])
+        entity = get_current_task_entity()
+        if not entity:
+            self.log.warning(
+                "No current task entity found. Using default settings."
+            )
+            return self.get_default_settings()
+        task_type = entity.get("taskType")
+        profile = filter_profiles(ep_profiles, task_type)
+        if profile and len(profile) > 0:
+            return profile
+        else:
+            return self.get_default_settings()
+
     def process(self, instance):
         # create representation data
         if "representations" not in instance.data:
@@ -43,20 +76,17 @@ class ExtractEditorialPackage(publish.Extractor):
         staging_dir = staging_dir / subfolder_name
         self.log.info(f"Staging directory: {staging_dir}")
 
-        # Find Intermediate file representation file name
-        published_file_path = None
-        for repre in instance.data["representations"]:
-            if repre["name"] == "intermediate":
-                published_file_path = self._get_published_path(instance, repre)
-                export_otio = repre.get("export_otio", True)
-                otio_rootless = repre.get("otio_rootless", True)
-                break
-
-        if published_file_path is None:
-            raise ValueError("Intermediate representation not found")
-
         # otio file path
-        otio_file_path = staging_dir / f"{subfolder_name}.otio"
+        otio_file_name = f"{subfolder_name}.otio"
+        otio_file_path = staging_dir / otio_file_name
+
+        # get settings for otio export
+        settings = self.get_settings()
+        export_otio = settings.get("export_otio", True)
+        otio_rootless = settings.get("otio_rootless", True)
+        self.log.debug(
+            f"Export_otio: {export_otio}, otio_rootless: {otio_rootless}"
+        )
 
         # if timeline was used then switch it to current timeline
         with maintain_current_timeline(timeline_mp_item) as timeline:
@@ -64,7 +94,7 @@ class ExtractEditorialPackage(publish.Extractor):
             timeline_start_frame = timeline.GetStartFrame()
             timeline_end_frame = timeline.GetEndFrame()
             timeline_duration = timeline_end_frame - timeline_start_frame
-            self.log.info(
+            self.log.debug(
                 f"Timeline: {timeline}, "
                 f"Start: {timeline_start_frame}, "
                 f"End: {timeline_end_frame}, "
@@ -91,14 +121,15 @@ class ExtractEditorialPackage(publish.Extractor):
                 representation_name=repre["name"],
                 ext=repre["ext"],
             )
+            export_otio = repre.get("export_otio", True)
+            otio_rootless = repre.get("otio_rootless", True)
             break
-
         else:
             raise ValueError("Intermediate representation not found")
 
         # Finding clip references and replacing them with rootless paths
         # of video files
-        otio_file_path_replaced = otio_file_path
+        otio_file_name_replaced = otio_file_name
         if export_otio and otio_rootless:
             otio_timeline = otio.adapters.read_from_file(
                 otio_file_path.as_posix())
@@ -157,8 +188,8 @@ class ExtractEditorialPackage(publish.Extractor):
             # frames and clip source
 
             # new otio file needs to be saved as new file
-            otio_filename = f"{subfolder_name}_remap.otio"
-            otio_file_path_replaced = staging_dir / otio_filename
+            otio_file_name_replaced = f"{subfolder_name}_remap.otio"
+            otio_file_path_replaced = staging_dir / otio_file_name_replaced
             otio.adapters.write_to_file(
                 otio_timeline, otio_file_path_replaced.as_posix())
 
@@ -176,7 +207,7 @@ class ExtractEditorialPackage(publish.Extractor):
             representation_otio = {
                 "name": "editorial_pkg",
                 "ext": "otio",
-                "files": otio_file_path_replaced,
+                "files": otio_file_name_replaced,
                 "stagingDir": staging_dir.as_posix(),
             }
             self.log.debug(f"OTIO representation: {representation_otio}")
@@ -193,6 +224,9 @@ class ExtractEditorialPackage(publish.Extractor):
         resolve_version = bmdvr.GetVersion()
         if tuple(resolve_version[:2]) < (18, 5):
             # if it is lower then use ayon's otio exporter
+            self.log.debug(
+                f"OTIO Export: Using AYON's OTIO exporter: {filepath}"
+            )
             otio_timeline = davinci_export.create_otio_timeline(
                 resolve_project, timeline=timeline
             )
@@ -200,6 +234,9 @@ class ExtractEditorialPackage(publish.Extractor):
         else:
             # use native otio export
             export_timeline_otio_native(timeline, filepath.as_posix())
+            self.log.debug(
+                f"OTIO Export: Using native OTIO exporter: {filepath}"
+            )
 
         # check if file exists
         if not filepath.exists():

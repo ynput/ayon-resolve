@@ -46,7 +46,8 @@ class ExtractIntermediateRepresentation(publish.Extractor):
             self.otio_rootless = i_s["otio_rootless"]
             self.file_format = i_s["file_format"]
             self.codec = i_s["codec"]
-            self.preset_path = self.resolve_preset_path(i_s["preset_path"])
+            preset_path = self.resolve_preset_path(i_s["preset_path"])
+            self.preset_path = Path(preset_path)
 
     def resolve_preset_path(self, preset_path):
         """Resolve the path to a render preset file.
@@ -156,52 +157,50 @@ class ExtractIntermediateRepresentation(publish.Extractor):
             instance.data["representations"] = []
 
         folder_path = instance.data["folderPath"]
-        timeline_mp_item = instance.data["mediaPoolItem"]
-        timeline_name = timeline_mp_item.GetName()
-        folder_path_name = folder_path.lstrip("/").replace("/", "_")
-
-        staging_dir = self.staging_dir(instance)
-
-        subfolder_name = folder_path_name + "_" + timeline_name
-
-        staging_dir = os.path.normpath(
-            os.path.join(staging_dir, subfolder_name))
-
-        self.log.info(f"Staging directory: {staging_dir}")
-
-        self.log.info(f"Timeline: {timeline_mp_item}")
-        self.log.info(f"Timeline name: {timeline_name}")
-        # if timeline was used then switch it to current timeline
-        with maintain_current_timeline(timeline_mp_item) as timeline:
-            self.log.info(f"Timeline: {timeline}")
-            self.log.info(f"Timeline name: {timeline.GetName()}")
-
-            # Render timeline here
-            rendered_file = self.render_timeline_intermediate_file(
-                timeline,
-                Path(staging_dir),
+        timeline_mp_item = instance.data.get("mediaPoolItem")
+        if timeline_mp_item is not None:
+            # we have timeline item in the instance
+            timeline_name = timeline_mp_item.GetName()
+            folder_path_name = folder_path.lstrip("/").replace("/", "_")
+            staging_dir = self.staging_dir(instance)
+            subfolder_name = folder_path_name + "_" + timeline_name
+            staging_dir = os.path.normpath(
+                os.path.join(staging_dir, subfolder_name))
+            self.log.info(f"Staging directory: {staging_dir}")
+            self.log.info(f"Timeline: {timeline_mp_item}")
+            self.log.info(f"Timeline name: {timeline_name}")
+            # if timeline was used then switch it to current timeline
+            with maintain_current_timeline(timeline_mp_item) as timeline:
+                self.log.info(f"Timeline: {timeline}")
+                self.log.info(f"Timeline name: {timeline.GetName()}")
+                # Render timeline here
+                rendered_file = self.render_timeline_intermediate_file(
+                    timeline,
+                    Path(staging_dir),
+                )
+            self.log.debug(f"Rendered file: {rendered_file}")
+            # create intermediate workfile representation
+            representation_intermediate = {
+                "name": "intermediate",
+                "ext": os.path.splitext(rendered_file)[1][1:],
+                "files": rendered_file.name,
+                "stagingDir": staging_dir,
+                "tags": ["review"],
+                "export_otio": self.export_otio,
+                "otio_rootless": self.otio_rootless,
+                "thumbnail_source": rendered_file,
+            }
+            self.log.debug(
+                f"Video representation: {representation_intermediate}"
+            )
+            instance.data["representations"].append(
+                representation_intermediate
             )
 
-        self.log.debug(f"Rendered file: {rendered_file}")
-
-        # create intermediate workfile representation
-        representation_intermediate = {
-            "name": "intermediate",
-            "ext": os.path.splitext(rendered_file)[1][1:],
-            "files": rendered_file.name,
-            "stagingDir": staging_dir,
-            "tags": ["review"],
-            "export_otio": self.export_otio,
-            "otio_rootless": self.otio_rootless,
-            "thumbnail_source": rendered_file,
-        }
-        self.log.debug(f"Video representation: {representation_intermediate}")
-        instance.data["representations"].append(representation_intermediate)
-
-        self.log.info(
-            "Added intermediate file representation: "
-            f"{os.path.join(staging_dir, rendered_file)}"
-        )
+            self.log.info(
+                "Added intermediate file representation: "
+                f"{os.path.join(staging_dir, rendered_file)}"
+            )
 
     def render_timeline_intermediate_file(
         self,

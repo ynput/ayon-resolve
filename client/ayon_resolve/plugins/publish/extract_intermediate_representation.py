@@ -124,7 +124,7 @@ class ExtractIntermediateRepresentation(publish.Extractor):
             "task_types": [],
             "task_names": [],
             "preset_path": preset_path,
-            "file_format": "Quicktime",
+            "file_format": "QuickTime",
             "codec": "H.264"
         }
 

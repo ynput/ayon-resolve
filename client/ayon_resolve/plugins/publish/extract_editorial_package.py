@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pyblish.api
@@ -40,7 +41,7 @@ class ExtractEditorialPackage(publish.Extractor):
         project_settings = get_project_settings(project_name)
         ep_settings = (
             project_settings
-            .get("ayon_resolve", {})
+            .get("resolve", {})
             .get("create", {})
             .get("EditorialPackage", {})
         )
@@ -52,7 +53,8 @@ class ExtractEditorialPackage(publish.Extractor):
             )
             return self.get_default_settings()
         task_type = entity.get("taskType")
-        profile = filter_profiles(ep_profiles, task_type)
+        task_name = entity.get("taskName")
+        profile = filter_profiles(ep_profiles, {"task_types": task_type, "task_names": task_name})
         if profile and len(profile) > 0:
             return profile
         else:
@@ -74,6 +76,7 @@ class ExtractEditorialPackage(publish.Extractor):
 
         # new staging directory for each timeline
         staging_dir = staging_dir / subfolder_name
+        os.makedirs(staging_dir, exist_ok=True)
         self.log.info(f"Staging directory: {staging_dir}")
 
         # otio file path

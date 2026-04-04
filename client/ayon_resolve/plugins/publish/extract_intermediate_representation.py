@@ -133,7 +133,7 @@ class ExtractIntermediateRepresentation(publish.Extractor):
         project_settings = get_project_settings(project_name)
         ep_settings = (
             project_settings
-            .get("ayon_resolve", {})
+            .get("resolve", {})
             .get("create", {})
             .get("EditorialPackage", {})
         )
@@ -145,10 +145,14 @@ class ExtractIntermediateRepresentation(publish.Extractor):
             )
             return self.get_default_settings()
         task_type = entity.get("taskType")
-        profile = filter_profiles(ep_profiles, task_type)
+        task_name = entity.get("taskName")
+        profile = filter_profiles(ep_profiles, {"task_types": task_type, "task_names": task_name})
         if profile and len(profile) > 0:
+            self.log.debug(f"Found preset profile:{profile}")
             return profile
         else:
+            self.log.debug(
+                "Preset profile not found, getting default settings.")
             return self.get_default_settings()
 
     def process(self, instance):
@@ -187,8 +191,7 @@ class ExtractIntermediateRepresentation(publish.Extractor):
                 "stagingDir": staging_dir,
                 "tags": ["review"],
                 "export_otio": self.export_otio,
-                "otio_rootless": self.otio_rootless,
-                "thumbnail_source": rendered_file,
+                "otio_rootless": self.otio_rootless
             }
             self.log.debug(
                 f"Video representation: {representation_intermediate}"

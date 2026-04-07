@@ -180,6 +180,7 @@ class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):
             "Requested project database:\n"
             f"\tDB Type: {self.requested_db['db_type']}\n"
             f"\tDB Name: {self.requested_db['db_name']}\n"
+            f"\tDB IP: {self.requested_db.get('db_ip', '')}\n"
             "Available project databases:\n"
         )
         for db in self.available_dbs:

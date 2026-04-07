@@ -163,6 +163,9 @@ class ProjectDatabaseOverrideModel(BaseSettingsModel):
     db_ip: str = SettingsField(
         default="",
         title="Database IP",
+        description=(
+            "IP address of the database server. Not used if db_type is 'Disk'."
+        )
     )
     use_db_project_folder: bool = SettingsField(
         default=False,

@@ -175,7 +175,11 @@ def handle_project_db_override(project_name, settings) -> bool:
     for available_db in available_dbs:
         if available_db["DbType"] == settings["db_type"]:
             if available_db["DbName"] == settings["db_name"]:
-                if available_db.get("IpAddress", "") == settings.get("db_ip", ""):
+                # NOTE: Disk databases don't return IP address, so i consider them valid as long as type and name match
+                if settings["db_type"] == "Disk":
+                    valid_db_settings = True
+                    break
+                elif available_db.get("IpAddress", "") == settings.get("db_ip", ""):
                     valid_db_settings = True
                     break
 

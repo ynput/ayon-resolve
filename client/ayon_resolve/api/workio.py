@@ -151,7 +151,7 @@ def handle_local_vs_exported_project(settings, project_name, file_path):
         db_project = get_local_database_root() / file_name / "Project.db"
 
     if not db_project.exists():
-        log.error(f"Project `{file_name}` does not exist in local database. Aborting timestamp comparison.")
+        log.warning(f"Project `{file_name}` does not exist in local database. Aborting timestamp comparison.")
         return
 
     mtime_drp = Path(file_path).stat().st_mtime
@@ -161,7 +161,7 @@ def handle_local_vs_exported_project(settings, project_name, file_path):
         if choice == QtWidgets.QMessageBox.Ok:
             proj = project_manager.LoadProject(file_name)
             if not proj:
-                log.error(f"Failed to load project `{file_name}` for import. Aborting.")
+                log.warning(f"Failed to load project `{file_name}` for import. Aborting.")
                 return
             sha = hashlib.sha1(
                 f"{file_name}_{time.time()}".encode("utf-8")

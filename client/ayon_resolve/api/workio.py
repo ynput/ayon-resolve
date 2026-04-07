@@ -192,20 +192,26 @@ def handle_project_db_override(project_name, settings) -> bool:
     # check if we're already in the right database
     # reloading the database causes projects to not increment correctly anymore
     curr_db_valid = True
-    if settings["db_ip"] != curr_db.get("IpAddress", "127.0.0.1"):
-        curr_db_valid = False
     if settings["db_type"] != curr_db.get("DbType", ""):
         curr_db_valid = False
     if settings["db_name"] != curr_db.get("DbName", ""):
         curr_db_valid = False
+    if settings["db_type"] != "Disk" and (
+        settings["db_ip"] != curr_db.get("IpAddress", "127.0.0.1")
+    ):
+        curr_db_valid = False
 
     if not curr_db_valid:
-        log.info(f"Setting Project Database to: {settings}")
-        project_manager.SetCurrentDatabase({
+        db_parms = {
             "DbType": settings["db_type"],
             "DbName": settings["db_name"],
-            "IpAddress": settings["db_ip"]
-        })
+        }
+        if settings["db_type"] != "Disk":
+            db_parms["IpAddress"] = settings["db_ip"]
+        log.info(f"Setting Project Database with Parameters: {db_parms}")
+        project_manager.SetCurrentDatabase(db_parms)
+    else:
+        log.info(f"Using current Project Database: {curr_db}")
 
     if settings.get("use_db_project_folder", False):
         set_project_manager_to_folder_name(project_name)

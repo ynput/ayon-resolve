@@ -35,6 +35,11 @@ def has_unsaved_changes():
 
 def save_file(filepath):
     project_manager = get_project_manager()
+    project_saved = project_manager.SaveProject()
+    if not project_saved:
+        log.error("Failed to save current project!")
+        return False
+
     file = os.path.basename(filepath)
     fname, _ = os.path.splitext(file)
     resolve_project = get_current_resolve_project()

@@ -160,6 +160,9 @@ def handle_local_vs_exported_project(settings, project_name, file_path):
         choice = ProjectImportChooser(mtime_drp, mtime_dbp).exec_()
         if choice == QtWidgets.QMessageBox.Ok:
             proj = project_manager.LoadProject(file_name)
+            if not proj:
+                log.error(f"Failed to load project `{file_name}` for import. Aborting.")
+                return
             sha = hashlib.sha1(
                 f"{file_name}_{time.time()}".encode("utf-8")
             ).hexdigest()[:6]

@@ -40,10 +40,10 @@ def save_file(filepath):
         log.error("Failed to save current project!")
         return False
 
-    file = os.path.basename(filepath)
-    fname, _ = os.path.splitext(file)
     resolve_project = get_current_resolve_project()
-    name = resolve_project.GetName()
+    incoming_wf = Path(filepath)
+    current_wf = incoming_wf.with_name(
+        resolve_project.GetName() + ".drp")
 
     # handle project db override if set
     project_name = get_current_project_name()
@@ -58,17 +58,31 @@ def save_file(filepath):
         if not override_is_valid:
             return False
 
-    response = False
-    if "Untitled Project" in name:
-        response = project_manager.CreateProject(fname)
-        log.info("New project created: {}".format(response))
+    rename_db_project = settings["resolve"].get("rename_db_project_on_increment", True)
+    if "Untitled Project" in current_wf.stem:
+        # saving initial workfile from currently opened project
+        project_manager.CreateProject(incoming_wf.stem)
         project_manager.SaveProject()
-    elif name != fname:
-        response = resolve_project.SetName(fname)
-        log.info("Project renamed: {}".format(response))
-
-    exported = project_manager.ExportProject(fname, filepath)
-    log.info("Project exported: {}".format(exported))
+        exported = project_manager.ExportProject(incoming_wf.stem, incoming_wf.as_posix())
+        log.info(f"New project {incoming_wf.stem} exported: {exported}")
+    if current_wf.stem != incoming_wf.stem:
+        # workfile shall be incremented
+        if rename_db_project:
+            # increment with local renaming
+            resolve_project.SetName(incoming_wf.stem)
+            exported = project_manager.ExportProject(incoming_wf.stem, incoming_wf.as_posix())
+            log.info(f"Incremented workfile with local rename to {incoming_wf.as_posix()}: {exported}")
+        else:
+            # increment without local renaming but reimport
+            exported = project_manager.ExportProject(current_wf.stem, current_wf.as_posix())
+            exported = project_manager.ExportProject(current_wf.stem, incoming_wf.as_posix())
+            project_manager.ImportProject(incoming_wf.as_posix())
+            project_manager.LoadProject(incoming_wf.stem)
+            log.info(f"Incremented workfile with reimport to {incoming_wf.as_posix()}: {exported}")
+    else:
+        # workfile export without increment
+        exported = project_manager.ExportProject(incoming_wf.stem, incoming_wf.as_posix())
+        log.info(f"Project exported without increment to {incoming_wf.as_posix()}: {exported}")
 
 
 def open_file(filepath):

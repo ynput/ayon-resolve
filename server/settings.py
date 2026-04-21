@@ -134,32 +134,9 @@ class IntermediatePresetModel(BaseSettingsModel):
         default_factory=list,
         title="Task names"
     )
-    path: str = SettingsField(
+    preset_path: str = SettingsField(
         "",
         title="Path to output preset",
-    )
-    file_format: str = SettingsField(
-        default_factory=list,
-        title="File Format",
-        enum_resolver=intermediate_format_enum
-    )
-    codec: str = SettingsField(
-        "",
-        title="Codec"
-    )
-    task_types: list[str] = SettingsField(
-        default_factory=list,
-        title="Task types",
-        enum_resolver=task_types_enum
-    )
-    task_names: list[str] = SettingsField(
-        default_factory=list,
-        title="Task names"
-    )
-    path: str = SettingsField(
-        "",
-        title="Path to output preset",
-        section="Resolve preset properties",
     )
     file_format: str = SettingsField(
         default_factory=list,

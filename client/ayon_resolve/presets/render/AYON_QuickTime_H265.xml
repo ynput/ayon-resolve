@@ -31,7 +31,7 @@
  <RecordSetTimelineTimecode>false</RecordSetTimelineTimecode>
  <UseRecordClipStartFrame>false</UseRecordClipStartFrame>
  <RecordClipStartFrame>1</RecordClipStartFrame>
- <RecordPrefix>AYON_intermediate</RecordPrefix>
+ <RecordPrefix>AYON_QuickTime_H265</RecordPrefix>
  <RecordSuffix/>
  <RecordFormatType>mov</RecordFormatType>
  <RecordFormatSubType>hvc1_enc</RecordFormatSubType>

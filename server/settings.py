@@ -9,7 +9,13 @@ from ayon_server.settings import (
 from .imageio import ResolveImageIOModel
 
 
-def intermediate_format_enum():
+def _intermediate_buildin_format_enum():
+    return [
+        {"value": "MP4", "label": "MP4"},
+        {"value": "QuickTime", "label": "QuickTime"},
+    ]
+
+def _intermediate_custom_format_enum():
     return [
         {"value": "AVI", "label": "AVI"},
         {"value": "Cineon", "label": "Cineon"},
@@ -29,6 +35,38 @@ def intermediate_format_enum():
         {"value": "QuickTime", "label": "QuickTime"},
         {"value": "TIFF", "label": "TIFF"},
         {"value": "WebP", "label": "WebP"}
+    ]
+
+
+def _buildin_presets():
+    return [
+        {
+            "label": "AYON QuickTime H264",
+            "value": "{ayon_render_presets}/AYON_QuickTime_H264.xml"
+        },
+        {
+            "label": "AYON QuickTime H265",
+            "value": "{ayon_render_presets}/AYON_QuickTime_H265.xml"
+        },
+        {
+            "label": "AYON QuickTime Prores422Hq",
+            "value": "{ayon_render_presets}/AYON_QuickTime_Prores422Hq.xml"
+        },
+        {
+            "label": "AYON QuickTime ProresLT",
+            "value": "{ayon_render_presets}/AYON_QuickTime_ProresLT.xml"
+        },
+        {
+            "label": "AYON QuickTime ProresXQ",
+            "value": "{ayon_render_presets}/AYON_QuickTime_ProresXQ.xml"
+        },
+    ]
+
+
+def _preset_types_enum():
+    return [
+        {"value": "custom_preset", "label": "Custom"},
+        {"value": "builtin_preset", "label": "Built-in"},
     ]
 
 
@@ -108,6 +146,42 @@ class CreateShotClipModels(BaseSettingsModel):
     )
 
 
+class BuildinIntermediateFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    format: str = SettingsField(
+        "QuickTime",
+        title="Format",
+        enum_resolver=_intermediate_buildin_format_enum,
+    )
+    preset_path: str = SettingsField(
+        "{ayon_render_presets}/AYON_QuickTime_H264.xml",
+        title="Preset",
+        enum_resolver=_buildin_presets,
+    )
+    codec: str = SettingsField(
+        "H.264",
+        title="Codec",
+    )
+
+
+class CustomIntermediateFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    format: str = SettingsField(
+        "QuickTime",
+        title="Format",
+        enum_resolver=_intermediate_custom_format_enum,
+    )
+    preset_path: str = SettingsField(
+        "",
+        title="Preset path",
+        placeholder="shared storage path with `{root[work]}` token",
+    )
+    codec: str = SettingsField(
+        "H.264",
+        title="Codec",
+    )
+
+
 class IntermediatePresetModel(BaseSettingsModel):
     """Intermediate Preset
 
@@ -134,18 +208,19 @@ class IntermediatePresetModel(BaseSettingsModel):
         default_factory=list,
         title="Task names"
     )
-    preset_path: str = SettingsField(
-        "",
-        title="Path to output preset",
+    preset_type: str = SettingsField(
+        "buildin_preset",
+        title="Preset type",
+        enum_resolver=_preset_types_enum,
+        conditional_enum=True,
     )
-    file_format: str = SettingsField(
-        default_factory=list,
-        title="File Format",
-        enum_resolver=intermediate_format_enum
+    buildin_preset: BuildinIntermediateFormatModel = SettingsField(
+        default_factory=BuildinIntermediateFormatModel,
+        title="Buildin Preset",
     )
-    codec: str = SettingsField(
-        "",
-        title="Codec"
+    custom_preset: CustomIntermediateFormatModel = SettingsField(
+        default_factory=CustomIntermediateFormatModel,
+        title="Custom Preset",
     )
     export_otio: bool = SettingsField(
         title="Export OTIO",
@@ -291,11 +366,7 @@ DEFAULT_VALUES = {
                     "name": "AYON_intermediates",
                     "task_types": [],
                     "task_names": [],
-                    "path": (
-                        "{ayon_render_presets}/AYON_intermediates.xml"
-                    ),
-                    "file_format": "QuickTime",
-                    "codec": "H.264",
+                    "preset_type": "builtin_preset",
                     "export_otio": True,
                     "otio_rootless": True,
                 }

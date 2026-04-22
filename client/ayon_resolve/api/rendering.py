@@ -61,7 +61,7 @@ def _render_timelines(timelines, target_render_directory):
         else:
             failed_timelines.append(timeline_to_render.GetName())
     if len(failed_timelines) != len(timelines):
-        bmr_project.StartRendering()
+        bmr_project.StartRendering(_PROCESSING_JOBS, isInteractiveMode=False)
         wait_for_rendering_completion()
         delete_all_processed_jobs()
     if failed_timelines:

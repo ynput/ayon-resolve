@@ -23,17 +23,17 @@ from ayon_resolve.api.rendering import (
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
 
 
-class ExtractIntermediateRepresentation(publish.Extractor):
+class ExtractProductResources(publish.Extractor):
     """
-    Extract and Render intermediate file for Editorial Package
+    Extract product resources (intermediate files) for Editorial Package
 
     """
     def __init__(self):
         super().__init__()
 
-        self.label = "Extract Intermediate Representation"
+        self.label = "Extract Product Resources"
         self.order = pyblish.api.ExtractorOrder - 0.45
-        self.families = ["editorial_pkg"]
+        self.families = ["editorial_pkg", "clip"]
 
         i_s = self.get_settings()
         if not i_s:

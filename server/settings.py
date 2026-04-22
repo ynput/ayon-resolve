@@ -304,16 +304,16 @@ class ProductResourcesPresetModel(BaseSettingsModel):
 class ExtractProductResourcesModel(BaseSettingsModel):
     """Extract Product Resources
     """
-    presets: list[ProductResourcesPresetModel] = SettingsField(
+    profiles: list[ProductResourcesPresetModel] = SettingsField(
         default_factory=list,
-        title="Presets",
+        title="Profiles",
         description=(
-            "Additional product resources presets to be used in product "
+            "Additional product resources profiles to be used in product "
             "resource extraction."
         )
     )
 
-    @validator("presets")
+    @validator("profiles")
     def validate_unique_outputs(cls, value):
         ensure_unique_names(value)
         return value
@@ -466,7 +466,7 @@ DEFAULT_VALUES = {
     },
     "publish": {
         "ExtractProductResources": {
-            "presets": [
+            "profiles": [
                 {
                     "name": "timeline_reviewable",
                     "task_types": [],
@@ -489,3 +489,4 @@ DEFAULT_VALUES = {
         }
     }
 }
+#

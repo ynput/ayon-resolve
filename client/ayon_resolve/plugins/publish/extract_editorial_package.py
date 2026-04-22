@@ -1,23 +1,17 @@
 import os
 from pathlib import Path
 
-import pyblish.api
 import opentimelineio as otio
-
-from ayon_core.lib import filter_profiles
-from ayon_core.pipeline import get_current_project_name, publish
-from ayon_core.pipeline.context_tools import get_current_task_entity
+import pyblish.api
+from ayon_core.pipeline import publish
 from ayon_core.pipeline.publish.lib import get_instance_expected_output_path
-from ayon_core.settings import get_project_settings
-
+from ayon_resolve.api import bmdvr
 from ayon_resolve.api.lib import (
-    maintain_current_timeline,
+    export_timeline_otio_native,
     get_current_resolve_project,
-    export_timeline_otio_native
+    maintain_current_timeline,
 )
 from ayon_resolve.otio import davinci_export
-
-from ayon_resolve.api import bmdvr
 
 
 class ExtractEditorialPackage(publish.Extractor):
@@ -29,36 +23,6 @@ class ExtractEditorialPackage(publish.Extractor):
     label = "Extract Editorial Package"
     order = pyblish.api.ExtractorOrder + 0.45
     families = ["editorial_pkg"]
-
-    def get_default_settings(self):
-        return {
-            "export_otio": True,
-            "otio_rootless": True
-        }
-
-    def get_settings(self):
-        project_name = get_current_project_name()
-        project_settings = get_project_settings(project_name)
-        ep_settings = (
-            project_settings
-            .get("resolve", {})
-            .get("create", {})
-            .get("EditorialPackage", {})
-        )
-        ep_profiles = ep_settings.get("intermediate_presets", [])
-        entity = get_current_task_entity()
-        if not entity:
-            self.log.warning(
-                "No current task entity found. Using default settings."
-            )
-            return self.get_default_settings()
-        task_type = entity.get("taskType")
-        task_name = entity.get("taskName")
-        profile = filter_profiles(ep_profiles, {"task_types": task_type, "task_names": task_name})
-        if profile and len(profile) > 0:
-            return profile
-        else:
-            return self.get_default_settings()
 
     def process(self, instance):
         # create representation data
@@ -83,10 +47,27 @@ class ExtractEditorialPackage(publish.Extractor):
         otio_file_name = f"{subfolder_name}.otio"
         otio_file_path = staging_dir / otio_file_name
 
-        # get settings for otio export
-        settings = self.get_settings()
-        export_otio = settings.get("export_otio", True)
-        otio_rootless = settings.get("otio_rootless", True)
+        # Expected representations comming from `ExtractProductResources` plugin
+        for repre in instance.data["representations"]:
+            # make sure only representations with custom tags
+            # or "intermediate" custom tag are processed
+            if (
+                not repre.get("custom_tags", [])
+                and "intermediate" not in repre.get("custom_tags", [])
+            ):
+                continue
+
+            published_file_path = get_instance_expected_output_path(
+                instance,
+                representation_name=repre["name"],
+                ext=repre["ext"],
+            )
+            export_otio = repre.get("export_otio", True)
+            otio_rootless = repre.get("otio_rootless", True)
+            break
+        else:
+            raise ValueError("Intermediate representation not found")
+
         self.log.debug(
             f"Export_otio: {export_otio}, otio_rootless: {otio_rootless}"
         )
@@ -114,21 +95,6 @@ class ExtractEditorialPackage(publish.Extractor):
                 self.log.info("OTIO export not enabled, skipping OTIO export.")
                 return
 
-        # Find Intermediate file representation file name
-        for repre in instance.data["representations"]:
-            if repre["name"] != "intermediate":
-                continue
-
-            published_file_path = get_instance_expected_output_path(
-                instance,
-                representation_name=repre["name"],
-                ext=repre["ext"],
-            )
-            export_otio = repre.get("export_otio", True)
-            otio_rootless = repre.get("otio_rootless", True)
-            break
-        else:
-            raise ValueError("Intermediate representation not found")
 
         # Finding clip references and replacing them with rootless paths
         # of video files

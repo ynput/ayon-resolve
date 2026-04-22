@@ -11,8 +11,8 @@ from .imageio import ResolveImageIOModel
 
 def _intermediate_buildin_format_enum():
     return [
-        {"value": "MP4", "label": "MP4"},
         {"value": "QuickTime", "label": "QuickTime"},
+        {"value": "EXR", "label": "EXR"},
     ]
 
 def _intermediate_custom_format_enum():
@@ -38,27 +38,40 @@ def _intermediate_custom_format_enum():
     ]
 
 
-def _buildin_presets():
+def _buildin_timeline_presets():
     return [
         {
-            "label": "AYON QuickTime H264",
-            "value": "{ayon_render_presets}/AYON_QuickTime_H264.xml"
+            "label": "QuickTime H264",
+            "value": "{ayon_render_presets}/timeline/QuickTime_H264.xml"
         },
         {
-            "label": "AYON QuickTime H265",
-            "value": "{ayon_render_presets}/AYON_QuickTime_H265.xml"
+            "label": "QuickTime H265",
+            "value": "{ayon_render_presets}/timeline/QuickTime_H265.xml"
         },
         {
-            "label": "AYON QuickTime Prores422Hq",
-            "value": "{ayon_render_presets}/AYON_QuickTime_Prores422Hq.xml"
+            "label": "QuickTime Prores422Hq",
+            "value": "{ayon_render_presets}/timeline/QuickTime_Prores422Hq.xml"
         },
         {
-            "label": "AYON QuickTime ProresLT",
-            "value": "{ayon_render_presets}/AYON_QuickTime_ProresLT.xml"
+            "label": "QuickTime ProresLT",
+            "value": "{ayon_render_presets}/timeline/QuickTime_ProresLT.xml"
         },
         {
-            "label": "AYON QuickTime ProresXQ",
-            "value": "{ayon_render_presets}/AYON_QuickTime_ProresXQ.xml"
+            "label": "QuickTime ProresXQ",
+            "value": "{ayon_render_presets}/timeline/QuickTime_ProresXQ.xml"
+        },
+    ]
+
+
+def _buildin_clip_presets():
+    return [
+        {
+            "label": "EXR RGB half (DWAA)",
+            "value": "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml"
+        },
+        {
+            "label": "EXR RGB float (ZIP)",
+            "value": "{ayon_render_presets}/clip/EXR_RGB_float_(ZIP).xml"
         },
     ]
 
@@ -66,7 +79,19 @@ def _buildin_presets():
 def _preset_types_enum():
     return [
         {"value": "custom_preset", "label": "Custom"},
-        {"value": "builtin_preset", "label": "Built-in"},
+        {"value": "buildin_preset", "label": "Built-in"},
+    ]
+
+def _media_types_enum():
+    return [
+        {"value": "timeline_attrs", "label": "Timeline"},
+        {"value": "clip_attrs", "label": "Clip"},
+    ]
+
+def _product_base_types_enum():
+    return [
+        {"value": "editorial_pkg", "label": "Editorial Package"},
+        {"value": "clip", "label": "Individual Clip"},
     ]
 
 
@@ -146,7 +171,7 @@ class CreateShotClipModels(BaseSettingsModel):
     )
 
 
-class BuildinIntermediateFormatModel(BaseSettingsModel):
+class BuildinTimelineFormatModel(BaseSettingsModel):
     _layout = "expanded"
     format: str = SettingsField(
         "QuickTime",
@@ -154,15 +179,31 @@ class BuildinIntermediateFormatModel(BaseSettingsModel):
         enum_resolver=_intermediate_buildin_format_enum,
     )
     preset_path: str = SettingsField(
-        "{ayon_render_presets}/AYON_QuickTime_H264.xml",
+        "{ayon_render_presets}/timeline/QuickTime_H264.xml",
         title="Preset",
-        enum_resolver=_buildin_presets,
+        enum_resolver=_buildin_timeline_presets,
     )
     codec: str = SettingsField(
         "H.264",
         title="Codec",
     )
 
+class BuildinClipFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    format: str = SettingsField(
+        "EXR",
+        title="Format",
+        enum_resolver=_intermediate_buildin_format_enum,
+    )
+    preset_path: str = SettingsField(
+        "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml",
+        title="Preset",
+        enum_resolver=_buildin_clip_presets,
+    )
+    codec: str = SettingsField(
+        "RGB half (DWAA)",
+        title="Codec",
+    )
 
 class CustomIntermediateFormatModel(BaseSettingsModel):
     _layout = "expanded"
@@ -181,20 +222,56 @@ class CustomIntermediateFormatModel(BaseSettingsModel):
         title="Codec",
     )
 
+class TimelineIntermediateFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    export_otio: bool = SettingsField(
+        True,
+        title="Export OTIO",
+        description="When enabled AYON will export OTIO file"
+        " along with intermediate file.",
+    )
+    otio_rootless: bool = SettingsField(
+        True,
+        title="Use rootless OTIO paths",
+        description="When enabled AYON will convert all paths"
+        " in OTIO to be rootless.",
+    )
+    preset_type: str = SettingsField(
+        "buildin_preset",
+        title="Preset type",
+        enum_resolver=_preset_types_enum,
+        conditional_enum=True,
+        section="Preset options",
+    )
+    buildin_preset: BuildinTimelineFormatModel = SettingsField(
+        default_factory=BuildinTimelineFormatModel,
+        title="Buildin Preset",
+    )
+    custom_preset: CustomIntermediateFormatModel = SettingsField(
+        default_factory=CustomIntermediateFormatModel,
+        title="Custom Preset",
+    )
 
-class IntermediatePresetModel(BaseSettingsModel):
-    """Intermediate Preset
+class ClipIntermediateFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    preset_type: str = SettingsField(
+        "buildin_preset",
+        title="Preset type",
+        enum_resolver=_preset_types_enum,
+        conditional_enum=True,
+        section="Preset options",
+    )
+    buildin_preset: BuildinClipFormatModel = SettingsField(
+        default_factory=BuildinClipFormatModel,
+        title="Buildin Preset",
+    )
+    custom_preset: CustomIntermediateFormatModel = SettingsField(
+        default_factory=CustomIntermediateFormatModel,
+        title="Custom Preset",
+    )
 
-    - Preset Name
-    - Filter by task Types
-    - Filter by task names
-    - Path to Preset
-    - Format
-    - Codec
-    - export_otio
-    - otio_rootless
-
-    """
+class ProductResourcesPresetModel(BaseSettingsModel):
+    """Product Resources Preset."""
     name: str = SettingsField(
         "",
         title="Name"
@@ -208,45 +285,35 @@ class IntermediatePresetModel(BaseSettingsModel):
         default_factory=list,
         title="Task names"
     )
-    preset_type: str = SettingsField(
-        "buildin_preset",
-        title="Preset type",
-        enum_resolver=_preset_types_enum,
-        conditional_enum=True,
+    product_base_type: str = SettingsField(
+        "editorial_pkg",
+        title="Product base type",
+        enum_resolver=_product_base_types_enum,
+        conditional_enum=True
     )
-    buildin_preset: BuildinIntermediateFormatModel = SettingsField(
-        default_factory=BuildinIntermediateFormatModel,
-        title="Buildin Preset",
+    editorial_pkg: TimelineIntermediateFormatModel = SettingsField(
+        default_factory=TimelineIntermediateFormatModel,
+        title="Timeline Attributes",
     )
-    custom_preset: CustomIntermediateFormatModel = SettingsField(
-        default_factory=CustomIntermediateFormatModel,
-        title="Custom Preset",
-    )
-    export_otio: bool = SettingsField(
-        title="Export OTIO",
-        description="When enabled AYON will export OTIO file"
-        " along with intermediate file.",
-    )
-    otio_rootless: bool = SettingsField(
-        title="Use rootless OTIO paths",
-        description="When enabled AYON will convert all paths"
-        " in OTIO to be rootless.",
+    clip: ClipIntermediateFormatModel = SettingsField(
+        default_factory=ClipIntermediateFormatModel,
+        title="Clip Attributes",
     )
 
 
-class EditorialPackageModels(BaseSettingsModel):
-    """Editorial Package
+class ExtractProductResourcesModel(BaseSettingsModel):
+    """Extract Product Resources
     """
-    intermediate_presets: list[IntermediatePresetModel] = SettingsField(
+    presets: list[ProductResourcesPresetModel] = SettingsField(
         default_factory=list,
-        title="Intermediate presets",
+        title="Presets",
         description=(
-            "Intermediate presets to be used in Editorial Package creator. The"
-            " name must be unique."
+            "Additional product resources presets to be used in product "
+            "resource extraction."
         )
     )
 
-    @validator("intermediate_presets")
+    @validator("presets")
     def validate_unique_outputs(cls, value):
         ensure_unique_names(value)
         return value
@@ -256,10 +323,6 @@ class CreatorPluginsModel(BaseSettingsModel):
     CreateShotClip: CreateShotClipModels = SettingsField(
         default_factory=CreateShotClipModels,
         title="Create Shot Clip"
-    )
-    EditorialPackage: EditorialPackageModels = SettingsField(
-        default_factory=EditorialPackageModels,
-        title="Editorial Package"
     )
 
 
@@ -318,6 +381,12 @@ class LoaderPluginsModel(BaseSettingsModel):
         title="Load Media"
     )
 
+class PubishPluginModel(BaseSettingsModel):
+    ExtractProductResources: ExtractProductResourcesModel = SettingsField(
+        default_factory=ExtractProductResourcesModel,
+        title="Extract Product Resources"
+    )
+
 
 class ResolveSettings(BaseSettingsModel):
     launch_ayon_menu_on_start: bool = SettingsField(
@@ -337,6 +406,10 @@ class ResolveSettings(BaseSettingsModel):
     load: LoaderPluginsModel = SettingsField(
         default_factory=LoaderPluginsModel,
         title="Loader plugins",
+    )
+    publish: PubishPluginModel = SettingsField(
+        default_factory=PubishPluginModel,
+        title="Publish plugins",
     )
 
 
@@ -359,18 +432,6 @@ DEFAULT_VALUES = {
             "workfileFrameStart": 1001,
             "handleStart": 10,
             "handleEnd": 10
-        },
-        "EditorialPackage": {
-            "intermediate_presets": [
-                {
-                    "name": "AYON_intermediates",
-                    "task_types": [],
-                    "task_names": [],
-                    "preset_type": "builtin_preset",
-                    "export_otio": True,
-                    "otio_rootless": True,
-                }
-            ]
         }
     },
     "load": {
@@ -399,6 +460,30 @@ DEFAULT_VALUES = {
                         "{folder[path]} {product[name]} "
                         "{version[name]} ({representation[name]})"
                     )
+                }
+            ]
+        }
+    },
+    "publish": {
+        "ExtractProductResources": {
+            "presets": [
+                {
+                    "name": "timeline_reviewable",
+                    "task_types": [],
+                    "task_names": [],
+                    "product_base_type": "editorial_pkg",
+                    "editorial_pkg": {
+                        "preset_type": "buildin_preset",
+                    }
+                },
+                {
+                    "name": "clip_exr_dwaa",
+                    "task_types": [],
+                    "task_names": [],
+                    "product_base_type": "clip",
+                    "clip": {
+                        "preset_type": "buildin_preset"
+                    }
                 }
             ]
         }

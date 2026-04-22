@@ -239,7 +239,7 @@ class ExtractProductResources(publish.Extractor):
             "ext":        os.path.splitext(rendered_file)[1][1:],
             "files":      rendered_file.name,
             "stagingDir": staging_dir,
-            "tags":       ["review", "delete"],
+            "tags":       ["review"],
             "custom_tags": ["intermediate"],
             "export_otio":   settings.get("export_otio", True),
             "otio_rootless": settings.get("otio_rootless", True),

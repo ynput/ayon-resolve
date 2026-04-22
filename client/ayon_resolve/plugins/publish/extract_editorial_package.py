@@ -25,10 +25,6 @@ class ExtractEditorialPackage(publish.Extractor):
     families = ["editorial_pkg"]
 
     def process(self, instance):
-        # create representation data
-        if "representations" not in instance.data:
-            instance.data["representations"] = []
-
         anatomy = instance.context.data["anatomy"]
         folder_path = instance.data["folderPath"]
         timeline_mp_item = instance.data["mediaPoolItem"]

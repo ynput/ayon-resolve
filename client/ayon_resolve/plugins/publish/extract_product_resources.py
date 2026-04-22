@@ -6,48 +6,134 @@ import pyblish.api
 from ayon_core.pipeline import Anatomy, get_current_project_name, publish
 from ayon_core.pipeline.context_tools import get_current_task_entity
 
-from ayon_core.settings import get_project_settings
-
 from ayon_core.lib import StringTemplate, filter_profiles
 
-from ayon_resolve.api.lib import (
-    maintain_current_timeline,
-    maintain_page_by_name,
-)
+from ayon_resolve.api.lib import maintain_current_timeline, maintain_page_by_name
 from ayon_resolve.api.rendering import (
     set_render_preset_from_file,
     render_single_timeline,
     set_format_and_codec,
+    render_clip_to_intermediate_file,
 )
 
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
 
 
 class ExtractProductResources(publish.Extractor):
+    """Extract product resources (intermediate files).
+
+    Handles two product base types:
+    - ``editorial_pkg``: renders the full active timeline to a video container
+      and optionally exports an OTIO file alongside it.
+    - ``clip``: renders the exact frame range of a single ``TimelineItem`` on
+      the active timeline, producing either a video container or an image
+      sequence depending on the configured format.
+
+    Settings are resolved per-instance from
+    ``resolve → publish → ExtractProductResources → presets``, matched on task
+    type / task name and ``product_base_type``.
     """
-    Extract product resources (intermediate files) for Editorial Package
 
-    """
-    def __init__(self):
-        super().__init__()
+    label = "Extract Product Resources"
+    order = pyblish.api.ExtractorOrder - 0.45
+    families = ["editorial_pkg", "clip"]
 
-        self.label = "Extract Product Resources"
-        self.order = pyblish.api.ExtractorOrder - 0.45
-        self.families = ["editorial_pkg", "clip"]
+    # settings
+    profiles = []
 
-        i_s = self.get_settings()
-        if not i_s:
-            self.log.error(
-                "No settings found for "
-                "ExtractIntermediateRepresentation plugin."
-            )
+    def process(self, instance):
+        instance.data.setdefault("representations", [])
+
+        settings = self.get_settings(instance)
+        preset_path = Path(self.resolve_preset_path(settings["preset_path"]))
+        product_base_type = instance.data["productBaseType"]
+
+        if product_base_type == "editorial_pkg":
+            self._process_editorial_pkg(instance, settings, preset_path)
+        elif product_base_type == "clip":
+            self._process_clip(instance, settings, preset_path)
         else:
-            self.export_otio = i_s["export_otio"]
-            self.otio_rootless = i_s["otio_rootless"]
-            self.file_format = i_s["file_format"]
-            self.codec = i_s["codec"]
-            preset_path = self.resolve_preset_path(i_s["preset_path"])
-            self.preset_path = Path(preset_path)
+            self.log.warning(
+                f"ExtractProductResources: unhandled family '{product_base_type}', skipping."
+            )
+
+    def get_settings(self, instance):
+        """Return normalised render settings for *instance*.
+
+        Looks up ``resolve → publish → ExtractProductResources → profiles``,
+        then profile-matches on task type / task name / product_base_type.
+
+        Returns a flat dict with keys:
+            ``file_format``, ``codec``, ``preset_path``,
+            and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
+        """
+
+        entity = get_current_task_entity()
+        if not entity:
+            self.log.warning("No current task entity — using default settings.")
+            product_base_type = instance.data["productBaseType"]
+            return self.get_default_settings(product_base_type)
+
+        task_type = entity.get("taskType")
+        task_name = entity.get("taskName")
+        product_base_type = instance.data["productBaseType"]
+
+        profile = filter_profiles(
+            self.profiles,
+            {
+                "task_types": task_type,
+                "task_names": task_name,
+                "product_base_type": product_base_type,
+            },
+        )
+
+        if not profile:
+            self.log.debug(
+                f"No preset matched for family='{product_base_type}', "
+                f"task_type='{task_type}', task_name='{task_name}'. "
+                "Using defaults."
+            )
+            return self.get_default_settings(product_base_type)
+
+        self.log.debug(f"Matched preset: {profile.get('name')}")
+        return self._normalize_preset(profile, product_base_type)
+
+    def _normalize_preset(self, preset, product_base_type):
+        """Flatten the nested preset structure into a render-ready dict."""
+        sub = preset.get(product_base_type, {})
+        preset_type = sub.get("preset_type")
+        fmt = sub.get(preset_type, {})
+
+        normalized = {
+            "name":        preset["name"],
+            "file_format": fmt.get("format"),
+            "codec":       fmt.get("codec"),
+            "preset_path": fmt.get("preset_path"),
+        }
+        if product_base_type == "editorial_pkg":
+            normalized["export_otio"]   = sub.get("export_otio")
+            normalized["otio_rootless"] = sub.get("otio_rootless")
+        return normalized
+
+    def get_default_settings(self, product_base_type="editorial_pkg"):
+        """Return hard-coded defaults when no matching preset is found."""
+        if product_base_type == "clip":
+            return {
+                "file_format": "EXR",
+                "codec":       "RGB half (DWAA)",
+                "preset_path": (
+                    "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml"
+                ),
+            }
+        return {
+            "file_format":   "QuickTime",
+            "codec":         "H.264",
+            "preset_path":   (
+                "{ayon_render_presets}/timeline/QuickTime_H264.xml"
+            ),
+            "export_otio":   True,
+            "otio_rootless": True,
+        }
 
     def resolve_preset_path(self, preset_path):
         """Resolve the path to a render preset file.
@@ -113,136 +199,158 @@ class ExtractProductResources(publish.Extractor):
         solved_path = os.path.normpath(solved_path)
         return solved_path
 
-    def get_default_settings(self):
-        preset_name = "AYON_intermediates"
-        preset_path = f"{{ayon_render_presets}}/{preset_name}.xml"
+    # ------------------------------------------------------------------
+    # Product Base Type handlers
+    # ------------------------------------------------------------------
 
-        return {
-            "name": "AYON_custom_intermediate",
-            "export_otio": True,
-            "otio_rootless": True,
-            "task_types": [],
-            "task_names": [],
-            "preset_path": preset_path,
-            "file_format": "QuickTime",
-            "codec": "H.264"
-        }
-
-    def get_settings(self):
-        project_name = get_current_project_name()
-        project_settings = get_project_settings(project_name)
-        ep_settings = (
-            project_settings
-            .get("resolve", {})
-            .get("create", {})
-            .get("EditorialPackage", {})
-        )
-        ep_profiles = ep_settings.get("intermediate_presets", [])
-        entity = get_current_task_entity()
-        if not entity:
-            self.log.warning(
-                "No current task entity found. Using default settings."
-            )
-            return self.get_default_settings()
-        task_type = entity.get("taskType")
-        task_name = entity.get("taskName")
-        profile = filter_profiles(ep_profiles, {"task_types": task_type, "task_names": task_name})
-        if profile and len(profile) > 0:
-            self.log.debug(f"Found preset profile:{profile}")
-            return profile
-        else:
-            self.log.debug(
-                "Preset profile not found, getting default settings.")
-            return self.get_default_settings()
-
-    def process(self, instance):
-        # create representation data
-        if "representations" not in instance.data:
-            instance.data["representations"] = []
-
+    def _process_editorial_pkg(self, instance, settings, preset_path):
+        """Render the active timeline and produce an intermediate representation."""
         folder_path = instance.data["folderPath"]
         timeline_mp_item = instance.data.get("mediaPoolItem")
-        if timeline_mp_item is not None:
-            # we have timeline item in the instance
-            timeline_name = timeline_mp_item.GetName()
-            folder_path_name = folder_path.lstrip("/").replace("/", "_")
-            staging_dir = self.staging_dir(instance)
-            subfolder_name = folder_path_name + "_" + timeline_name
-            staging_dir = os.path.normpath(
-                os.path.join(staging_dir, subfolder_name))
-            self.log.info(f"Staging directory: {staging_dir}")
-            self.log.info(f"Timeline: {timeline_mp_item}")
-            self.log.info(f"Timeline name: {timeline_name}")
-            # if timeline was used then switch it to current timeline
-            with maintain_current_timeline(timeline_mp_item) as timeline:
-                self.log.info(f"Timeline: {timeline}")
-                self.log.info(f"Timeline name: {timeline.GetName()}")
-                # Render timeline here
-                rendered_file = self.render_timeline_intermediate_file(
-                    timeline,
-                    Path(staging_dir),
-                )
-            self.log.debug(f"Rendered file: {rendered_file}")
-            # create intermediate workfile representation
-            representation_intermediate = {
-                "name": "intermediate",
-                "ext": os.path.splitext(rendered_file)[1][1:],
-                "files": rendered_file.name,
-                "stagingDir": staging_dir,
-                "tags": ["review"],
-                "export_otio": self.export_otio,
-                "otio_rootless": self.otio_rootless
-            }
-            self.log.debug(
-                f"Video representation: {representation_intermediate}"
+        if timeline_mp_item is None:
+            self.log.warning(
+                "No mediaPoolItem on instance — cannot render editorial_pkg."
             )
-            instance.data["representations"].append(
-                representation_intermediate
+            return
+
+        timeline_name = timeline_mp_item.GetName()
+        folder_path_name = folder_path.lstrip("/").replace("/", "_")
+        staging_dir = os.path.normpath(
+            os.path.join(
+                self.staging_dir(instance),
+                f"{folder_path_name}_{timeline_name}",
+            )
+        )
+        self.log.info(f"Staging directory: {staging_dir}")
+
+        with maintain_current_timeline(timeline_mp_item) as timeline:
+            self.log.info(f"Rendering timeline: {timeline.GetName()}")
+            rendered_file = self.render_timeline_intermediate_file(
+                timeline,
+                Path(staging_dir),
+                preset_path,
+                settings["file_format"],
+                settings["codec"],
             )
 
-            self.log.info(
-                "Added intermediate file representation: "
-                f"{os.path.join(staging_dir, rendered_file)}"
+        self.log.debug(f"Rendered file: {rendered_file}")
+        representation = {
+            "name":       settings["name"],
+            "ext":        os.path.splitext(rendered_file)[1][1:],
+            "files":      rendered_file.name,
+            "stagingDir": staging_dir,
+            "tags":       ["review", "delete"],
+            "custom_tags": ["intermediate"],
+            "export_otio":   settings.get("export_otio", True),
+            "otio_rootless": settings.get("otio_rootless", True),
+        }
+        instance.data["representations"].append(representation)
+        self.log.info(
+            f"Added intermediate representation: "
+            f"{os.path.join(staging_dir, rendered_file.name)}"
+        )
+
+    def _process_clip(self, instance, settings, preset_path):
+        """Render a single TimelineItem's frame range on the active timeline."""
+        timeline_item = instance.data.get("timelineItem")
+        if timeline_item is None:
+            raise RuntimeError(
+                "instance.data['timelineItem'] is required for 'clip' family "
+                "but was not found."
             )
+
+        folder_slug = instance.data["folderPath"].lstrip("/").replace("/", "_")
+        clip_name = timeline_item.GetName()
+        staging_dir = (
+            Path(self.staging_dir(instance)) / f"{folder_slug}_{clip_name}"
+        )
+        staging_dir.mkdir(parents=True, exist_ok=True)
+        self.log.info(f"Staging directory: {staging_dir}")
+
+        with maintain_page_by_name("Deliver"):
+            if not set_render_preset_from_file(preset_path.as_posix()):
+                raise RuntimeError(
+                    f"Unable to load render preset: {preset_path}"
+                )
+
+            format_ext = set_format_and_codec(
+                settings["file_format"], settings["codec"]
+            )
+            if not format_ext:
+                raise RuntimeError(
+                    f"Unable to set render format '{settings['file_format']}' "
+                    f"/ codec '{settings['codec']}'."
+                )
+
+            rendered = render_clip_to_intermediate_file(
+                timeline_item, staging_dir
+            )
+
+        if isinstance(rendered, list):
+            representation = {
+                "name":       settings["name"],
+                "ext":        rendered[0].suffix.lstrip("."),
+                "files":      [f.name for f in rendered],
+                "stagingDir": str(staging_dir),
+                "tags":       ["review"],
+                "custom_tags": ["intermediate"],
+                "frameStart": timeline_item.GetStart(),
+                "frameEnd":   timeline_item.GetEnd(),
+            }
+        else:
+            representation = {
+                "name":       settings["name"],
+                "ext":        rendered.suffix.lstrip("."),
+                "files":      rendered.name,
+                "stagingDir": str(staging_dir),
+                "tags":       ["review"],
+                "custom_tags": ["intermediate"],
+            }
+
+        instance.data["representations"].append(representation)
+        self.log.info(f"Added clip intermediate representation: {staging_dir}")
+
+    # ------------------------------------------------------------------
+    # Rendering helpers
+    # ------------------------------------------------------------------
 
     def render_timeline_intermediate_file(
         self,
         timeline,
         target_render_directory,
+        preset_path,
+        file_format,
+        codec,
     ):
-        """Render timeline to intermediate file
+        """Render *timeline* to an intermediate file in *target_render_directory*.
 
-        Process is taking a defined timeline and render it to temporary
-        intermediate file which will be lately used by Extract Review plugin
-        for conversion to review file.
+        Args:
+            timeline: Active Resolve Timeline object.
+            target_render_directory (Path): Staging directory for the output.
+            preset_path (Path): Path to the render preset XML file.
+            file_format (str): Resolve format name (e.g. ``"QuickTime"``).
+            codec (str): Resolve codec name (e.g. ``"H.264"``).
+
+        Returns:
+            Path: Path to the rendered file.
         """
-        # get path to ayon_resolve module and get path to render presets
-
         self.log.info(f"Rendering timeline to '{target_render_directory}'")
 
         with maintain_page_by_name("Deliver"):
-            # first we need to maintain rendering preset
-            if not set_render_preset_from_file(self.preset_path.as_posix()):
-                raise Exception("Unable to add render preset.")
+            if not set_render_preset_from_file(preset_path.as_posix()):
+                raise RuntimeError("Unable to load render preset.")
 
-            # set render format and codec
-            format_extension = set_format_and_codec(
-                self.file_format, self.codec)
-
+            format_extension = set_format_and_codec(file_format, codec)
             if not format_extension:
-                raise Exception("Unable to set render format and codec.")
+                raise RuntimeError("Unable to set render format and codec.")
 
-            if not render_single_timeline(
-                timeline,
-                target_render_directory,
-            ):
-                raise Exception("Unable to render timeline.")
+            if not render_single_timeline(timeline, target_render_directory):
+                raise RuntimeError("Unable to render timeline.")
 
-        # get path of the rendered file
         rendered_files = list(
-            target_render_directory.glob(f"*.{format_extension}"))
-
+            target_render_directory.glob(f"*.{format_extension}")
+        )
         if not rendered_files:
-            raise Exception("No rendered files found.")
+            raise RuntimeError("No rendered files found.")
 
         return rendered_files[0]

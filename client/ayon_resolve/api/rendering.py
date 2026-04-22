@@ -20,6 +20,11 @@ log = Logger.get_logger(__name__)
 _SLEEP_TIME = 1
 _PROCESSING_JOBS = []
 
+# File extensions produced by Resolve that are image sequences (not containers)
+_IMAGE_SEQUENCE_EXTS = frozenset({
+    "exr", "dpx", "png", "tiff", "tif", "jpg", "jpeg", "cin",
+})
+
 
 def add_timeline_to_render(
     bmr_project,
@@ -156,6 +161,72 @@ def delete_all_processed_jobs():
         bmr_project.DeleteRenderJob(job_id)
 
     _PROCESSING_JOBS.clear()
+
+
+def render_clip_to_intermediate_file(timeline_item, target_render_directory):
+    """Render a single TimelineItem's range on the currently active timeline.
+
+    Uses the render settings already configured on the project (format, codec,
+    preset). Caller is responsible for setting those up before calling this
+    function (e.g. via ``set_render_preset_from_file`` and
+    ``set_format_and_codec``).
+
+    Args:
+        timeline_item: A Resolve ``TimelineItem`` object from the active timeline.
+        target_render_directory (Path): Directory where rendered files are written.
+
+    Returns:
+        Path: Single file path for container formats (QuickTime, MXF, …).
+        list[Path]: Sorted list of frame paths for image sequences (EXR, DPX, …).
+
+    Raises:
+        RuntimeError: If the render job cannot be created, started, or completes
+            with a non-"Complete" status, or if no output files are found.
+    """
+    bmr_project = get_current_resolve_project()
+
+    render_settings = {
+        "SelectAllFrames": False,
+        "MarkIn":    timeline_item.GetStart(),
+        "MarkOut":   timeline_item.GetEnd(),   # inclusive in Resolve API
+        "TargetDir": target_render_directory.as_posix(),
+        "CustomName": timeline_item.GetName(),
+    }
+    log.info(f"Clip render settings: {pformat(render_settings)}")
+
+    if not bmr_project.SetRenderSettings(render_settings):
+        raise RuntimeError("SetRenderSettings failed for clip render.")
+
+    job_id = bmr_project.AddRenderJob()
+    if not job_id:
+        raise RuntimeError("AddRenderJob failed for clip render.")
+
+    log.info(f"Clip render job created: {job_id}")
+    try:
+        if not bmr_project.StartRendering(job_id, isInteractiveMode=False):
+            raise RuntimeError(f"StartRendering failed for job '{job_id}'.")
+        wait_for_rendering_completion()
+
+        status = bmr_project.GetRenderJobStatus(job_id)
+        if status.get("JobStatus") != "Complete":
+            raise RuntimeError(
+                f"Clip render job '{job_id}' did not complete: {status}"
+            )
+    finally:
+        bmr_project.DeleteRenderJob(job_id)
+
+    rendered = sorted(target_render_directory.iterdir())
+    if not rendered:
+        raise RuntimeError(
+            f"No rendered files found in '{target_render_directory}'."
+        )
+
+    if rendered[0].suffix.lstrip(".").lower() in _IMAGE_SEQUENCE_EXTS:
+        log.info(f"Clip rendered as image sequence: {len(rendered)} frames")
+        return rendered          # list[Path]
+
+    log.info(f"Clip rendered as single file: {rendered[0]}")
+    return rendered[0]           # Path
 
 
 def set_render_preset_from_file(preset_file_path):

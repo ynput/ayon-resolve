@@ -2,6 +2,7 @@
 Rendering API wrapper for Blackmagic Design DaVinci Resolve.
 """
 
+import contextlib
 import time
 from pathlib import Path
 from pprint import pformat
@@ -163,6 +164,55 @@ def delete_all_processed_jobs():
     _PROCESSING_JOBS.clear()
 
 
+@contextlib.contextmanager
+def _solo_video_track(timeline_item):
+    """Disable all video tracks except the one containing *timeline_item*.
+
+    Saves the enabled state of every video track on the current timeline,
+    disables all tracks that are not the clip's own track, ensures the
+    clip's track is enabled, then restores every track to its original
+    state on exit.  This prevents neighbouring clips on other tracks from
+    being baked into a single-clip render job.
+
+    If the timeline item does not live on a video track the context
+    manager is a no-op.
+
+    Args:
+        timeline_item: A Resolve ``TimelineItem`` whose track should be
+            the only active video track during the context.
+    """
+    bmr_project = get_current_resolve_project()
+    timeline = bmr_project.GetCurrentTimeline()
+
+    track_type, item_track_index = timeline_item.GetTrackTypeAndIndex()
+
+    if track_type != "video":
+        yield
+        return
+
+    track_count = int(timeline.GetTrackCount("video"))
+    original_states = {
+        i: timeline.GetIsTrackEnabled("video", i)
+        for i in range(1, track_count + 1)
+    }
+
+    # Disable every enabled video track that is not the clip's track.
+    for i, enabled in original_states.items():
+        if i != item_track_index and enabled:
+            timeline.SetTrackEnable("video", i, False)
+
+    # Guarantee the clip's own track is enabled.
+    if not original_states.get(item_track_index):
+        timeline.SetTrackEnable("video", item_track_index, True)
+
+    try:
+        yield
+    finally:
+        for i, was_enabled in original_states.items():
+            if timeline.GetIsTrackEnabled("video", i) != was_enabled:
+                timeline.SetTrackEnable("video", i, was_enabled)
+
+
 def render_clip_to_intermediate_file(timeline_item, target_render_directory):
     """Render a single TimelineItem's range on the currently active timeline.
 
@@ -197,24 +247,25 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
     if not bmr_project.SetRenderSettings(render_settings):
         raise RuntimeError("SetRenderSettings failed for clip render.")
 
-    job_id = bmr_project.AddRenderJob()
-    if not job_id:
-        raise RuntimeError("AddRenderJob failed for clip render.")
+    with _solo_video_track(timeline_item):
+        job_id = bmr_project.AddRenderJob()
+        if not job_id:
+            raise RuntimeError("AddRenderJob failed for clip render.")
 
-    log.info(f"Clip render job created: {job_id}")
-    try:
-        if not bmr_project.StartRendering(job_id, isInteractiveMode=False):
-            raise RuntimeError(f"StartRendering failed for job '{job_id}'.")
-        wait_for_rendering_completion()
+        log.info(f"Clip render job created: {job_id}")
+        try:
+            if not bmr_project.StartRendering(job_id, isInteractiveMode=False):
+                raise RuntimeError(f"StartRendering failed for job '{job_id}'.")
+            wait_for_rendering_completion()
 
-        status = bmr_project.GetRenderJobStatus(job_id)
-        if status.get("JobStatus") != "Complete":
-            raise RuntimeError(
-                f"Clip render job '{job_id}' did not complete: {status}"
-            )
-    finally:
-        log.info(f"Deleting clip render job: {job_id}")
-        bmr_project.DeleteRenderJob(job_id)
+            status = bmr_project.GetRenderJobStatus(job_id)
+            if status.get("JobStatus") != "Complete":
+                raise RuntimeError(
+                    f"Clip render job '{job_id}' did not complete: {status}"
+                )
+        finally:
+            log.info(f"Deleting clip render job: {job_id}")
+            bmr_project.DeleteRenderJob(job_id)
 
     rendered = sorted(target_render_directory.iterdir())
     if not rendered:

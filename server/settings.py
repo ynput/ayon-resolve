@@ -63,7 +63,7 @@ def _buildin_timeline_presets():
     ]
 
 
-def _buildin_clip_presets():
+def _buildin_plate_presets():
     return [
         {
             "label": "EXR RGB half (DWAA)",
@@ -91,7 +91,7 @@ def _media_types_enum():
 def _product_base_types_enum():
     return [
         {"value": "editorial_pkg", "label": "Editorial Package"},
-        {"value": "clip", "label": "Individual Clip"},
+        {"value": "plate", "label": "Plate Clip"},
     ]
 
 
@@ -188,7 +188,7 @@ class BuildinTimelineFormatModel(BaseSettingsModel):
         title="Codec",
     )
 
-class BuildinClipFormatModel(BaseSettingsModel):
+class BuildinPlateFormatModel(BaseSettingsModel):
     _layout = "expanded"
     format: str = SettingsField(
         "EXR",
@@ -198,14 +198,14 @@ class BuildinClipFormatModel(BaseSettingsModel):
     preset_path: str = SettingsField(
         "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml",
         title="Preset",
-        enum_resolver=_buildin_clip_presets,
+        enum_resolver=_buildin_plate_presets,
     )
     codec: str = SettingsField(
         "RGB half (DWAA)",
         title="Codec",
     )
 
-class CustomIntermediateFormatModel(BaseSettingsModel):
+class CustomPresetModel(BaseSettingsModel):
     _layout = "expanded"
     format: str = SettingsField(
         "QuickTime",
@@ -248,12 +248,12 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
         default_factory=BuildinTimelineFormatModel,
         title="Buildin Preset",
     )
-    custom_preset: CustomIntermediateFormatModel = SettingsField(
-        default_factory=CustomIntermediateFormatModel,
+    custom_preset: CustomPresetModel = SettingsField(
+        default_factory=CustomPresetModel,
         title="Custom Preset",
     )
 
-class ClipIntermediateFormatModel(BaseSettingsModel):
+class PlateFormatModel(BaseSettingsModel):
     _layout = "expanded"
     preset_type: str = SettingsField(
         "buildin_preset",
@@ -262,12 +262,12 @@ class ClipIntermediateFormatModel(BaseSettingsModel):
         conditional_enum=True,
         section="Preset options",
     )
-    buildin_preset: BuildinClipFormatModel = SettingsField(
-        default_factory=BuildinClipFormatModel,
+    buildin_preset: BuildinPlateFormatModel = SettingsField(
+        default_factory=BuildinPlateFormatModel,
         title="Buildin Preset",
     )
-    custom_preset: CustomIntermediateFormatModel = SettingsField(
-        default_factory=CustomIntermediateFormatModel,
+    custom_preset: CustomPresetModel = SettingsField(
+        default_factory=CustomPresetModel,
         title="Custom Preset",
     )
 
@@ -297,9 +297,9 @@ class ProductResourcesPresetModel(BaseSettingsModel):
         default_factory=TimelineIntermediateFormatModel,
         title="Timeline Attributes",
     )
-    clip: ClipIntermediateFormatModel = SettingsField(
-        default_factory=ClipIntermediateFormatModel,
-        title="Clip Attributes",
+    plate: PlateFormatModel = SettingsField(
+        default_factory=PlateFormatModel,
+        title="Plate Attributes",
     )
 
 
@@ -479,11 +479,11 @@ DEFAULT_VALUES = {
                     }
                 },
                 {
-                    "name": "clip_exr_dwaa",
+                    "name": "plate_exr_dwaa",
                     "task_types": [],
                     "task_names": [],
-                    "product_base_type": "clip",
-                    "clip": {
+                    "product_base_type": "plate",
+                    "plate": {
                         "preset_type": "buildin_preset"
                     }
                 }

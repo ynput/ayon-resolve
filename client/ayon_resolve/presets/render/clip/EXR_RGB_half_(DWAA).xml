@@ -14,7 +14,7 @@
  <RecordTotalFrame>0</RecordTotalFrame>
  <RecordOldFrame>0</RecordOldFrame>
  <RecordNewFrame>86400</RecordNewFrame>
- <RecordAllowDupImg>1</RecordAllowDupImg>
+ <RecordAllowDupImg>0</RecordAllowDupImg>
  <RecordClipUniqueName>true</RecordClipUniqueName>
  <RecordClipUniqueNameStyle>0</RecordClipUniqueNameStyle>
  <RecordDigit>8</RecordDigit>
@@ -59,7 +59,7 @@
  <SrcDirLevelsMode>0</SrcDirLevelsMode>
  <NumFramesOfHandles>0</NumFramesOfHandles>
  <UseVersionNameForFolder>0</UseVersionNameForFolder>
- <DestSuffix>%{Clip Name}%{Clip #}</DestSuffix>
+ <DestSuffix/>
  <RecordInfoName/>
  <VersionIdList/>
  <VersionNameList/>

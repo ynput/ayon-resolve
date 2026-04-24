@@ -213,6 +213,7 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
                 f"Clip render job '{job_id}' did not complete: {status}"
             )
     finally:
+        log.info(f"Deleting clip render job: {job_id}")
         bmr_project.DeleteRenderJob(job_id)
 
     rendered = sorted(target_render_directory.iterdir())

@@ -2,20 +2,20 @@ import os
 from pathlib import Path
 
 import pyblish.api
-
+from ayon_core.lib import StringTemplate, filter_profiles
 from ayon_core.pipeline import Anatomy, get_current_project_name, publish
 from ayon_core.pipeline.context_tools import get_current_task_entity
-
-from ayon_core.lib import StringTemplate, filter_profiles
-
-from ayon_resolve.api.lib import maintain_current_timeline, maintain_page_by_name
+from ayon_resolve.api.lib import (
+    maintain_current_timeline,
+    maintain_page_by_name,
+)
+from ayon_resolve.api import rendering
 from ayon_resolve.api.rendering import (
-    set_render_preset_from_file,
+    render_clip_to_intermediate_file,
     render_single_timeline,
     set_format_and_codec,
-    render_clip_to_intermediate_file,
+    set_render_preset_from_file,
 )
-
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
 
 
@@ -48,13 +48,17 @@ class ExtractProductResources(publish.Extractor):
         preset_path = Path(self.resolve_preset_path(settings["preset_path"]))
         product_base_type = instance.data["productBaseType"]
 
+        # set rendering loggler to inherit from publisher's logger
+        rendering.log = self.log
+
         if product_base_type == "editorial_pkg":
             self._process_editorial_pkg(instance, settings, preset_path)
-        elif product_base_type == "clip":
-            self._process_clip(instance, settings, preset_path)
+        elif product_base_type == "plate":
+            self._process_plate(instance, settings, preset_path)
         else:
             self.log.warning(
-                f"ExtractProductResources: unhandled family '{product_base_type}', skipping."
+                "ExtractProductResources: unhandled product base type "
+                f"'{product_base_type}', skipping."
             )
 
     def get_settings(self, instance):
@@ -117,7 +121,7 @@ class ExtractProductResources(publish.Extractor):
 
     def get_default_settings(self, product_base_type="editorial_pkg"):
         """Return hard-coded defaults when no matching preset is found."""
-        if product_base_type == "clip":
+        if product_base_type == "plate":
             return {
                 "file_format": "EXR",
                 "codec":       "RGB half (DWAA)",
@@ -250,13 +254,13 @@ class ExtractProductResources(publish.Extractor):
             f"{os.path.join(staging_dir, rendered_file.name)}"
         )
 
-    def _process_clip(self, instance, settings, preset_path):
+    def _process_plate(self, instance, settings, preset_path):
         """Render a single TimelineItem's frame range on the active timeline."""
         timeline_item = instance.data.get("timelineItem")
         if timeline_item is None:
             raise RuntimeError(
-                "instance.data['timelineItem'] is required for 'clip' family "
-                "but was not found."
+                "instance.data['timelineItem'] is required for 'plate' "
+                "products, but was not found."
             )
 
         folder_slug = instance.data["folderPath"].lstrip("/").replace("/", "_")
@@ -281,7 +285,6 @@ class ExtractProductResources(publish.Extractor):
                     f"Unable to set render format '{settings['file_format']}' "
                     f"/ codec '{settings['codec']}'."
                 )
-
             rendered = render_clip_to_intermediate_file(
                 timeline_item, staging_dir
             )

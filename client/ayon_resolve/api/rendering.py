@@ -199,11 +199,15 @@ def _solo_video_track(timeline_item):
     # Disable every enabled video track that is not the clip's track.
     for i, enabled in original_states.items():
         if i != item_track_index and enabled:
-            timeline.SetTrackEnable("video", i, False)
+            log.info(f">>>>>> Disabling video track {i}")
+            done = timeline.SetTrackEnable(track_type, i, False)
+            log.info(f">>>>>> SetTrackEnable result: {done}")
+            is_enabled = timeline.GetIsTrackEnabled(track_type, i)
+            log.info(f">>>>>> Track {i} enabled: {is_enabled}")
 
     # Guarantee the clip's own track is enabled.
     if not original_states.get(item_track_index):
-        timeline.SetTrackEnable("video", item_track_index, True)
+        log.info(f">>>>>> Enabling video track {item_track_index}")
         timeline.SetTrackEnable(track_type, item_track_index, True)
 
     try:
@@ -268,7 +272,7 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
                 )
         finally:
             log.info(f"Deleting clip render job: {job_id}")
-            bmr_project.DeleteRenderJob(job_id)
+            # bmr_project.DeleteRenderJob(job_id)
 
     rendered = sorted(target_render_directory.iterdir())
     if not rendered:

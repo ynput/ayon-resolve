@@ -190,9 +190,9 @@ def _solo_video_track(timeline_item):
         yield
         return
 
-    track_count = int(timeline.GetTrackCount("video"))
+    track_count = int(timeline.GetTrackCount(track_type))
     original_states = {
-        i: timeline.GetIsTrackEnabled("video", i)
+        i: timeline.GetIsTrackEnabled(track_type, i)
         for i in range(1, track_count + 1)
     }
 
@@ -204,13 +204,14 @@ def _solo_video_track(timeline_item):
     # Guarantee the clip's own track is enabled.
     if not original_states.get(item_track_index):
         timeline.SetTrackEnable("video", item_track_index, True)
+        timeline.SetTrackEnable(track_type, item_track_index, True)
 
     try:
         yield
     finally:
         for i, was_enabled in original_states.items():
-            if timeline.GetIsTrackEnabled("video", i) != was_enabled:
-                timeline.SetTrackEnable("video", i, was_enabled)
+            if timeline.GetIsTrackEnabled(track_type, i) != was_enabled:
+                timeline.SetTrackEnable(track_type, i, was_enabled)
 
 
 def render_clip_to_intermediate_file(timeline_item, target_render_directory):
@@ -234,13 +235,15 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
             with a non-"Complete" status, or if no output files are found.
     """
     bmr_project = get_current_resolve_project()
+    media_pool_item = timeline_item.GetMediaPoolItem()
 
     render_settings = {
         "SelectAllFrames": False,
         "MarkIn":    timeline_item.GetStart(),
-        "MarkOut":   timeline_item.GetEnd(),   # inclusive in Resolve API
+        "MarkOut":   timeline_item.GetEnd() - 1,
         "TargetDir": target_render_directory.as_posix(),
         "CustomName": timeline_item.GetName(),
+        "FrameRate": float(media_pool_item.GetClipProperty("FPS")),
     }
     log.info(f"Clip render settings: {pformat(render_settings)}")
 

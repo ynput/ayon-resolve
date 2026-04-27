@@ -1,15 +1,16 @@
 import os
 from pathlib import Path
+from pprint import pformat
 
 import pyblish.api
 from ayon_core.lib import StringTemplate, filter_profiles
 from ayon_core.pipeline import Anatomy, get_current_project_name, publish
 from ayon_core.pipeline.context_tools import get_current_task_entity
+from ayon_resolve.api import rendering
 from ayon_resolve.api.lib import (
     maintain_current_timeline,
     maintain_page_by_name,
 )
-from ayon_resolve.api import rendering
 from ayon_resolve.api.rendering import (
     render_clip_to_intermediate_file,
     render_single_timeline,
@@ -310,6 +311,7 @@ class ExtractProductResources(publish.Extractor):
                 "custom_tags": ["intermediate"],
             }
 
+        self.log.debug(f"Representation: {pformat(representation)}")
         instance.data["representations"].append(representation)
         self.log.info(f"Added clip intermediate representation: {staging_dir}")
 

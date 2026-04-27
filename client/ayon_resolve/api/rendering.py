@@ -2,6 +2,7 @@
 Rendering API wrapper for Blackmagic Design DaVinci Resolve.
 """
 
+import contextlib
 import time
 from pathlib import Path
 from pprint import pformat
@@ -19,6 +20,11 @@ log = Logger.get_logger(__name__)
 
 _SLEEP_TIME = 1
 _PROCESSING_JOBS = []
+
+# File extensions produced by Resolve that are image sequences (not containers)
+_IMAGE_SEQUENCE_EXTS = frozenset({
+    "exr", "dpx", "png", "tiff", "tif", "jpg", "jpeg", "cin",
+})
 
 
 def add_timeline_to_render(
@@ -61,7 +67,7 @@ def _render_timelines(timelines, target_render_directory):
         else:
             failed_timelines.append(timeline_to_render.GetName())
     if len(failed_timelines) != len(timelines):
-        bmr_project.StartRendering()
+        bmr_project.StartRendering(_PROCESSING_JOBS, isInteractiveMode=False)
         wait_for_rendering_completion()
         delete_all_processed_jobs()
     if failed_timelines:
@@ -156,6 +162,130 @@ def delete_all_processed_jobs():
         bmr_project.DeleteRenderJob(job_id)
 
     _PROCESSING_JOBS.clear()
+
+
+@contextlib.contextmanager
+def _solo_video_track(timeline_item):
+    """Disable all video tracks except the one containing *timeline_item*.
+
+    Saves the enabled state of every video track on the current timeline,
+    disables all tracks that are not the clip's own track, ensures the
+    clip's track is enabled, then restores every track to its original
+    state on exit.  This prevents neighbouring clips on other tracks from
+    being baked into a single-clip render job.
+
+    If the timeline item does not live on a video track the context
+    manager is a no-op.
+
+    Args:
+        timeline_item: A Resolve ``TimelineItem`` whose track should be
+            the only active video track during the context.
+    """
+    bmr_project = get_current_resolve_project()
+    timeline = bmr_project.GetCurrentTimeline()
+
+    track_type, item_track_index = timeline_item.GetTrackTypeAndIndex()
+
+    if track_type != "video":
+        yield
+        return
+
+    track_count = int(timeline.GetTrackCount(track_type))
+    original_states = {
+        i: timeline.GetIsTrackEnabled(track_type, i)
+        for i in range(1, track_count + 1)
+    }
+
+    # Disable every enabled video track that is not the clip's track.
+    for i, enabled in original_states.items():
+        if i != item_track_index and enabled:
+            log.info(f">>>>>> Disabling video track {i}")
+            done = timeline.SetTrackEnable(track_type, i, False)
+            log.info(f">>>>>> SetTrackEnable result: {done}")
+            is_enabled = timeline.GetIsTrackEnabled(track_type, i)
+            log.info(f">>>>>> Track {i} enabled: {is_enabled}")
+
+    # Guarantee the clip's own track is enabled.
+    if not original_states.get(item_track_index):
+        log.info(f">>>>>> Enabling video track {item_track_index}")
+        timeline.SetTrackEnable(track_type, item_track_index, True)
+
+    try:
+        yield
+    finally:
+        for i, was_enabled in original_states.items():
+            if timeline.GetIsTrackEnabled(track_type, i) != was_enabled:
+                timeline.SetTrackEnable(track_type, i, was_enabled)
+
+
+def render_clip_to_intermediate_file(timeline_item, target_render_directory):
+    """Render a single TimelineItem's range on the currently active timeline.
+
+    Uses the render settings already configured on the project (format, codec,
+    preset). Caller is responsible for setting those up before calling this
+    function (e.g. via ``set_render_preset_from_file`` and
+    ``set_format_and_codec``).
+
+    Args:
+        timeline_item: A Resolve ``TimelineItem`` object from the active timeline.
+        target_render_directory (Path): Directory where rendered files are written.
+
+    Returns:
+        Path: Single file path for container formats (QuickTime, MXF, …).
+        list[Path]: Sorted list of frame paths for image sequences (EXR, DPX, …).
+
+    Raises:
+        RuntimeError: If the render job cannot be created, started, or completes
+            with a non-"Complete" status, or if no output files are found.
+    """
+    bmr_project = get_current_resolve_project()
+    media_pool_item = timeline_item.GetMediaPoolItem()
+
+    render_settings = {
+        "SelectAllFrames": False,
+        "MarkIn":    timeline_item.GetStart(),
+        "MarkOut":   timeline_item.GetEnd() - 1,
+        "TargetDir": target_render_directory.as_posix(),
+        "CustomName": timeline_item.GetName(),
+        "FrameRate": float(media_pool_item.GetClipProperty("FPS")),
+    }
+    log.info(f"Clip render settings: {pformat(render_settings)}")
+
+    if not bmr_project.SetRenderSettings(render_settings):
+        raise RuntimeError("SetRenderSettings failed for clip render.")
+
+    with _solo_video_track(timeline_item):
+        job_id = bmr_project.AddRenderJob()
+        if not job_id:
+            raise RuntimeError("AddRenderJob failed for clip render.")
+
+        log.info(f"Clip render job created: {job_id}")
+        try:
+            if not bmr_project.StartRendering(job_id, isInteractiveMode=False):
+                raise RuntimeError(f"StartRendering failed for job '{job_id}'.")
+            wait_for_rendering_completion()
+
+            status = bmr_project.GetRenderJobStatus(job_id)
+            if status.get("JobStatus") != "Complete":
+                raise RuntimeError(
+                    f"Clip render job '{job_id}' did not complete: {status}"
+                )
+        finally:
+            log.info(f"Deleting clip render job: {job_id}")
+            # bmr_project.DeleteRenderJob(job_id)
+
+    rendered = sorted(target_render_directory.iterdir())
+    if not rendered:
+        raise RuntimeError(
+            f"No rendered files found in '{target_render_directory}'."
+        )
+
+    if rendered[0].suffix.lstrip(".").lower() in _IMAGE_SEQUENCE_EXTS:
+        log.info(f"Clip rendered as image sequence: {len(rendered)} frames")
+        return rendered          # list[Path]
+
+    log.info(f"Clip rendered as single file: {rendered[0]}")
+    return rendered[0]           # Path
 
 
 def set_render_preset_from_file(preset_file_path):

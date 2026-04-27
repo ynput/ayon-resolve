@@ -3,9 +3,96 @@ from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
     ensure_unique_names,
+    task_types_enum
 )
 
 from .imageio import ResolveImageIOModel
+
+
+def _intermediate_buildin_format_enum():
+    return [
+        {"value": "QuickTime", "label": "QuickTime"},
+        {"value": "EXR", "label": "EXR"},
+    ]
+
+def _intermediate_custom_format_enum():
+    return [
+        {"value": "AVI", "label": "AVI"},
+        {"value": "Cineon", "label": "Cineon"},
+        {"value": "DCP", "label": "DCP"},
+        {"value": "DPX", "label": "DPX"},
+        {"value": "EXR", "label": "EXR"},
+        {"value": "GIF", "label": "GIF"},
+        {"value": "IMF", "label": "IMF"},
+        {"value": "JPEG", "label": "JPEG"},
+        {"value": "JPEG 2000", "label": "JPEG 2000"},
+        {"value": "MJ2", "label": "MJ2"},
+        {"value": "MKV", "label": "MKV"},
+        {"value": "MP4", "label": "MP4"},
+        {"value": "MXF OP-Atom", "label": "MXF OP-Atom"},
+        {"value": "MXF OP1A", "label": "MXF OP1A"},
+        {"value": "PNG", "label": "PNG"},
+        {"value": "QuickTime", "label": "QuickTime"},
+        {"value": "TIFF", "label": "TIFF"},
+        {"value": "WebP", "label": "WebP"}
+    ]
+
+
+def _buildin_timeline_presets():
+    return [
+        {
+            "label": "QuickTime H264",
+            "value": "{ayon_render_presets}/timeline/QuickTime_H264.xml"
+        },
+        {
+            "label": "QuickTime H265",
+            "value": "{ayon_render_presets}/timeline/QuickTime_H265.xml"
+        },
+        {
+            "label": "QuickTime Prores422Hq",
+            "value": "{ayon_render_presets}/timeline/QuickTime_Prores422Hq.xml"
+        },
+        {
+            "label": "QuickTime ProresLT",
+            "value": "{ayon_render_presets}/timeline/QuickTime_ProresLT.xml"
+        },
+        {
+            "label": "QuickTime ProresXQ",
+            "value": "{ayon_render_presets}/timeline/QuickTime_ProresXQ.xml"
+        },
+    ]
+
+
+def _buildin_plate_presets():
+    return [
+        {
+            "label": "EXR RGB half (DWAA)",
+            "value": "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml"
+        },
+        {
+            "label": "EXR RGB float (ZIP)",
+            "value": "{ayon_render_presets}/clip/EXR_RGB_float_(ZIP).xml"
+        },
+    ]
+
+
+def _preset_types_enum():
+    return [
+        {"value": "custom_preset", "label": "Custom"},
+        {"value": "buildin_preset", "label": "Built-in"},
+    ]
+
+def _media_types_enum():
+    return [
+        {"value": "timeline_attrs", "label": "Timeline"},
+        {"value": "clip_attrs", "label": "Clip"},
+    ]
+
+def _product_base_types_enum():
+    return [
+        {"value": "editorial_pkg", "label": "Editorial Package"},
+        {"value": "plate", "label": "Plate Clip"},
+    ]
 
 
 class CreateShotClipModels(BaseSettingsModel):
@@ -84,6 +171,156 @@ class CreateShotClipModels(BaseSettingsModel):
     )
 
 
+class BuildinTimelineFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    format: str = SettingsField(
+        "QuickTime",
+        title="Format",
+        enum_resolver=_intermediate_buildin_format_enum,
+    )
+    preset_path: str = SettingsField(
+        "{ayon_render_presets}/timeline/QuickTime_H264.xml",
+        title="Preset",
+        enum_resolver=_buildin_timeline_presets,
+    )
+    codec: str = SettingsField(
+        "H.264",
+        title="Codec",
+    )
+
+class BuildinPlateFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    format: str = SettingsField(
+        "EXR",
+        title="Format",
+        enum_resolver=_intermediate_buildin_format_enum,
+    )
+    preset_path: str = SettingsField(
+        "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml",
+        title="Preset",
+        enum_resolver=_buildin_plate_presets,
+    )
+    codec: str = SettingsField(
+        "RGB half (DWAA)",
+        title="Codec",
+    )
+
+class CustomPresetModel(BaseSettingsModel):
+    _layout = "expanded"
+    format: str = SettingsField(
+        "QuickTime",
+        title="Format",
+        enum_resolver=_intermediate_custom_format_enum,
+    )
+    preset_path: str = SettingsField(
+        "",
+        title="Preset path",
+        placeholder="shared storage path with `{root[work]}` token",
+    )
+    codec: str = SettingsField(
+        "H.264",
+        title="Codec",
+    )
+
+class TimelineIntermediateFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    export_otio: bool = SettingsField(
+        True,
+        title="Export OTIO",
+        description="When enabled AYON will export OTIO file"
+        " along with intermediate file.",
+        section="Timeline options",
+    )
+    otio_rootless: bool = SettingsField(
+        True,
+        title="Use rootless OTIO paths",
+        description="When enabled AYON will convert all paths"
+        " in OTIO to be rootless.",
+    )
+    preset_type: str = SettingsField(
+        "buildin_preset",
+        title="Preset type",
+        enum_resolver=_preset_types_enum,
+        conditional_enum=True,
+        section="Preset options",
+    )
+    buildin_preset: BuildinTimelineFormatModel = SettingsField(
+        default_factory=BuildinTimelineFormatModel,
+        title="Buildin Preset",
+    )
+    custom_preset: CustomPresetModel = SettingsField(
+        default_factory=CustomPresetModel,
+        title="Custom Preset",
+    )
+
+class PlateFormatModel(BaseSettingsModel):
+    _layout = "expanded"
+    preset_type: str = SettingsField(
+        "buildin_preset",
+        title="Preset type",
+        enum_resolver=_preset_types_enum,
+        conditional_enum=True,
+        section="Preset options",
+    )
+    buildin_preset: BuildinPlateFormatModel = SettingsField(
+        default_factory=BuildinPlateFormatModel,
+        title="Buildin Preset",
+    )
+    custom_preset: CustomPresetModel = SettingsField(
+        default_factory=CustomPresetModel,
+        title="Custom Preset",
+    )
+
+class ProductResourcesPresetModel(BaseSettingsModel):
+    """Product Resources Preset."""
+    name: str = SettingsField(
+        "",
+        title="Name"
+    )
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task types",
+        enum_resolver=task_types_enum,
+        section="Profile filtering",
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task names"
+    )
+    product_base_type: str = SettingsField(
+        "editorial_pkg",
+        title="Product base type",
+        enum_resolver=_product_base_types_enum,
+        conditional_enum=True
+    )
+    editorial_pkg: TimelineIntermediateFormatModel = SettingsField(
+        default_factory=TimelineIntermediateFormatModel,
+        title="Timeline Attributes",
+    )
+    plate: PlateFormatModel = SettingsField(
+        default_factory=PlateFormatModel,
+        title="Plate Attributes",
+    )
+
+
+class ExtractProductResourcesModel(BaseSettingsModel):
+    """Extract Product Resources
+    """
+    profiles: list[ProductResourcesPresetModel] = SettingsField(
+        default_factory=list,
+        title="Profiles",
+        description=(
+            "Additional product resources profiles to be used in product "
+            "resource extraction."
+        )
+    )
+
+    @validator("profiles")
+    def validate_unique_outputs(cls, value):
+        ensure_unique_names(value)
+        return value
+
+
 class CreatorPluginsModel(BaseSettingsModel):
     CreateShotClip: CreateShotClipModels = SettingsField(
         default_factory=CreateShotClipModels,
@@ -146,6 +383,12 @@ class LoaderPluginsModel(BaseSettingsModel):
         title="Load Media"
     )
 
+class PubishPluginModel(BaseSettingsModel):
+    ExtractProductResources: ExtractProductResourcesModel = SettingsField(
+        default_factory=ExtractProductResourcesModel,
+        title="Extract Product Resources"
+    )
+
 
 class ResolveSettings(BaseSettingsModel):
     launch_ayon_menu_on_start: bool = SettingsField(
@@ -165,6 +408,10 @@ class ResolveSettings(BaseSettingsModel):
     load: LoaderPluginsModel = SettingsField(
         default_factory=LoaderPluginsModel,
         title="Loader plugins",
+    )
+    publish: PubishPluginModel = SettingsField(
+        default_factory=PubishPluginModel,
+        title="Publish plugins",
     )
 
 
@@ -218,5 +465,30 @@ DEFAULT_VALUES = {
                 }
             ]
         }
+    },
+    "publish": {
+        "ExtractProductResources": {
+            "profiles": [
+                {
+                    "name": "timeline_reviewable",
+                    "task_types": [],
+                    "task_names": [],
+                    "product_base_type": "editorial_pkg",
+                    "editorial_pkg": {
+                        "preset_type": "buildin_preset",
+                    }
+                },
+                {
+                    "name": "plate_exr_dwaa",
+                    "task_types": [],
+                    "task_names": [],
+                    "product_base_type": "plate",
+                    "plate": {
+                        "preset_type": "buildin_preset"
+                    }
+                }
+            ]
+        }
     }
 }
+#

@@ -20,7 +20,10 @@ from ayon_resolve.api.rendering import (
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
 
 
-class ExtractProductResources(publish.Extractor):
+class ExtractProductResources(
+    publish.Extractor,
+    publish.ColormanagedPyblishPluginMixin
+):
     """Extract product resources (intermediate files).
 
     Handles two product base types:
@@ -244,11 +247,19 @@ class ExtractProductResources(publish.Extractor):
             "ext":        os.path.splitext(rendered_file)[1][1:],
             "files":      rendered_file.name,
             "stagingDir": staging_dir,
-            "tags":       ["review"],
-            "custom_tags": ["intermediate"],
+            "tags":       settings.get("tags", []),
+            "custom_tags": settings.get("custom_tags", []),
+            "link_to_otio": True,
             "export_otio":   settings.get("export_otio", True),
             "otio_rootless": settings.get("otio_rootless", True),
         }
+        # attach colorspace to the representation
+        if settings.get("colorspace"):
+            colorspace = settings["colorspace"]
+            self.set_representation_colorspace(
+                representation, instance.context, colorspace)
+            self.log.debug(f"Set colorspace: {colorspace}")
+
         instance.data["representations"].append(representation)
         self.log.info(
             f"Added intermediate representation: "
@@ -296,8 +307,6 @@ class ExtractProductResources(publish.Extractor):
                 "ext":        rendered[0].suffix.lstrip("."),
                 "files":      [f.name for f in rendered],
                 "stagingDir": str(staging_dir),
-                "tags":       ["review"],
-                "custom_tags": ["intermediate"],
                 "frameStart": timeline_item.GetStart(),
                 "frameEnd":   timeline_item.GetEnd(),
             }
@@ -307,9 +316,19 @@ class ExtractProductResources(publish.Extractor):
                 "ext":        rendered.suffix.lstrip("."),
                 "files":      rendered.name,
                 "stagingDir": str(staging_dir),
-                "tags":       ["review"],
-                "custom_tags": ["intermediate"],
             }
+
+        if settings.get("tags"):
+            representation["tags"] = settings["tags"]
+        if settings.get("custom_tags"):
+            representation["custom_tags"] = settings["custom_tags"]
+
+        # attach colorspace to the representation
+        if settings.get("colorspace"):
+            colorspace = settings["colorspace"]
+            self.set_representation_colorspace(
+                representation, instance.context, colorspace)
+            self.log.debug(f"Set colorspace: {colorspace}")
 
         self.log.debug(f"Representation: {pformat(representation)}")
         instance.data["representations"].append(representation)

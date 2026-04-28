@@ -45,12 +45,8 @@ class ExtractEditorialPackage(publish.Extractor):
 
         # Expected representations coming from `ExtractProductResources` plugin
         for repre in instance.data["representations"]:
-            # make sure only representations with custom tags
-            # or "intermediate" custom tag are processed
-            if (
-                not repre.get("custom_tags", [])
-                and "intermediate" not in repre.get("custom_tags", [])
-            ):
+            # make sure only representations with "link_to_otio" are processed
+            if not repre.get("link_to_otio"):
                 continue
 
             published_file_path = get_instance_expected_output_path(

@@ -82,16 +82,19 @@ def _preset_types_enum():
         {"value": "builtin_preset", "label": "Built-in"},
     ]
 
-def _media_types_enum():
-    return [
-        {"value": "timeline_attrs", "label": "Timeline"},
-        {"value": "clip_attrs", "label": "Clip"},
-    ]
 
 def _product_base_types_enum():
     return [
         {"value": "editorial_pkg", "label": "Editorial Package"},
         {"value": "plate", "label": "Plate Clip"},
+    ]
+
+
+def representation_tags_enum():
+    return [
+        {"value": "review", "label": "Extract review processing"},
+        {"value": "delete", "label": "Delete - as intermediate"},
+        {"value": "passing", "label": "Skip Extract Review"},
     ]
 
 
@@ -301,6 +304,24 @@ class ProductResourcesPresetModel(BaseSettingsModel):
         default_factory=PlateFormatModel,
         title="Plate Attributes",
     )
+    tags: list[str] = SettingsField(
+        default_factory=list,
+        title="Tags",
+        enum_resolver=representation_tags_enum,
+        description="Currently only partly supporting reviewable workflow.",
+        section="Representation attributes",
+    )
+    custom_tags: list[str] = SettingsField(
+        default_factory=list,
+        title="Custom Tags",
+        description=(
+            "Ideal for additional filtering under Extract Review plugin.")
+    )
+    colorspace: str = SettingsField(
+        "",
+        title="Colorspace",
+        description="The colorspace to be added to colorspace metadata."
+    )
 
 
 class ExtractProductResourcesModel(BaseSettingsModel):
@@ -476,7 +497,9 @@ DEFAULT_VALUES = {
                     "product_base_type": "editorial_pkg",
                     "editorial_pkg": {
                         "preset_type": "builtin_preset",
-                    }
+                    },
+                    "tags": ["review", "delete"],
+                    "custom_tags": []
                 },
                 {
                     "name": "plate_exr_dwaa",
@@ -485,7 +508,9 @@ DEFAULT_VALUES = {
                     "product_base_type": "plate",
                     "plate": {
                         "preset_type": "builtin_preset"
-                    }
+                    },
+                    "tags": ["passing"],
+                    "custom_tags": []
                 }
             ]
         }

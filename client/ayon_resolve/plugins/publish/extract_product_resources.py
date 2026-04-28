@@ -49,7 +49,7 @@ class ExtractProductResources(publish.Extractor):
         preset_path = Path(self.resolve_preset_path(settings["preset_path"]))
         product_base_type = instance.data["productBaseType"]
 
-        # set rendering loggler to inherit from publisher's logger
+        # set rendering logger to inherit from publisher's logger
         rendering.log = self.log
 
         if product_base_type == "editorial_pkg":

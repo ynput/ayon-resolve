@@ -25,7 +25,7 @@
  <FormatHeight>1080</FormatHeight>
  <FormatPixelAspectRatio>1</FormatPixelAspectRatio>
  <FormatOption>-1</FormatOption>
- <RecordTargetDir>C:\Users\robur\AppData\Local\Temp\ay_tmp_2adwcv85\edit_ingest_TestTimeline</RecordTargetDir>
+ <RecordTargetDir/>
  <RecordUseTgtTimeCode>1</RecordUseTgtTimeCode>
  <RenderAtSourceResolution>false</RenderAtSourceResolution>
  <RecordSetTimelineTimecode>false</RecordSetTimelineTimecode>

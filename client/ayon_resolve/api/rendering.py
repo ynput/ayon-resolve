@@ -261,7 +261,7 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
 
         log.info(f"Clip render job created: {job_id}")
         try:
-            if not bmr_project.StartRendering(job_id, isInteractiveMode=False):
+            if not bmr_project.StartRendering([job_id], isInteractiveMode=False):
                 raise RuntimeError(f"StartRendering failed for job '{job_id}'.")
             wait_for_rendering_completion()
 
@@ -272,7 +272,7 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
                 )
         finally:
             log.info(f"Deleting clip render job: {job_id}")
-            # bmr_project.DeleteRenderJob(job_id)
+            bmr_project.DeleteRenderJob(job_id)
 
     rendered = sorted(target_render_directory.iterdir())
     if not rendered:

@@ -241,11 +241,18 @@ class ExtractProductResources(
                 settings["codec"],
             )
 
+        # check if rendered_file is folder and return first file
+        if rendered_file.is_dir():
+            files = [file.name for file in rendered_file.iterdir()]
+        else:
+            files = rendered_file.name
+
         self.log.debug(f"Rendered file: {rendered_file}")
         representation = {
             "name":       settings["name"],
             "ext":        os.path.splitext(rendered_file)[1][1:],
-            "files":      rendered_file.name,
+            "outputName": settings["name"],
+            "files":      files,
             "stagingDir": staging_dir,
             "tags":       settings.get("tags", []),
             "custom_tags": settings.get("custom_tags", []),
@@ -300,21 +307,27 @@ class ExtractProductResources(
             rendered = render_clip_to_intermediate_file(
                 timeline_item, staging_dir
             )
+            # check if rendered_file is folder and return first file
+            if rendered.is_dir():
+                files = [file.name for file in rendered.iterdir()]
+            else:
+                files = rendered.name
 
-        if isinstance(rendered, list):
+        if isinstance(files, list):
             representation = {
                 "name":       settings["name"],
-                "ext":        rendered[0].suffix.lstrip("."),
-                "files":      [f.name for f in rendered],
-                "stagingDir": str(staging_dir),
+                "ext":        files[0].split(".")[-1],
+                "outputName": settings["name"],
+                "files":      files,
+                "stagingDir": str(rendered),
                 "frameStart": timeline_item.GetStart(),
                 "frameEnd":   timeline_item.GetEnd(),
             }
         else:
             representation = {
                 "name":       settings["name"],
-                "ext":        rendered.suffix.lstrip("."),
-                "files":      rendered.name,
+                "ext":        files.split(".")[-1],
+                "files":      files,
                 "stagingDir": str(staging_dir),
             }
 

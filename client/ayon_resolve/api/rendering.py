@@ -279,10 +279,10 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
 
     if rendered[0].suffix.lstrip(".").lower() in _IMAGE_SEQUENCE_EXTS:
         log.info(f"Clip rendered as image sequence: {len(rendered)} frames")
-        return rendered          # list[Path]
+        return rendered  # list[Path]
 
     log.info(f"Clip rendered as single file: {rendered[0]}")
-    return rendered[0]           # Path
+    return rendered[0]  # Path
 
 
 def set_render_preset_from_file(preset_file_path):

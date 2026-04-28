@@ -383,7 +383,7 @@ class LoaderPluginsModel(BaseSettingsModel):
         title="Load Media"
     )
 
-class PubishPluginModel(BaseSettingsModel):
+class PublishPluginModel(BaseSettingsModel):
     ExtractProductResources: ExtractProductResourcesModel = SettingsField(
         default_factory=ExtractProductResourcesModel,
         title="Extract Product Resources"
@@ -409,8 +409,8 @@ class ResolveSettings(BaseSettingsModel):
         default_factory=LoaderPluginsModel,
         title="Loader plugins",
     )
-    publish: PubishPluginModel = SettingsField(
-        default_factory=PubishPluginModel,
+    publish: PublishPluginModel = SettingsField(
+        default_factory=PublishPluginModel,
         title="Publish plugins",
     )
 

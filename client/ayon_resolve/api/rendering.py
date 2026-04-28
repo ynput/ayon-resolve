@@ -196,26 +196,23 @@ def _solo_video_track(timeline_item):
         for i in range(1, track_count + 1)
     }
 
-    # Disable every enabled video track that is not the clip's track.
-    for i, enabled in original_states.items():
-        if i != item_track_index and enabled:
-            log.info(f">>>>>> Disabling video track {i}")
-            done = timeline.SetTrackEnable(track_type, i, False)
-            log.info(f">>>>>> SetTrackEnable result: {done}")
-            is_enabled = timeline.GetIsTrackEnabled(track_type, i)
-            log.info(f">>>>>> Track {i} enabled: {is_enabled}")
+    with maintain_page_by_name("Edit"):
+        # Disable every enabled video track that is not the clip's track.
+        for i, enabled in original_states.items():
+            if i != item_track_index and enabled:
+                timeline.SetTrackEnable(track_type, i, False)
 
-    # Guarantee the clip's own track is enabled.
-    if not original_states.get(item_track_index):
-        log.info(f">>>>>> Enabling video track {item_track_index}")
-        timeline.SetTrackEnable(track_type, item_track_index, True)
+        # Guarantee the clip's own track is enabled.
+        if not original_states.get(item_track_index):
+            timeline.SetTrackEnable(track_type, item_track_index, True)
 
     try:
         yield
     finally:
-        for i, was_enabled in original_states.items():
-            if timeline.GetIsTrackEnabled(track_type, i) != was_enabled:
-                timeline.SetTrackEnable(track_type, i, was_enabled)
+        with maintain_page_by_name("Edit"):
+            for i, was_enabled in original_states.items():
+                if timeline.GetIsTrackEnabled(track_type, i) != was_enabled:
+                    timeline.SetTrackEnable(track_type, i, was_enabled)
 
 
 def render_clip_to_intermediate_file(timeline_item, target_render_directory):

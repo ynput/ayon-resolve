@@ -43,7 +43,7 @@ class ExtractEditorialPackage(publish.Extractor):
         otio_file_name = f"{subfolder_name}.otio"
         otio_file_path = staging_dir / otio_file_name
 
-        # Expected representations comming from `ExtractProductResources` plugin
+        # Expected representations coming from `ExtractProductResources` plugin
         for repre in instance.data["representations"]:
             # make sure only representations with custom tags
             # or "intermediate" custom tag are processed

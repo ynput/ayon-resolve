@@ -9,7 +9,7 @@ from ayon_server.settings import (
 from .imageio import ResolveImageIOModel
 
 
-def _intermediate_buildin_format_enum():
+def _intermediate_builtin_format_enum():
     return [
         {"value": "QuickTime", "label": "QuickTime"},
         {"value": "EXR", "label": "EXR"},
@@ -38,7 +38,7 @@ def _intermediate_custom_format_enum():
     ]
 
 
-def _buildin_timeline_presets():
+def _builtin_timeline_presets():
     return [
         {
             "label": "QuickTime H264",
@@ -63,7 +63,7 @@ def _buildin_timeline_presets():
     ]
 
 
-def _buildin_plate_presets():
+def _builtin_plate_presets():
     return [
         {
             "label": "EXR RGB half (DWAA)",
@@ -79,7 +79,7 @@ def _buildin_plate_presets():
 def _preset_types_enum():
     return [
         {"value": "custom_preset", "label": "Custom"},
-        {"value": "buildin_preset", "label": "Built-in"},
+        {"value": "builtin_preset", "label": "Built-in"},
     ]
 
 def _media_types_enum():
@@ -171,34 +171,34 @@ class CreateShotClipModels(BaseSettingsModel):
     )
 
 
-class BuildinTimelineFormatModel(BaseSettingsModel):
+class BuiltinTimelineFormatModel(BaseSettingsModel):
     _layout = "expanded"
     format: str = SettingsField(
         "QuickTime",
         title="Format",
-        enum_resolver=_intermediate_buildin_format_enum,
+        enum_resolver=_intermediate_builtin_format_enum,
     )
     preset_path: str = SettingsField(
         "{ayon_render_presets}/timeline/QuickTime_H264.xml",
         title="Preset",
-        enum_resolver=_buildin_timeline_presets,
+        enum_resolver=_builtin_timeline_presets,
     )
     codec: str = SettingsField(
         "H.264",
         title="Codec",
     )
 
-class BuildinPlateFormatModel(BaseSettingsModel):
+class BuiltinPlateFormatModel(BaseSettingsModel):
     _layout = "expanded"
     format: str = SettingsField(
         "EXR",
         title="Format",
-        enum_resolver=_intermediate_buildin_format_enum,
+        enum_resolver=_intermediate_builtin_format_enum,
     )
     preset_path: str = SettingsField(
         "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml",
         title="Preset",
-        enum_resolver=_buildin_plate_presets,
+        enum_resolver=_builtin_plate_presets,
     )
     codec: str = SettingsField(
         "RGB half (DWAA)",
@@ -238,15 +238,15 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
         " in OTIO to be rootless.",
     )
     preset_type: str = SettingsField(
-        "buildin_preset",
+        "builtin_preset",
         title="Preset type",
         enum_resolver=_preset_types_enum,
         conditional_enum=True,
         section="Preset options",
     )
-    buildin_preset: BuildinTimelineFormatModel = SettingsField(
-        default_factory=BuildinTimelineFormatModel,
-        title="Buildin Preset",
+    builtin_preset: BuiltinTimelineFormatModel = SettingsField(
+        default_factory=BuiltinTimelineFormatModel,
+        title="Builtin Preset",
     )
     custom_preset: CustomPresetModel = SettingsField(
         default_factory=CustomPresetModel,
@@ -256,15 +256,15 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
 class PlateFormatModel(BaseSettingsModel):
     _layout = "expanded"
     preset_type: str = SettingsField(
-        "buildin_preset",
+        "builtin_preset",
         title="Preset type",
         enum_resolver=_preset_types_enum,
         conditional_enum=True,
         section="Preset options",
     )
-    buildin_preset: BuildinPlateFormatModel = SettingsField(
-        default_factory=BuildinPlateFormatModel,
-        title="Buildin Preset",
+    builtin_preset: BuiltinPlateFormatModel = SettingsField(
+        default_factory=BuiltinPlateFormatModel,
+        title="Builtin Preset",
     )
     custom_preset: CustomPresetModel = SettingsField(
         default_factory=CustomPresetModel,
@@ -475,7 +475,7 @@ DEFAULT_VALUES = {
                     "task_names": [],
                     "product_base_type": "editorial_pkg",
                     "editorial_pkg": {
-                        "preset_type": "buildin_preset",
+                        "preset_type": "builtin_preset",
                     }
                 },
                 {
@@ -484,7 +484,7 @@ DEFAULT_VALUES = {
                     "task_names": [],
                     "product_base_type": "plate",
                     "plate": {
-                        "preset_type": "buildin_preset"
+                        "preset_type": "builtin_preset"
                     }
                 }
             ]

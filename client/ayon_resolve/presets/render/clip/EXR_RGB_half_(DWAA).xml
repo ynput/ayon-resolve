@@ -14,7 +14,7 @@
  <RecordTotalFrame>0</RecordTotalFrame>
  <RecordOldFrame>0</RecordOldFrame>
  <RecordNewFrame>86400</RecordNewFrame>
- <RecordAllowDupImg>0</RecordAllowDupImg>
+ <RecordAllowDupImg>1</RecordAllowDupImg>
  <RecordClipUniqueName>true</RecordClipUniqueName>
  <RecordClipUniqueNameStyle>0</RecordClipUniqueNameStyle>
  <RecordDigit>8</RecordDigit>
@@ -35,7 +35,7 @@
  <RecordFormatType>exr</RecordFormatType>
  <RecordFormatSubType>DWAA</RecordFormatSubType>
  <RecordInFieldMode>false</RecordInFieldMode>
- <RecordDataLevel>DATA_LEVEL_AUTO</RecordDataLevel>
+ <RecordDataLevel>DATA_LEVEL_FULL</RecordDataLevel>
  <RecordQuality>4</RecordQuality>
  <RecordFPS>23.976</RecordFPS>
  <StereoRender>false</StereoRender>

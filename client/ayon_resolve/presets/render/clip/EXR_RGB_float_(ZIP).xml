@@ -35,7 +35,7 @@
  <RecordFormatType>exr</RecordFormatType>
  <RecordFormatSubType>ZIP</RecordFormatSubType>
  <RecordInFieldMode>false</RecordInFieldMode>
- <RecordDataLevel>DATA_LEVEL_AUTO</RecordDataLevel>
+ <RecordDataLevel>DATA_LEVEL_FULL</RecordDataLevel>
  <RecordQuality>4</RecordQuality>
  <RecordFPS>23.976</RecordFPS>
  <StereoRender>false</StereoRender>
@@ -59,7 +59,7 @@
  <SrcDirLevelsMode>0</SrcDirLevelsMode>
  <NumFramesOfHandles>0</NumFramesOfHandles>
  <UseVersionNameForFolder>0</UseVersionNameForFolder>
- <DestSuffix>%{Clip Name}%{Clip #}</DestSuffix>
+ <DestSuffix/>
  <RecordInfoName/>
  <VersionIdList/>
  <VersionNameList/>

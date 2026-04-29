@@ -13,7 +13,7 @@ from ayon_resolve.api.lib import (
 )
 from ayon_resolve.api.rendering import (
     render_clip_to_intermediate_file,
-    render_single_timeline,
+    render_timeline_intermediate_file,
     set_format_and_codec,
     set_render_preset_from_file,
 )
@@ -233,7 +233,7 @@ class ExtractProductResources(
 
         with maintain_current_timeline(timeline_mp_item) as timeline:
             self.log.info(f"Rendering timeline: {timeline.GetName()}")
-            rendered_file = self.render_timeline_intermediate_file(
+            rendered = render_timeline_intermediate_file(
                 timeline,
                 Path(staging_dir),
                 preset_path,
@@ -241,25 +241,34 @@ class ExtractProductResources(
                 settings["codec"],
             )
 
-        # check if rendered_file is folder and return first file
-        if rendered_file.is_dir():
-            files = [file.name for file in rendered_file.iterdir()]
-        else:
-            files = rendered_file.name
+        self.log.debug(f"Rendered output: {rendered}")
 
-        self.log.debug(f"Rendered file: {rendered_file}")
         representation = {
             "name":       settings["name"],
-            "ext":        os.path.splitext(rendered_file)[1][1:],
             "outputName": settings["name"],
-            "files":      files,
-            "stagingDir": staging_dir,
             "tags":       settings.get("tags", []),
             "custom_tags": settings.get("custom_tags", []),
             "link_to_otio": True,
             "export_otio":   settings.get("export_otio", True),
             "otio_rootless": settings.get("otio_rootless", True),
         }
+        # check if rendered is a list (multiple files) or a single file
+        if isinstance(rendered, list):
+            files = [file.name for file in rendered]
+            representation.update({
+                "ext":        rendered[0].suffix.lstrip(".").lower(),
+                "files":      files,
+                "stagingDir": str(rendered[0]),
+                "frameStart": timeline.GetStartFrame(),
+                "frameEnd":   timeline.GetEndFrame(),
+            })
+        else:
+            representation.update({
+                "ext":        rendered.suffix.lstrip(".").lower(),
+                "files":      rendered.name,
+                "stagingDir": str(rendered),
+            })
+
         # attach colorspace to the representation
         if settings.get("colorspace"):
             colorspace = settings["colorspace"]
@@ -307,34 +316,30 @@ class ExtractProductResources(
             rendered = render_clip_to_intermediate_file(
                 timeline_item, staging_dir
             )
-            # check if rendered_file is folder and return first file
-            if rendered.is_dir():
-                files = [file.name for file in rendered.iterdir()]
-            else:
-                files = rendered.name
 
-        if isinstance(files, list):
-            representation = {
-                "name":       settings["name"],
-                "ext":        files[0].split(".")[-1],
-                "outputName": settings["name"],
+        representation = {
+            "name":       settings["name"],
+            "outputName": settings["name"],
+            "stagingDir": str(staging_dir),
+            "tags":       settings.get("tags", []),
+            "custom_tags": settings.get("custom_tags", []),
+        }
+
+        # check if rendered_file is folder and return first file
+        if isinstance(rendered, list):
+            files = [file.name for file in rendered]
+            representation.update({
+                "ext":        rendered[0].suffix.lstrip(".").lower(),
                 "files":      files,
-                "stagingDir": str(rendered),
+                "stagingDir": str(rendered[0]),
                 "frameStart": timeline_item.GetStart(),
                 "frameEnd":   timeline_item.GetEnd(),
-            }
+            })
         else:
-            representation = {
-                "name":       settings["name"],
-                "ext":        files.split(".")[-1],
-                "files":      files,
-                "stagingDir": str(staging_dir),
-            }
-
-        if settings.get("tags"):
-            representation["tags"] = settings["tags"]
-        if settings.get("custom_tags"):
-            representation["custom_tags"] = settings["custom_tags"]
+            representation.update({
+                "ext":        rendered.suffix.lstrip(".").lower(),
+                "files":      rendered.name,
+            })
 
         # attach colorspace to the representation
         if settings.get("colorspace"):
@@ -346,48 +351,3 @@ class ExtractProductResources(
         self.log.debug(f"Representation: {pformat(representation)}")
         instance.data["representations"].append(representation)
         self.log.info(f"Added clip intermediate representation: {staging_dir}")
-
-    # ------------------------------------------------------------------
-    # Rendering helpers
-    # ------------------------------------------------------------------
-
-    def render_timeline_intermediate_file(
-        self,
-        timeline,
-        target_render_directory,
-        preset_path,
-        file_format,
-        codec,
-    ):
-        """Render *timeline* to an intermediate file in *target_render_directory*.
-
-        Args:
-            timeline: Active Resolve Timeline object.
-            target_render_directory (Path): Staging directory for the output.
-            preset_path (Path): Path to the render preset XML file.
-            file_format (str): Resolve format name (e.g. ``"QuickTime"``).
-            codec (str): Resolve codec name (e.g. ``"H.264"``).
-
-        Returns:
-            Path: Path to the rendered file.
-        """
-        self.log.info(f"Rendering timeline to '{target_render_directory}'")
-
-        with maintain_page_by_name("Deliver"):
-            if not set_render_preset_from_file(preset_path.as_posix()):
-                raise RuntimeError("Unable to load render preset.")
-
-            format_extension = set_format_and_codec(file_format, codec)
-            if not format_extension:
-                raise RuntimeError("Unable to set render format and codec.")
-
-            if not render_single_timeline(timeline, target_render_directory):
-                raise RuntimeError("Unable to render timeline.")
-
-        rendered_files = list(
-            target_render_directory.glob(f"*.{format_extension}")
-        )
-        if not rendered_files:
-            raise RuntimeError("No rendered files found.")
-
-        return rendered_files[0]

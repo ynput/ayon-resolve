@@ -1,11 +1,13 @@
 """
 Rendering API wrapper for Blackmagic Design DaVinci Resolve.
 """
+from __future__ import annotations
 
 import contextlib
 import time
 from pathlib import Path
 from pprint import pformat
+from typing import TYPE_CHECKING
 
 from ayon_core.lib import Logger
 
@@ -14,6 +16,11 @@ from .lib import (
     maintain_current_timeline,
     maintain_page_by_name,
 )
+
+if TYPE_CHECKING:
+    # Import the actual class here; it only runs during linting/type-checking
+    from .utils import get_resolve_module
+    resolve = get_resolve_module()
 
 log = Logger.get_logger(__name__)
 
@@ -215,7 +222,10 @@ def _solo_video_track(timeline_item):
                     timeline.SetTrackEnable(track_type, i, was_enabled)
 
 
-def render_clip_to_intermediate_file(timeline_item, target_render_directory):
+def render_clip_to_intermediate_file(
+    timeline_item: resolve.TimelineItem,
+    target_render_directory: Path
+) -> Path | list[Path]:
     """Render a single TimelineItem's range on the currently active timeline.
 
     Uses the render settings already configured on the project (format, codec,
@@ -271,18 +281,24 @@ def render_clip_to_intermediate_file(timeline_item, target_render_directory):
             log.info(f"Deleting clip render job: {job_id}")
             bmr_project.DeleteRenderJob(job_id)
 
-    rendered = sorted(target_render_directory.iterdir())
+    # Collect all rendered files, handling two layouts:
+    #   1. Flat:   target_render_directory/*.<ext>
+    #   2. Nested: target_render_directory/**/*.<ext>
+    #              (files may live inside one or more levels of sub-folders)
+    rendered = sorted(
+        f for f in target_render_directory.rglob("*") if f.is_file()
+    )
     if not rendered:
-        raise RuntimeError(
-            f"No rendered files found in '{target_render_directory}'."
-        )
+        msg = f"No rendered files found in '{target_render_directory}'."
+        raise RuntimeError(msg)
 
     if rendered[0].suffix.lstrip(".").lower() in _IMAGE_SEQUENCE_EXTS:
-        log.info(f"Clip rendered as image sequence: {len(rendered)} frames")
+        log.info("Clip rendered as image sequence: %d frames", len(rendered))
         return rendered  # list[Path]
 
-    log.info(f"Clip rendered as single file: {rendered[0]}")
+    log.info("Clip rendered as single file: %s", rendered[0])
     return rendered[0]  # Path
+
 
 
 def set_render_preset_from_file(preset_file_path):
@@ -344,3 +360,60 @@ def set_format_and_codec(render_format, render_codec):
         return False
 
     return render_format_val
+
+
+def render_timeline_intermediate_file(
+    timeline: resolve.Timeline,
+    target_render_directory: Path,
+    preset_path: Path,
+    file_format: str,
+    codec: str,
+) -> Path | list[Path]:
+    """Render *timeline* to an intermediate file in *target_render_directory*.
+
+    Args:
+        timeline: Active Resolve Timeline object.
+        target_render_directory (Path): Staging directory for the output.
+        preset_path (Path): Path to the render preset XML file.
+        file_format (str): Resolve format name (e.g. ``"QuickTime"``).
+        codec (str): Resolve codec name (e.g. ``"H.264"``).
+
+    Returns:
+        Path: Path to the rendered file.
+        list[Path]: List of paths to the rendered files.
+
+    Raises:
+        RuntimeError: If the render preset cannot be loaded, the format and codec
+            cannot be set, or the timeline cannot be rendered.
+    """
+    log.info(f"Rendering timeline to '{target_render_directory}'")
+
+    with maintain_page_by_name("Deliver"):
+        if not set_render_preset_from_file(preset_path.as_posix()):
+            raise RuntimeError("Unable to load render preset.")
+
+        format_extension = set_format_and_codec(file_format, codec)
+        if not format_extension:
+            raise RuntimeError("Unable to set render format and codec.")
+
+        if not render_single_timeline(timeline, target_render_directory):
+            raise RuntimeError("Unable to render timeline.")
+
+    # Collect all files matching the format extension, handling two layouts:
+    #   1. Flat:   target_render_directory/*.{format_extension}
+    #   2. Nested: target_render_directory/**/*.{format_extension}
+    #              (files may live inside one or more levels of sub-folders)
+    rendered_files = sorted(
+        target_render_directory.rglob(f"*.{format_extension}")
+    )
+    if not rendered_files:
+        msg = (
+            f"No rendered files with extension '{format_extension}' found "
+            f"in '{target_render_directory}'."
+        )
+        raise RuntimeError(msg)
+
+    if len(rendered_files) > 1:
+        return rendered_files
+
+    return rendered_files[0]

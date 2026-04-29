@@ -16,6 +16,7 @@ from ayon_resolve.api.rendering import (
     render_timeline_intermediate_file,
     set_format_and_codec,
     set_render_preset_from_file,
+    modify_preset_file,
 )
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
 
@@ -284,6 +285,12 @@ class ExtractProductResources(
 
     def _process_plate(self, instance, settings, preset_path):
         """Render a single TimelineItem's frame range on the active timeline."""
+        frame_start = instance.data["frameStart"]
+        frame_end = instance.data["frameEnd"]
+        handle_start = instance.data["handleStart"]
+        handle_end = instance.data["handleEnd"]
+        with_handles = settings.get("with_handles", False)
+
         timeline_item = instance.data.get("timelineItem")
         if timeline_item is None:
             raise RuntimeError(
@@ -299,10 +306,28 @@ class ExtractProductResources(
         staging_dir.mkdir(parents=True, exist_ok=True)
         self.log.info(f"Staging directory: {staging_dir}")
 
+        preset_data = {}
+        if with_handles:
+            preset_data.update({
+                "NumFramesOfHandles": max(handle_start, handle_end)
+            })
+            repre_frame_start = frame_start - handle_start
+            repre_frame_end = frame_end + handle_end
+        else:
+            repre_frame_start = frame_start
+            repre_frame_end = frame_end
+
+        # Modify preset file
+        modified_preset_path = modify_preset_file(
+            preset_path,
+            staging_dir,
+            preset_data,
+        )
+
         with maintain_page_by_name("Deliver"):
-            if not set_render_preset_from_file(preset_path.as_posix()):
+            if not set_render_preset_from_file(modified_preset_path.as_posix()):
                 raise RuntimeError(
-                    f"Unable to load render preset: {preset_path}"
+                    f"Unable to load render preset: {modified_preset_path}"
                 )
 
             format_ext = set_format_and_codec(
@@ -332,8 +357,8 @@ class ExtractProductResources(
                 "ext":        rendered[0].suffix.lstrip(".").lower(),
                 "files":      files,
                 "stagingDir": str(rendered[0]),
-                "frameStart": timeline_item.GetStart(),
-                "frameEnd":   timeline_item.GetEnd(),
+                "frameStart": repre_frame_start,
+                "frameEnd":   repre_frame_end,
             })
         else:
             representation.update({

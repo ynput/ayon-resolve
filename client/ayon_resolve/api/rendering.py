@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 from pprint import pformat
 from typing import TYPE_CHECKING
+from xml.etree import ElementTree as ET
 
 from ayon_core.lib import Logger
 
@@ -417,3 +418,65 @@ def render_timeline_intermediate_file(
         return rendered_files
 
     return rendered_files[0]
+
+
+def modify_preset_file(
+    xml_path: Path,
+    staging_dir: Path,
+    data: dict
+):
+    """Modify xml preset with input data.
+
+    Args:
+        xml_path (pathlib.Path): path for input xml preset
+        staging_dir (pathlib.Path): staging dir path
+        data (dict): data where key is xmlTag and value as string
+
+    Returns:
+        str: _description_
+
+    Raises:
+        AttributeError: If the xml tag is not found in the input xml file.
+    """
+    # create temp path
+    temp_path = staging_dir / xml_path.name
+
+    # change xml following data keys
+    with xml_path.open("r", encoding="utf-8") as datafile:
+        _root = ET.parse(datafile)
+
+        for key, value in data.items():
+            try:
+                if "/" in key:
+                    if not key.startswith("./"):
+                        key = ".//" + key
+
+                    split_key_path = key.split("/")
+                    element_key = split_key_path[-1]
+                    parent_obj_path = "/".join(split_key_path[:-1])
+
+                    parent_obj = _root.find(parent_obj_path)
+                    element_obj = parent_obj.find(element_key)
+                    if not element_obj:
+                        _append_element(parent_obj, element_key, value)
+                else:
+                    finds = _root.findall(".//{}".format(key))
+                    if not finds:
+                        raise AttributeError
+                    for element in finds:
+                        element.text = str(value)
+            except AttributeError:
+                log.warning(
+                    "Cannot create attribute: {}: {}. Skipping".format(
+                        key, value
+                    ))
+        _root.write(str(temp_path))
+
+    return temp_path
+
+
+def _append_element(root_element_obj, key, value):
+    new_element_obj = ET.Element(key)
+    log.debug("__ new_element_obj: {}".format(new_element_obj))
+    new_element_obj.text = str(value)
+    root_element_obj.insert(0, new_element_obj)

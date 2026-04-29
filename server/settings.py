@@ -273,6 +273,10 @@ class PlateFormatModel(BaseSettingsModel):
         default_factory=CustomPresetModel,
         title="Custom Preset",
     )
+    with_handles: bool = SettingsField(
+        False,
+        title="With Handles",
+    )
 
 class ProductResourcesPresetModel(BaseSettingsModel):
     """Product Resources Preset."""
@@ -325,7 +329,7 @@ class ProductResourcesPresetModel(BaseSettingsModel):
 
 
 class ExtractProductResourcesModel(BaseSettingsModel):
-    """Extract Product Resources
+    """Extract Product Resources.
     """
     profiles: list[ProductResourcesPresetModel] = SettingsField(
         default_factory=list,
@@ -507,7 +511,8 @@ DEFAULT_VALUES = {
                     "task_names": [],
                     "product_base_type": "plate",
                     "plate": {
-                        "preset_type": "builtin_preset"
+                        "preset_type": "builtin_preset",
+                        "with_handles": True,
                     },
                     "tags": ["passing"],
                     "custom_tags": []

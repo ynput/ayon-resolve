@@ -4,6 +4,7 @@ Rendering API wrapper for Blackmagic Design DaVinci Resolve.
 from __future__ import annotations
 
 import contextlib
+import io
 import time
 from pathlib import Path
 from pprint import pformat
@@ -420,63 +421,108 @@ def render_timeline_intermediate_file(
     return rendered_files[0]
 
 
+def _extract_prolog(text: str) -> str:
+    """Return the XML prolog — everything before the root element.
+
+    Consumed tokens: whitespace, ``<?...?>`` processing instructions (including
+    the XML declaration), and ``<!--...-->`` comments.  Stops at the first
+    character that could start a real element tag.
+
+    Python's :mod:`xml.etree.ElementTree` silently drops prolog-level comments
+    when parsing.  Extracting the prolog as raw text lets ``modify_preset_file``
+    re-attach it to the written output so nothing is lost.
+    """
+    pos = 0
+    while pos < len(text):
+        if text[pos].isspace():
+            pos += 1
+        elif text[pos:pos + 2] == "<?":
+            end = text.find("?>", pos)
+            pos = end + 2
+        elif text[pos:pos + 4] == "<!--":
+            end = text.find("-->", pos)
+            pos = end + 3
+        else:
+            break
+    return text[:pos]
+
+
 def modify_preset_file(
     xml_path: Path,
     staging_dir: Path,
-    data: dict
-):
-    """Modify xml preset with input data.
+    data: dict,
+) -> Path:
+    """Copy *xml_path* to *staging_dir* and apply *data* overrides.
+
+    Each key in *data* is either a bare element tag name (e.g.
+    ``"NumFramesOfHandles"``) or a slash-separated path expression (e.g.
+    ``"Parent/Child"``).
+
+    * **Bare name** – every matching element in the document is updated.
+    * **Path** – the leaf element at the given path is updated; if absent
+      it is created as the first child of its parent element.
 
     Args:
-        xml_path (pathlib.Path): path for input xml preset
-        staging_dir (pathlib.Path): staging dir path
-        data (dict): data where key is xmlTag and value as string
+        xml_path (Path): Source XML preset file.
+        staging_dir (Path): Directory where the modified copy is written.
+        data (dict): Mapping of XML tag / path → new text value.
 
     Returns:
-        str: _description_
+        Path: Path to the modified copy of the preset in *staging_dir*.
 
     Raises:
-        AttributeError: If the xml tag is not found in the input xml file.
+        AttributeError: Logged as a warning when a bare tag is not found.
     """
-    # create temp path
     temp_path = staging_dir / xml_path.name
 
-    # change xml following data keys
-    with xml_path.open("r", encoding="utf-8") as datafile:
-        _root = ET.parse(datafile)
+    # Read raw text upfront so we can extract the prolog (XML declaration +
+    # any prolog-level comments).  Python's ElementTree parser drops prolog
+    # comments silently; we preserve them by re-attaching the prolog to the
+    # written output.
+    raw_text = xml_path.read_text(encoding="utf-8")
+    prolog = _extract_prolog(raw_text)
 
-        for key, value in data.items():
-            try:
-                if "/" in key:
-                    if not key.startswith("./"):
-                        key = ".//" + key
+    # insert_comments=True preserves comments that live *inside* elements.
+    parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
+    tree = ET.parse(xml_path, parser=parser)
 
-                    split_key_path = key.split("/")
-                    element_key = split_key_path[-1]
-                    parent_obj_path = "/".join(split_key_path[:-1])
+    for key, value in data.items():
+        try:
+            if "/" in key:
+                # Normalise to a descendant XPath expression.
+                xpath = key if key.startswith("./") else f".//{key}"
 
-                    parent_obj = _root.find(parent_obj_path)
-                    element_obj = parent_obj.find(element_key)
-                    if not element_obj:
-                        _append_element(parent_obj, element_key, value)
+                *parent_parts, leaf = xpath.split("/")
+                parent_path = "/".join(parent_parts)
+
+                parent = tree.find(parent_path)
+                element = parent.find(leaf)
+                if element is None:
+                    _append_element(parent, leaf, value)
                 else:
-                    finds = _root.findall(".//{}".format(key))
-                    if not finds:
-                        raise AttributeError
-                    for element in finds:
-                        element.text = str(value)
-            except AttributeError:
-                log.warning(
-                    "Cannot create attribute: {}: {}. Skipping".format(
-                        key, value
-                    ))
-        _root.write(str(temp_path))
+                    element.text = str(value)
+            else:
+                elements = tree.findall(f".//{key}")
+                if not elements:
+                    raise AttributeError(key)
+                for element in elements:
+                    element.text = str(value)
+        except AttributeError:
+            log.warning(f"Cannot set '{key}': tag not found. Skipping.")
+
+    # Write the modified element tree as unicode text (no xml_declaration —
+    # the original prolog, which already contains the declaration and any
+    # prolog-level comments, is prepended directly).
+    buf = io.StringIO()
+    tree.write(buf, encoding="unicode", xml_declaration=False)
+    temp_path.write_text(prolog + buf.getvalue(), encoding="utf-8")
 
     return temp_path
 
 
-def _append_element(root_element_obj, key, value):
-    new_element_obj = ET.Element(key)
-    log.debug("__ new_element_obj: {}".format(new_element_obj))
-    new_element_obj.text = str(value)
-    root_element_obj.insert(0, new_element_obj)
+def _append_element(parent: ET.Element, tag: str, value) -> None:
+    """Insert a new *tag* element with *value* as the first child of *parent*."""
+    element = ET.Element(tag)
+    element.text = str(value)
+    parent.insert(0, element)
+    log.debug(f"Appended new XML element <{tag}> = {value!r}")

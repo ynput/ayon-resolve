@@ -118,6 +118,9 @@ class ExtractProductResources(
             "file_format": fmt.get("format"),
             "codec":       fmt.get("codec"),
             "preset_path": fmt.get("preset_path"),
+            "with_handles": sub.get("with_handles"),
+            "tags":        preset["tags"],
+            "custom_tags": preset["custom_tags"],
         }
         if product_base_type == "editorial_pkg":
             normalized["export_otio"]   = sub.get("export_otio")
@@ -259,7 +262,7 @@ class ExtractProductResources(
             representation.update({
                 "ext":        rendered[0].suffix.lstrip(".").lower(),
                 "files":      files,
-                "stagingDir": str(rendered[0]),
+                "stagingDir": str(rendered[0].parent),
                 "frameStart": timeline.GetStartFrame(),
                 "frameEnd":   timeline.GetEndFrame(),
             })
@@ -285,8 +288,10 @@ class ExtractProductResources(
 
     def _process_plate(self, instance, settings, preset_path):
         """Render a single TimelineItem's frame range on the active timeline."""
-        frame_start = instance.data["frameStart"]
-        frame_end = instance.data["frameEnd"]
+        source_start = instance.data["sourceStart"]
+        source_end = instance.data["sourceEnd"]
+        source_start_handles = instance.data["sourceStartH"]
+        source_end_handles = instance.data["sourceEndH"]
         handle_start = instance.data["handleStart"]
         handle_end = instance.data["handleEnd"]
         with_handles = settings.get("with_handles", False)
@@ -311,18 +316,19 @@ class ExtractProductResources(
             preset_data.update({
                 "NumFramesOfHandles": max(handle_start, handle_end)
             })
-            repre_frame_start = frame_start - handle_start
-            repre_frame_end = frame_end + handle_end
+            repre_frame_start = source_start_handles
+            repre_frame_end = source_end_handles
         else:
-            repre_frame_start = frame_start
-            repre_frame_end = frame_end
+            repre_frame_start = source_start
+            repre_frame_end = source_end
 
         # Modify preset file
         modified_preset_path = modify_preset_file(
             preset_path,
-            staging_dir,
+            Path(self.staging_dir(instance)),
             preset_data,
         )
+        self.log.info(f"Modified preset path: {modified_preset_path}")
 
         with maintain_page_by_name("Deliver"):
             if not set_render_preset_from_file(modified_preset_path.as_posix()):
@@ -356,7 +362,7 @@ class ExtractProductResources(
             representation.update({
                 "ext":        rendered[0].suffix.lstrip(".").lower(),
                 "files":      files,
-                "stagingDir": str(rendered[0]),
+                "stagingDir": str(rendered[0].parent),
                 "frameStart": repre_frame_start,
                 "frameEnd":   repre_frame_end,
             })

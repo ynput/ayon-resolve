@@ -318,14 +318,16 @@ def set_render_preset_from_file(preset_file_path):
     preset_name = preset_path.stem
 
     # check if the render preset already exists
-    if not bmr_project.LoadRenderPreset(preset_name):
-        log.info(
-            "Render preset does not exists. "
-            f"Creating new render preset: '{preset_name}'"
-        )
-        return bmdvr.ImportRenderPreset(preset_path.as_posix())
+    if bmr_project.LoadRenderPreset(preset_name):
+        delete_preset = bmr_project.DeleteRenderPreset(preset_name)
+        log.info(f"Deleted already existing preset: {delete_preset}")
 
-    return True
+    log.info(
+        "Render preset does not exists. "
+        f"Creating new render preset: '{preset_name}'"
+    )
+    return bmdvr.ImportRenderPreset(preset_path.as_posix())
+
 
 
 def set_format_and_codec(render_format, render_codec):
@@ -487,6 +489,7 @@ def modify_preset_file(
     tree = ET.parse(xml_path, parser=parser)
 
     for key, value in data.items():
+        log.debug(f"Setting {key} to {value}")
         try:
             if "/" in key:
                 # Normalise to a descendant XPath expression.
@@ -500,12 +503,14 @@ def modify_preset_file(
                 if element is None:
                     _append_element(parent, leaf, value)
                 else:
+                    log.debug(f"Setting string 1 {key} to {value}")
                     element.text = str(value)
             else:
                 elements = tree.findall(f".//{key}")
                 if not elements:
                     raise AttributeError(key)
                 for element in elements:
+                    log.debug(f"Setting string 2 {key} to {value}")
                     element.text = str(value)
         except AttributeError:
             log.warning(f"Cannot set '{key}': tag not found. Skipping.")

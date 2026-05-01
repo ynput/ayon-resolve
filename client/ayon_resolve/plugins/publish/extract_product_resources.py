@@ -12,11 +12,11 @@ from ayon_resolve.api.lib import (
     maintain_page_by_name,
 )
 from ayon_resolve.api.rendering import (
+    modify_preset_file,
     render_clip_to_intermediate_file,
     render_timeline_intermediate_file,
     set_format_and_codec,
     set_render_preset_from_file,
-    modify_preset_file,
 )
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
 
@@ -35,7 +35,7 @@ class ExtractProductResources(
       sequence depending on the configured format.
 
     Settings are resolved per-instance from
-    ``resolve → publish → ExtractProductResources → presets``, matched on task
+    ``resolve → publish → ExtractProductResources → profiles``, matched on task
     type / task name and ``product_base_type``.
     """
 
@@ -62,8 +62,7 @@ class ExtractProductResources(
             self._process_plate(instance, settings, preset_path)
         else:
             self.log.warning(
-                "ExtractProductResources: unhandled product base type "
-                f"'{product_base_type}', skipping."
+                "ExtractProductResources: unhandled product base type '%s', skipping.", product_base_type
             )
 
     def get_settings(self, instance):
@@ -76,7 +75,6 @@ class ExtractProductResources(
             ``file_format``, ``codec``, ``preset_path``,
             and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
         """
-
         entity = get_current_task_entity()
         if not entity:
             self.log.warning("No current task entity — using default settings.")
@@ -98,9 +96,7 @@ class ExtractProductResources(
 
         if not profile:
             self.log.debug(
-                f"No preset matched for family='{product_base_type}', "
-                f"task_type='{task_type}', task_name='{task_name}'. "
-                "Using defaults."
+                "No preset matched for family='%s', task_type='%s', task_name='%s'. Using defaults.", product_base_type, task_type, task_name
             )
             return self.get_default_settings(product_base_type)
 
@@ -123,7 +119,7 @@ class ExtractProductResources(
             "custom_tags": preset["custom_tags"],
         }
         if product_base_type == "editorial_pkg":
-            normalized["export_otio"]   = sub.get("export_otio")
+            normalized["export_otio"] = sub.get("export_otio")
             normalized["otio_rootless"] = sub.get("otio_rootless")
         return normalized
 
@@ -143,7 +139,7 @@ class ExtractProductResources(
             "preset_path":   (
                 "{ayon_render_presets}/timeline/QuickTime_H264.xml"
             ),
-            "export_otio":   True,
+            "export_otio": True,
             "otio_rootless": True,
         }
 
@@ -155,7 +151,6 @@ class ExtractProductResources(
         and return the first valid path found. If no valid path is found,
         it will return the original path.
         """
-
         # If the path is set and it's found on disk, return it directly
         if preset_path and os.path.exists(preset_path):
             return preset_path
@@ -168,10 +163,7 @@ class ExtractProductResources(
 
         # Simple check whether the path contains any template keys
         if "{" in preset_path:
-            fill_data = {
-                key: value
-                for key, value in os.environ.items()
-            }
+            fill_data = dict(os.environ.items())
             fill_data["root"] = anatomy.roots
             fill_data["project"] = {
                 "name": project_name,
@@ -214,9 +206,11 @@ class ExtractProductResources(
     # ------------------------------------------------------------------
     # Product Base Type handlers
     # ------------------------------------------------------------------
-
     def _process_editorial_pkg(self, instance, settings, preset_path):
-        """Render the active timeline and produce an intermediate representation."""
+        """Render the active timeline.
+
+        And produce an intermediate representation.
+        """
         folder_path = instance.data["folderPath"]
         timeline_mp_item = instance.data.get("mediaPoolItem")
         if timeline_mp_item is None:
@@ -233,7 +227,7 @@ class ExtractProductResources(
                 f"{folder_path_name}_{timeline_name}",
             )
         )
-        self.log.info(f"Staging directory: {staging_dir}")
+        self.log.info("Staging directory: %s", staging_dir)
 
         with maintain_current_timeline(timeline_mp_item) as timeline:
             self.log.info(f"Rendering timeline: {timeline.GetName()}")
@@ -245,7 +239,7 @@ class ExtractProductResources(
                 settings["codec"],
             )
 
-        self.log.debug(f"Rendered output: {rendered}")
+        self.log.debug("Rendered output: %s", rendered)
 
         representation = {
             "name":       settings["name"],
@@ -278,7 +272,7 @@ class ExtractProductResources(
             colorspace = settings["colorspace"]
             self.set_representation_colorspace(
                 representation, instance.context, colorspace)
-            self.log.debug(f"Set colorspace: {colorspace}")
+            self.log.debug("Set colorspace: %s", colorspace)
 
         instance.data["representations"].append(representation)
         self.log.info(
@@ -316,7 +310,7 @@ class ExtractProductResources(
             Path(self.staging_dir(instance)) / f"{folder_slug}_{clip_name}"
         )
         staging_dir.mkdir(parents=True, exist_ok=True)
-        self.log.info(f"Staging directory: {staging_dir}")
+        self.log.info("Staging directory: %s", staging_dir)
 
         preset_data = {}
         if with_handles:
@@ -335,7 +329,7 @@ class ExtractProductResources(
             Path(self.staging_dir(instance)),
             preset_data,
         )
-        self.log.info(f"Modified preset path: {modified_preset_path}")
+        self.log.info("Modified preset path: %s", modified_preset_path)
 
         with maintain_page_by_name("Deliver"):
             if not set_render_preset_from_file(modified_preset_path.as_posix()):
@@ -384,8 +378,8 @@ class ExtractProductResources(
             colorspace = settings["colorspace"]
             self.set_representation_colorspace(
                 representation, instance.context, colorspace)
-            self.log.debug(f"Set colorspace: {colorspace}")
+            self.log.debug("Set colorspace: %s", colorspace)
 
         self.log.debug(f"Representation: {pformat(representation)}")
         instance.data["representations"].append(representation)
-        self.log.info(f"Added clip intermediate representation: {staging_dir}")
+        self.log.info("Added clip intermediate representation: %s", staging_dir)

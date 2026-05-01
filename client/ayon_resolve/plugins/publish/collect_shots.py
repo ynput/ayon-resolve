@@ -17,6 +17,8 @@ class CollectShot(pyblish.api.InstancePlugin):
     SHARED_KEYS = (
         "folderPath",
         "fps",
+        "handleStart",
+        "handleEnd",
         "resolutionWidth",
         "resolutionHeight",
         "pixelAspect",
@@ -53,6 +55,21 @@ class CollectShot(pyblish.api.InstancePlugin):
             instance (pyblish.Instance): The shot instance to update.
         """
         instance.data["integrate"] = False  # no representation for shot
+        track_item = instance.data["transientData"]["track_item"]
+
+        # Adjust handles - use track item handles if they are shorter
+        # than expected instance handles.
+        available_start = int(track_item.GetLeftOffset())
+        available_end = int(track_item.GetRightOffset())
+        self.log.info(
+            "Available handles: start=%s, end=%s",
+            available_start, available_end)
+        instance.data.update({
+            "handleStart": min(
+                instance.data["handleStart"], int(available_start)),
+            "handleEnd": min(
+                instance.data["handleEnd"], int(available_end)),
+        })
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]

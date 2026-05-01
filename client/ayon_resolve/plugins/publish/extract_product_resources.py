@@ -288,20 +288,27 @@ class ExtractProductResources(
 
     def _process_plate(self, instance, settings, preset_path):
         """Render a single TimelineItem's frame range on the active timeline."""
-        source_start = instance.data["sourceStart"]
-        source_end = instance.data["sourceEnd"]
-        source_start_handles = instance.data["sourceStartH"]
-        source_end_handles = instance.data["sourceEndH"]
-        handle_start = instance.data["handleStart"]
-        handle_end = instance.data["handleEnd"]
-        with_handles = settings.get("with_handles", False)
-
         timeline_item = instance.data.get("timelineItem")
         if timeline_item is None:
             raise RuntimeError(
                 "instance.data['timelineItem'] is required for 'plate' "
                 "products, but was not found."
             )
+
+        # Adjust handles - use track item handles if they are shorter
+        # than expected instance handles.
+        available_head = min(
+            instance.data["handleStart"], timeline_item.GetLeftOffset())
+        available_tail = min(
+            instance.data["handleEnd"], timeline_item.GetRightOffset())
+        clip_duration = int(timeline_item.GetDuration())
+        self.log.info(
+            "Available handles: start=%s, end=%s, clip_duration=%s",
+            available_head, available_tail, clip_duration)
+
+        frame_start = instance.data["frameStart"]
+
+        with_handles = settings.get("with_handles", False)
 
         folder_slug = instance.data["folderPath"].lstrip("/").replace("/", "_")
         clip_name = timeline_item.GetName()
@@ -314,13 +321,13 @@ class ExtractProductResources(
         preset_data = {}
         if with_handles:
             preset_data.update({
-                "NumFramesOfHandles": max(handle_start, handle_end)
+                "NumFramesOfHandles": max(available_head, available_tail)
             })
-            repre_frame_start = source_start_handles
-            repre_frame_end = source_end_handles
+            repre_frame_start = frame_start - available_head
+            repre_frame_end = frame_start + available_tail + clip_duration - 1
         else:
-            repre_frame_start = source_start
-            repre_frame_end = source_end
+            repre_frame_start = frame_start
+            repre_frame_end = frame_start + clip_duration - 1
 
         # Modify preset file
         modified_preset_path = modify_preset_file(

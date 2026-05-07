@@ -277,7 +277,7 @@ class ExtractProductResources(
         instance.data["representations"].append(representation)
         self.log.info(
             f"Added intermediate representation: "
-            f"{os.path.join(staging_dir, rendered_file.name)}"
+            f"{os.path.join(staging_dir, rendered.name)}"
         )
 
     def _process_plate(self, instance, settings, preset_path):

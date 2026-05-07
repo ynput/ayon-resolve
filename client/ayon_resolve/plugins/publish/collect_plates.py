@@ -19,6 +19,8 @@ class CollectPlate(pyblish.api.InstancePlugin):
             instance (pyblish.Instance): The shot instance to update.
         """
         instance.data["families"].append("clip")
+        track_item = instance.data["transientData"]["track_item"]
+        instance.data["timelineItem"] = track_item
 
         otio_timeline = instance.context.data["otioTimeline"]
         otio_clip, marker = utils.get_marker_from_clip_index(

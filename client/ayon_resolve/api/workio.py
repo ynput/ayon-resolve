@@ -98,8 +98,10 @@ def open_file(filepath):
         # Save current project only if Resolve has an active page, otherwise
         # we consider Resolve being in a pre-launch state (no open UI yet)
         resolve_project = get_current_resolve_project()
-        print(f"Saving current resolve project: {resolve_project}")
-        project_manager.SaveProject()
+        # check if resolve_project is string or binary name
+        if isinstance(resolve_project, str):
+            print(f"Saving current resolve project: {resolve_project}")
+            project_manager.SaveProject()
 
     file = os.path.basename(filepath)
     fname, _ = os.path.splitext(file)
@@ -246,6 +248,15 @@ def get_local_database_root() -> Path:
     if sys.platform == "win32":
         result = (
             Path(os.getenv("APPDATA"))
+            / "Blackmagic Design" / "DaVinci Resolve" / "Support"
+            / "Resolve Project Library" / "Resolve Projects"
+            / "Users" / "guest" / "Projects"
+        )
+    elif sys.platform == "darwin":
+        result = (
+            Path(os.getenv("HOME"))
+            / "Library"
+            / "Application Support"
             / "Blackmagic Design" / "DaVinci Resolve" / "Support"
             / "Resolve Project Library" / "Resolve Projects"
             / "Users" / "guest" / "Projects"

@@ -10,6 +10,7 @@ This code runs in a separate process to the main Resolve process.
 
 """
 import os
+import signal
 from ayon_core.lib import Logger
 import ayon_resolve.api
 
@@ -55,6 +56,20 @@ def open_workfile(path):
 
 
 def main():
+    # Close splash screen if splash pid is set
+    if splash_pid := os.environ.get("AYON_RESOLVE_SPLASH_PID"):
+        try:
+            os.kill(int(splash_pid), signal.SIGTERM)
+        except (ValueError, ProcessLookupError, PermissionError, OSError) as exc:
+            log.warning(
+                "Failed to terminate splash screen process %r: %s",
+                splash_pid,
+                exc,
+            )
+        finally:
+            # Ensure the env var does not keep causing failures on subsequent runs
+            os.environ.pop("AYON_RESOLVE_SPLASH_PID", None)
+
     # Open last workfile
     workfile_path = os.environ.get("AYON_RESOLVE_OPEN_ON_LAUNCH")
 

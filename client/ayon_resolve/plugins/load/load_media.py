@@ -386,7 +386,7 @@ class LoadMedia(LoaderPlugin):
             "handleStart", "handleEnd",
             "source", "fps", "colorSpace"
         ]:
-            data[key] = version["attrib"][key]
+            data[key] = version["attrib"].get(key)
 
         # version.data
         if "author" in version["data"]:

@@ -2,8 +2,6 @@ import copy
 import re
 import uuid
 
-import qargparse
-
 from ayon_core.pipeline.constants import AVALON_INSTANCE_ID
 from ayon_core.pipeline import (
     LoaderPlugin,
@@ -11,6 +9,7 @@ from ayon_core.pipeline import (
     HiddenCreator,
     Anatomy
 )
+from ayon_core.lib import BoolDef, EnumDef
 
 from . import lib, constants
 
@@ -239,23 +238,23 @@ class TimelineItemLoader(LoaderPlugin):
     """
 
     options = [
-        qargparse.Boolean(
+        BoolDef(
             "handles",
             label="Include handles",
-            default=0,
-            help="Load with handles or without?"
+            default=False,
+            tooltip="Load with handles or without?"
         ),
-        qargparse.Choice(
+        EnumDef(
             "load_to",
             label="Where to load clips",
             items=[
                 "Current timeline",
                 "New timeline"
             ],
-            default=0,
-            help="Where do you want clips to be loaded?"
+            default="Current timeline",
+            tooltip="Where do you want clips to be loaded?"
         ),
-        qargparse.Choice(
+        EnumDef(
             "load_how",
             label="How to load clips",
             items=[
@@ -263,7 +262,7 @@ class TimelineItemLoader(LoaderPlugin):
                 "Sequentially in order"
             ],
             default="Original timing",
-            help="Would you like to place it at original timing?"
+            tooltip="Would you like to place it at original timing?"
         )
     ]
 

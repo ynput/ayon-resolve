@@ -95,6 +95,7 @@ def representation_tags_enum():
         {"value": "review", "label": "Extract review processing"},
         {"value": "delete", "label": "Delete - as intermediate"},
         {"value": "passing", "label": "Skip Extract Review"},
+        {"value": "webreview", "label": "Upload as reviewable"},
     ]
 
 
@@ -203,6 +204,7 @@ class BuiltinPlateFormatModel(BaseSettingsModel):
         title="Preset",
         enum_resolver=_builtin_plate_presets,
     )
+    # todo: this needs to be a selection for the user
     codec: str = SettingsField(
         "RGB half (DWAA)",
         title="Codec",
@@ -278,11 +280,63 @@ class PlateFormatModel(BaseSettingsModel):
         title="With Handles",
     )
 
+
+class ProductTypeSharedModel(BaseSettingsModel):
+    _layout = "expanded"
+    repre_name: str = SettingsField(
+        "",
+        title="Name",
+        section="Representation attributes",
+    )
+    tags: list[str] = SettingsField(
+        default_factory=list,
+        title="Tags",
+        enum_resolver=representation_tags_enum,
+        description="Currently only partly supporting reviewable workflow.",
+    )
+    custom_tags: list[str] = SettingsField(
+        default_factory=list,
+        title="Custom Tags",
+        description=(
+            "Ideal for additional filtering under Extract Review plugin.")
+    )
+    colorspace: str = SettingsField(
+        "",
+        title="Colorspace",
+        description="The colorspace to be added to colorspace metadata."
+    )
+
+
+class EditorialPKGModel(BaseSettingsModel):
+    _layout = "expanded"
+    # todo: better name for settings and shared
+    settings: TimelineIntermediateFormatModel = SettingsField(
+        default_factory=TimelineIntermediateFormatModel,
+        title="Timeline Attributes",
+    )
+    shared: ProductTypeSharedModel = SettingsField(
+        default_factory=ProductTypeSharedModel,
+        title="Shared Attributes"
+    )
+
+
+class PlateModel(BaseSettingsModel):
+    _layout = "expanded"
+    settings: PlateFormatModel = SettingsField(
+        default_factory=PlateFormatModel,
+        title="Plate Attributes",
+    )
+    shared: ProductTypeSharedModel = SettingsField(
+        default_factory=ProductTypeSharedModel,
+        title="Shared Attributes"
+    )
+
+
 class ProductResourcesPresetModel(BaseSettingsModel):
     """Product Resources Preset."""
     name: str = SettingsField(
         "",
-        title="Name"
+        title="Preset Name"
     )
     task_types: list[str] = SettingsField(
         default_factory=list,
@@ -300,31 +354,22 @@ class ProductResourcesPresetModel(BaseSettingsModel):
         enum_resolver=_product_base_types_enum,
         conditional_enum=True
     )
-    editorial_pkg: TimelineIntermediateFormatModel = SettingsField(
-        default_factory=TimelineIntermediateFormatModel,
-        title="Timeline Attributes",
-    )
-    plate: PlateFormatModel = SettingsField(
-        default_factory=PlateFormatModel,
-        title="Plate Attributes",
-    )
-    tags: list[str] = SettingsField(
-        default_factory=list,
-        title="Tags",
-        enum_resolver=representation_tags_enum,
-        description="Currently only partly supporting reviewable workflow.",
-        section="Representation attributes",
-    )
-    custom_tags: list[str] = SettingsField(
-        default_factory=list,
-        title="Custom Tags",
+    integrate_clip_source: bool = SettingsField(
+        False,
+        title="Integrate Clip Source",
         description=(
-            "Ideal for additional filtering under Extract Review plugin.")
+            "When enabled integrate the timeline item's media pool item as additional representation."
+        )
     )
-    colorspace: str = SettingsField(
-        "",
-        title="Colorspace",
-        description="The colorspace to be added to colorspace metadata."
+
+    # conditional properties based on product_base_type
+    editorial_pkg: list[EditorialPKGModel] = SettingsField(
+        default_factory=list,
+        title="Editorial PKG"
+    )
+    plate: list[PlateModel] = SettingsField(
+        default_factory=list,
+        title="Plate"
     )
 
 
@@ -536,33 +581,34 @@ DEFAULT_VALUES = {
             ]
         }
     },
-    "publish": {
-        "ExtractProductResources": {
-            "profiles": [
-                {
-                    "name": "timeline_reviewable",
-                    "task_types": [],
-                    "task_names": [],
-                    "product_base_type": "editorial_pkg",
-                    "editorial_pkg": {
-                        "preset_type": "builtin_preset",
-                    },
-                    "tags": ["review", "delete"],
-                    "custom_tags": []
-                },
-                {
-                    "name": "plate_exr_dwaa",
-                    "task_types": [],
-                    "task_names": [],
-                    "product_base_type": "plate",
-                    "plate": {
-                        "preset_type": "builtin_preset",
-                        "with_handles": True,
-                    },
-                    "tags": ["passing"],
-                    "custom_tags": []
-                }
-            ]
-        }
-    }
+    # todo: paste sane defaults, commented out rn to not make frontend suffer too much
+    # "publish": {
+    #     "ExtractProductResources": {
+    #         "profiles": [
+    #             {
+    #                 "name": "timeline_reviewable",
+    #                 "task_types": [],
+    #                 "task_names": [],
+    #                 "product_base_type": "editorial_pkg",
+    #                 "editorial_pkg": {
+    #                     "preset_type": "builtin_preset",
+    #                 },
+    #                 "tags": ["review", "delete"],
+    #                 "custom_tags": []
+    #             },
+    #             {
+    #                 "name": "plate_exr_dwaa",
+    #                 "task_types": [],
+    #                 "task_names": [],
+    #                 "product_base_type": "plate",
+    #                 "plate": {
+    #                     "preset_type": "builtin_preset",
+    #                     "with_handles": True,
+    #                 },
+    #                 "tags": ["passing"],
+    #                 "custom_tags": []
+    #             }
+    #         ]
+    #     }
+    # }
 }

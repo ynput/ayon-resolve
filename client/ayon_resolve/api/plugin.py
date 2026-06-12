@@ -242,7 +242,7 @@ class TimelineItemLoader(LoaderPlugin):
             "handles",
             label="Include handles",
             default=False,
-            help="Load with handles or without?"
+            tooltip="Load with handles or without?"
         ),
         EnumDef(
             "load_to",
@@ -252,7 +252,7 @@ class TimelineItemLoader(LoaderPlugin):
                 "New timeline"
             ],
             default="Current timeline",
-            help="Where do you want clips to be loaded?"
+            tooltip="Where do you want clips to be loaded?"
         ),
         EnumDef(
             "load_how",
@@ -262,7 +262,7 @@ class TimelineItemLoader(LoaderPlugin):
                 "Sequentially in order"
             ],
             default="Original timing",
-            help="Would you like to place it at original timing?"
+            tooltip="Would you like to place it at original timing?"
         )
     ]
 

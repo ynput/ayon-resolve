@@ -5,7 +5,7 @@ class CollectWorkfile(pyblish.api.InstancePlugin):
     """Collect additional metadata for workfile instance."""
 
     label = "Collect Workfile"
-    order = pyblish.api.CollectorOrder - 0.45
+    order = pyblish.api.CollectorOrder - 0.49
     hosts = ["resolve"]
     families = ["workfile"]
 

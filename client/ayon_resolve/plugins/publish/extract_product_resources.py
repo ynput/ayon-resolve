@@ -264,7 +264,7 @@ class ExtractProductResources(
             representation.update({
                 "ext":        rendered.suffix.lstrip(".").lower(),
                 "files":      rendered.name,
-                "stagingDir": str(rendered),
+                "stagingDir": str(rendered.parent),
             })
 
         # attach colorspace to the representation

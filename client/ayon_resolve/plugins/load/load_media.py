@@ -386,6 +386,8 @@ class LoadMedia(LoaderPlugin):
             "handleStart", "handleEnd",
             "source", "fps", "colorSpace"
         ]:
+            if key not in version["attrib"]:
+                continue
             data[key] = version["attrib"][key]
 
         # version.data

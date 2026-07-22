@@ -19,8 +19,8 @@ class PreLaunchResolveLastWorkfile(PreLaunchHook):
 
         # Add path to launch environment for the startup script to pick up
         self.log.info(
-            "Setting AYON_RESOLVE_OPEN_ON_LAUNCH to launch "
-            f"last workfile: {workfile_path}"
+            "Setting AYON_RESOLVE_OPEN_ON_LAUNCH to open "
+            f"workfile: {workfile_path}"
         )
         key = "AYON_RESOLVE_OPEN_ON_LAUNCH"
         self.launch_context.env[key] = workfile_path

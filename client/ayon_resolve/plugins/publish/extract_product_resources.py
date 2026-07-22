@@ -98,10 +98,12 @@ class ExtractProductResources(
         )
 
         if not profile:
-            self.log.debug(
-                "No preset matched for family='%s', task_type='%s', task_name='%s'. Using defaults.", product_base_type, task_type, task_name
+            raise RuntimeError(
+                (
+                    f"No matching preset found for family='{product_base_type}'. "
+                    "Please visit your server settings and add a matching preset for this family."
+                )
             )
-            return self.get_default_settings(product_base_type)
 
         self.log.debug(f"Matched preset: {profile.get('name')}")
 

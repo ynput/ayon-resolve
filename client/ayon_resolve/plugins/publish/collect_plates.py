@@ -20,9 +20,9 @@ class CollectPlate(pyblish.api.InstancePlugin):
         """
         instance.data["families"].extend([
             "clip",
-            # Mark instance for 'CollectOTIORanges' in core
-            "otio.review.track",
             # Mark instance for 'CollectOTIOReviewTrack' in core
+            "otio.review.track",
+            # Mark instance for 'CollectOTIORanges' in core
             "otio.clip.ranges",
             # Mark instance for 'CollectOTIOProductResources' in core
             "otio.clip.resources",

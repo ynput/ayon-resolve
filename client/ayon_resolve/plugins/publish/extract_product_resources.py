@@ -84,11 +84,6 @@ class ExtractProductResources(
             and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
         """
         entity = get_current_task_entity()
-        if not entity:
-            self.log.warning("No current task entity — using default settings.")
-            product_base_type = instance.data["productBaseType"]
-            return self.get_default_settings(product_base_type)
-
         task_type = entity.get("taskType")
         task_name = entity.get("taskName")
         product_base_type = instance.data["productBaseType"]

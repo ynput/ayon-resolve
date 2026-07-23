@@ -133,26 +133,6 @@ class ExtractProductResources(
         self.log.debug(f"{normalized = }")
         return normalized
 
-    def get_default_settings(self, product_base_type="editorial_pkg"):
-        """Return hard-coded defaults when no matching preset is found."""
-        if product_base_type == "plate":
-            return {
-                "file_format": "EXR",
-                "codec":       "RGB half (DWAA)",
-                "preset_path": (
-                    "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml"
-                ),
-            }
-        return {
-            "file_format":   "QuickTime",
-            "codec":         "H.264",
-            "preset_path":   (
-                "{ayon_render_presets}/timeline/QuickTime_H264.xml"
-            ),
-            "export_otio": True,
-            "otio_rootless": True,
-        }
-
     def resolve_preset_path(self, preset_path):
         """Resolve the path to a render preset file.
 

@@ -581,34 +581,73 @@ DEFAULT_VALUES = {
             ]
         }
     },
-    # todo: paste sane defaults, commented out rn to not make frontend suffer too much
-    # "publish": {
-    #     "ExtractProductResources": {
-    #         "profiles": [
-    #             {
-    #                 "name": "timeline_reviewable",
-    #                 "task_types": [],
-    #                 "task_names": [],
-    #                 "product_base_type": "editorial_pkg",
-    #                 "editorial_pkg": {
-    #                     "preset_type": "builtin_preset",
-    #                 },
-    #                 "tags": ["review", "delete"],
-    #                 "custom_tags": []
-    #             },
-    #             {
-    #                 "name": "plate_exr_dwaa",
-    #                 "task_types": [],
-    #                 "task_names": [],
-    #                 "product_base_type": "plate",
-    #                 "plate": {
-    #                     "preset_type": "builtin_preset",
-    #                     "with_handles": True,
-    #                 },
-    #                 "tags": ["passing"],
-    #                 "custom_tags": []
-    #             }
-    #         ]
-    #     }
-    # }
+    "publish": {
+        "ExtractProductResources": {
+            "profiles": [
+                {
+                    "name": "Plate Clip Preset",
+                    "task_types": [],
+                    "task_names": [],
+                    "product_base_type": "plate",
+                    "editorial_pkg": [],
+                    "plate": [
+                        {
+                            "settings": {
+                                "preset_type": "builtin_preset",
+                                "builtin_preset": {
+                                    "format": "EXR",
+                                    "preset_path": "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml",
+                                    "codec": "RGB half (DWAA)",
+                                },
+                                "custom_preset": {
+                                    "format": "QuickTime",
+                                    "preset_path": "",
+                                    "codec": "H.264",
+                                },
+                                "with_handles": True,
+                            },
+                            "shared": {
+                                "repre_name": "exr",
+                                "tags": [],
+                                "custom_tags": [],
+                                "colorspace": "",
+                            },
+                        }
+                    ],
+                },
+                {
+                    "name": "Editorial Package Preset",
+                    "task_types": [],
+                    "task_names": [],
+                    "product_base_type": "editorial_pkg",
+                    "editorial_pkg": [
+                        {
+                            "settings": {
+                                "export_otio": True,
+                                "otio_rootless": True,
+                                "preset_type": "builtin_preset",
+                                "builtin_preset": {
+                                    "format": "QuickTime",
+                                    "preset_path": "{ayon_render_presets}/timeline/QuickTime_H264.xml",
+                                    "codec": "H.264",
+                                },
+                                "custom_preset": {
+                                    "format": "QuickTime",
+                                    "preset_path": "",
+                                    "codec": "H.264",
+                                },
+                            },
+                            "shared": {
+                                "repre_name": "mov",
+                                "tags": ["passing"],
+                                "custom_tags": [],
+                                "colorspace": "",
+                            },
+                        }
+                    ],
+                    "plate": [],
+                },
+            ]
+        }
+    },
 }

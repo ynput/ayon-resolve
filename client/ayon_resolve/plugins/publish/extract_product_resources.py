@@ -127,8 +127,8 @@ class ExtractProductResources(
             "with_handles": preset["settings"].get("with_handles"),
             "tags":        preset["shared"]["tags"],
             "custom_tags": preset["shared"]["custom_tags"],
-            "export_otio": preset["settings"].get("export_otio", None),
-            "otio_rootless": preset["settings"].get("otio_rootless", None),
+            "export_otio": preset["settings"].get("export_otio"),
+            "otio_rootless": preset["settings"].get("otio_rootless"),
         }
         self.log.debug(f"{normalized = }")
         return normalized

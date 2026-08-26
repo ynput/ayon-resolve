@@ -99,10 +99,8 @@ class ExtractProductResources(
 
         if not profile:
             raise RuntimeError(
-                (
-                    f"No matching preset found for family='{product_base_type}'. "
-                    "Please visit your server settings and add a matching preset for this family."
-                )
+                f"No matching preset found for family='{product_base_type}'. "
+                "Please visit your server settings and add a matching preset for this family."
             )
 
         self.log.debug(f"Matched preset: {profile.get('name')}")

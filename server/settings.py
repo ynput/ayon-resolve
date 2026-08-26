@@ -377,10 +377,9 @@ class ProductResourcesPresetModel(BaseSettingsModel):
         # ensure_unique_names unfortunately is hardcoded to use `name` as field key
         names = []
         for val in values:
-            if val.shared.repre_name not in names:
-                names.append(val.shared.repre_name)
-            else:
+            if val.shared.repre_name in names:
                 raise ValueError(f"Duplicate representation name: {val.shared.repre_name}")
+            names.append(val.shared.repre_name)
 
         return values
 

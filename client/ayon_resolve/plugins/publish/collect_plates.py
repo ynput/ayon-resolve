@@ -18,7 +18,15 @@ class CollectPlate(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
-        instance.data["families"].append("clip")
+        instance.data["families"].extend([
+            "clip",
+            # Mark instance for 'CollectOTIOReviewTrack' in core
+            "otio.review.track",
+            # Mark instance for 'CollectOTIORanges' in core
+            "otio.clip.ranges",
+            # Mark instance for 'CollectOTIOProductResources' in core
+            "otio.clip.resources",
+        ])
         track_item = instance.data["transientData"]["track_item"]
         instance.data["timelineItem"] = track_item
 
@@ -43,6 +51,8 @@ class CollectPlate(pyblish.api.InstancePlugin):
         if review_switch is True:
             if reviewable_source == "clip_media":
                 instance.data["families"].append("review")
+                # Tell 'CollectOTIOReviewTrack' to use the current clip
+                instance.data["otioReviewClips"] = [otio_clip]
                 instance.data.pop("reviewTrack", None)
             else:
                 instance.data["reviewTrack"] = reviewable_source

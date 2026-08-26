@@ -54,6 +54,9 @@ class CollectShot(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
+        # Mark instance for 'CollectOTIORanges' in core
+        instance.data["families"].append("otio.clip.ranges")
+
         instance.data["integrate"] = False  # no representation for shot
         track_item = instance.data["transientData"]["track_item"]
 

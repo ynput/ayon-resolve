@@ -5,7 +5,12 @@ from pprint import pformat
 
 import pyblish.api
 from ayon_core.lib import StringTemplate, filter_profiles
-from ayon_core.pipeline import Anatomy, get_current_project_name, publish
+from ayon_core.pipeline import (
+    Anatomy,
+    get_current_project_name,
+    publish,
+    PublishError,
+)
 from ayon_core.pipeline.context_tools import get_current_task_entity
 from ayon_resolve.api import rendering
 from ayon_resolve.api.lib import (
@@ -98,7 +103,7 @@ class ExtractProductResources(
         )
 
         if not profile:
-            raise RuntimeError(
+            raise PublishError(
                 f"No matching preset found for family='{product_base_type}'. "
                 "Please visit your server settings and add a matching preset for this family."
             )

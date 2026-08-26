@@ -301,8 +301,7 @@ class ExtractProductResources(
         self.log.info("Staging directory: %s", staging_dir)
 
         preset_data = {}
-        with_handles = settings.get("with_handles", False)
-        if with_handles:
+        if settings["with_handles"]:
             preset_data.update({
                 "NumFramesOfHandles": max(available_head, available_tail)
             })

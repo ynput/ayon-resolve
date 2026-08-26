@@ -116,8 +116,8 @@ class ExtractProductResources(
 
     def _normalize_preset(self, preset):
         """Flatten the nested preset structure into a render-ready dict."""
-        preset_type = preset["settings"].get("preset_type")
-        fmt = preset["settings"].get(preset_type, {})
+        preset_type = preset["settings"]["preset_type"]
+        fmt = preset["settings"][preset_type]
 
         normalized = {
             "name":        preset["shared"]["repre_name"],

@@ -334,7 +334,12 @@ class ProductResourcesPresetModel(BaseSettingsModel):
     """Product Resources Preset."""
     name: str = SettingsField(
         "",
-        title="Preset Name"
+        title="Profile Name",
+        description=(
+            "The name of the profile. If left empty, "
+            "a default name based on selected product base type will be assigned on save. "
+            "No further logic is connected to this."
+        )
     )
     task_types: list[str] = SettingsField(
         default_factory=list,
@@ -393,6 +398,18 @@ class ExtractProductResourcesModel(BaseSettingsModel):
             "resource extraction."
         )
     )
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+        plate_profiles = [profile for profile in self.profiles if profile.product_base_type == "plate"]
+        editorial_pkg_profiles = [profile for profile in self.profiles if profile.product_base_type == "editorial_pkg"]
+        for idx, profile in enumerate(plate_profiles):
+            if not profile.name:
+                profile.name = f"Plate Profile #{idx + 1}"
+        for idx, profile in enumerate(editorial_pkg_profiles):
+            if not profile.name:
+                profile.name = f"Editorial PKG Profile #{idx + 1}"
 
     @validator("profiles")
     def validate_unique_outputs(cls, value):
@@ -594,7 +611,7 @@ DEFAULT_VALUES = {
         "ExtractProductResources": {
             "profiles": [
                 {
-                    "name": "Plate Clip Preset",
+                    "name": "Plate Profile #1",
                     "task_types": [],
                     "task_names": [],
                     "product_base_type": "plate",
@@ -625,7 +642,7 @@ DEFAULT_VALUES = {
                     ],
                 },
                 {
-                    "name": "Editorial Package Preset",
+                    "name": "Editorial PKG Profile #1",
                     "task_types": [],
                     "task_names": [],
                     "product_base_type": "editorial_pkg",

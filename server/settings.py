@@ -308,9 +308,7 @@ class ProductTypeSharedModel(BaseSettingsModel):
 
 
 class EditorialPKGModel(BaseSettingsModel):
-    _layout = "expanded"
-    # todo: better name for settings and shared
-    settings: TimelineIntermediateFormatModel = SettingsField(
+    output_defs: TimelineIntermediateFormatModel = SettingsField(
         default_factory=TimelineIntermediateFormatModel,
     )
     shared: ProductTypeSharedModel = SettingsField(
@@ -319,8 +317,7 @@ class EditorialPKGModel(BaseSettingsModel):
 
 
 class PlateModel(BaseSettingsModel):
-    _layout = "expanded"
-    settings: PlateFormatModel = SettingsField(
+    output_defs: PlateFormatModel = SettingsField(
         default_factory=PlateFormatModel,
         title="Plate Attributes",
     )
@@ -368,11 +365,13 @@ class ProductResourcesPresetModel(BaseSettingsModel):
     # conditional properties based on product_base_type
     editorial_pkg: list[EditorialPKGModel] = SettingsField(
         default_factory=list,
-        title="Editorial PKG"
+        title="Output Definitions",
+        description="Configures Resolve render settings for each representation to be exported."
     )
     plate: list[PlateModel] = SettingsField(
         default_factory=list,
-        title="Plate"
+        title="Output Definitions",
+        description="Configures Resolve render settings for each representation to be exported."
     )
 
     @validator("editorial_pkg", "plate")

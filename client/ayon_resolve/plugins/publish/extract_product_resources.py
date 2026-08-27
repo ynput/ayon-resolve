@@ -119,19 +119,19 @@ class ExtractProductResources(
 
     def _normalize_preset(self, preset):
         """Flatten the nested preset structure into a render-ready dict."""
-        preset_type = preset["settings"]["preset_type"]
-        fmt = preset["settings"][preset_type]
+        preset_type = preset["output_defs"]["preset_type"]
+        fmt = preset["output_defs"][preset_type]
 
         normalized = {
             "name":        preset["shared"]["repre_name"],
             "file_format": fmt.get("format"),
             "codec":       fmt.get("codec"),
             "preset_path": fmt.get("preset_path"),
-            "with_handles": preset["settings"].get("with_handles"),
+            "with_handles": preset["output_defs"].get("with_handles"),
             "tags":        preset["shared"]["tags"],
             "custom_tags": preset["shared"]["custom_tags"],
-            "export_otio": preset["settings"].get("export_otio"),
-            "otio_rootless": preset["settings"].get("otio_rootless"),
+            "export_otio": preset["output_defs"].get("export_otio"),
+            "otio_rootless": preset["output_defs"].get("otio_rootless"),
         }
         self.log.debug(f"{normalized = }")
         return normalized

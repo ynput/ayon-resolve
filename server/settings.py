@@ -312,11 +312,9 @@ class EditorialPKGModel(BaseSettingsModel):
     # todo: better name for settings and shared
     settings: TimelineIntermediateFormatModel = SettingsField(
         default_factory=TimelineIntermediateFormatModel,
-        title="Timeline Attributes",
     )
     shared: ProductTypeSharedModel = SettingsField(
         default_factory=ProductTypeSharedModel,
-        title="Shared Attributes"
     )
 
 

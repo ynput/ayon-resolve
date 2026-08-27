@@ -234,7 +234,7 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
         title="Export OTIO",
         description="When enabled AYON will export OTIO file"
         " along with intermediate file.",
-        section="Timeline options",
+        section="Timeline Options",
     )
     otio_rootless: bool = SettingsField(
         True,
@@ -244,7 +244,7 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
     )
     preset_type: str = SettingsField(
         "builtin_preset",
-        title="Preset type",
+        title="Preset Type",
         enum_resolver=_preset_types_enum,
         conditional_enum=True,
         section="Preset Options",
@@ -340,7 +340,7 @@ class ProductResourcesPresetModel(BaseSettingsModel):
         default_factory=list,
         title="Task Types",
         enum_resolver=task_types_enum,
-        section="Profile filtering",
+        section="Profile Filtering",
     )
     task_names: list[str] = SettingsField(
         default_factory=list,

@@ -219,7 +219,7 @@ class CustomPresetModel(BaseSettingsModel):
     )
     preset_path: str = SettingsField(
         "",
-        title="Preset path",
+        title="Preset Path",
         placeholder="shared storage path with `{root[work]}` token",
     )
     codec: str = SettingsField(
@@ -247,7 +247,7 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
         title="Preset type",
         enum_resolver=_preset_types_enum,
         conditional_enum=True,
-        section="Preset options",
+        section="Preset Options",
     )
     builtin_preset: BuiltinTimelineFormatModel = SettingsField(
         default_factory=BuiltinTimelineFormatModel,
@@ -262,10 +262,10 @@ class PlateFormatModel(BaseSettingsModel):
     _layout = "expanded"
     preset_type: str = SettingsField(
         "builtin_preset",
-        title="Preset type",
+        title="Preset Type",
         enum_resolver=_preset_types_enum,
         conditional_enum=True,
-        section="Preset options",
+        section="Preset Options",
     )
     builtin_preset: BuiltinPlateFormatModel = SettingsField(
         default_factory=BuiltinPlateFormatModel,
@@ -286,7 +286,7 @@ class ProductTypeSharedModel(BaseSettingsModel):
     repre_name: str = SettingsField(
         "",
         title="Name",
-        section="Representation attributes",
+        section="Representation Attributes",
     )
     tags: list[str] = SettingsField(
         default_factory=list,
@@ -340,17 +340,17 @@ class ProductResourcesPresetModel(BaseSettingsModel):
     )
     task_types: list[str] = SettingsField(
         default_factory=list,
-        title="Task types",
+        title="Task Types",
         enum_resolver=task_types_enum,
         section="Profile filtering",
     )
     task_names: list[str] = SettingsField(
         default_factory=list,
-        title="Task names"
+        title="Task Names"
     )
     product_base_type: str = SettingsField(
         "editorial_pkg",
-        title="Product base type",
+        title="Product Base Type",
         enum_resolver=_product_base_types_enum,
         conditional_enum=True
     )

@@ -132,6 +132,7 @@ class ExtractProductResources(
             "custom_tags": preset["shared"]["custom_tags"],
             "export_otio": preset["output_defs"].get("export_otio"),
             "otio_rootless": preset["output_defs"].get("otio_rootless"),
+            "colorspace": preset["shared"].get("colorspace"),
         }
         self.log.debug(f"{normalized = }")
         return normalized

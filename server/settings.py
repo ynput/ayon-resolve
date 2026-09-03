@@ -73,6 +73,10 @@ def _builtin_plate_presets():
             "label": "EXR RGB float (ZIP)",
             "value": "{ayon_render_presets}/clip/EXR_RGB_float_(ZIP).xml"
         },
+        {
+            "label": "QuickTime H264",
+            "value": "{ayon_render_presets}/timeline/QuickTime_H264.xml"
+        },
     ]
 
 

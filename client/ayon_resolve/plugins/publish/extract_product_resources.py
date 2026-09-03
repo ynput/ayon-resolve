@@ -56,10 +56,8 @@ class ExtractProductResources(
         instance.data.setdefault("representations", [])
         integrate_clip_source, all_output_settings = self.get_settings(instance)
 
-        # todo: find the source of this, i think it's some otio extractor
-        #       maybe skip adding the repre there? but settings would be in a different extractor... doesn't make sense
         if not integrate_clip_source:
-            instance.data["representations"] = []   # disables clip source integration
+            instance.data["representations"] = []
 
         for settings in all_output_settings:
             preset_path = Path(self.resolve_preset_path(settings["preset_path"]))

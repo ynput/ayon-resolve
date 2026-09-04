@@ -73,6 +73,10 @@ def _builtin_plate_presets():
             "label": "EXR RGB float (ZIP)",
             "value": "{ayon_render_presets}/clip/EXR_RGB_float_(ZIP).xml"
         },
+        {
+            "label": "QuickTime H264",
+            "value": "{ayon_render_presets}/timeline/QuickTime_H264.xml"
+        },
     ]
 
 
@@ -95,6 +99,7 @@ def representation_tags_enum():
         {"value": "review", "label": "Extract review processing"},
         {"value": "delete", "label": "Delete - as intermediate"},
         {"value": "passing", "label": "Skip Extract Review"},
+        {"value": "webreview", "label": "Upload as reviewable"},
     ]
 
 
@@ -203,6 +208,7 @@ class BuiltinPlateFormatModel(BaseSettingsModel):
         title="Preset",
         enum_resolver=_builtin_plate_presets,
     )
+    # todo: this needs to be a selection for the user
     codec: str = SettingsField(
         "RGB half (DWAA)",
         title="Codec",
@@ -217,7 +223,7 @@ class CustomPresetModel(BaseSettingsModel):
     )
     preset_path: str = SettingsField(
         "",
-        title="Preset path",
+        title="Preset Path",
         placeholder="shared storage path with `{root[work]}` token",
     )
     codec: str = SettingsField(
@@ -232,7 +238,7 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
         title="Export OTIO",
         description="When enabled AYON will export OTIO file"
         " along with intermediate file.",
-        section="Timeline options",
+        section="Timeline Options",
     )
     otio_rootless: bool = SettingsField(
         True,
@@ -242,10 +248,10 @@ class TimelineIntermediateFormatModel(BaseSettingsModel):
     )
     preset_type: str = SettingsField(
         "builtin_preset",
-        title="Preset type",
+        title="Preset Type",
         enum_resolver=_preset_types_enum,
         conditional_enum=True,
-        section="Preset options",
+        section="Preset Options",
     )
     builtin_preset: BuiltinTimelineFormatModel = SettingsField(
         default_factory=BuiltinTimelineFormatModel,
@@ -260,10 +266,10 @@ class PlateFormatModel(BaseSettingsModel):
     _layout = "expanded"
     preset_type: str = SettingsField(
         "builtin_preset",
-        title="Preset type",
+        title="Preset Type",
         enum_resolver=_preset_types_enum,
         conditional_enum=True,
-        section="Preset options",
+        section="Preset Options",
     )
     builtin_preset: BuiltinPlateFormatModel = SettingsField(
         default_factory=BuiltinPlateFormatModel,
@@ -278,42 +284,19 @@ class PlateFormatModel(BaseSettingsModel):
         title="With Handles",
     )
 
-class ProductResourcesPresetModel(BaseSettingsModel):
-    """Product Resources Preset."""
-    name: str = SettingsField(
+
+class ProductTypeSharedModel(BaseSettingsModel):
+    _layout = "expanded"
+    repre_name: str = SettingsField(
         "",
-        title="Name"
-    )
-    task_types: list[str] = SettingsField(
-        default_factory=list,
-        title="Task types",
-        enum_resolver=task_types_enum,
-        section="Profile filtering",
-    )
-    task_names: list[str] = SettingsField(
-        default_factory=list,
-        title="Task names"
-    )
-    product_base_type: str = SettingsField(
-        "editorial_pkg",
-        title="Product base type",
-        enum_resolver=_product_base_types_enum,
-        conditional_enum=True
-    )
-    editorial_pkg: TimelineIntermediateFormatModel = SettingsField(
-        default_factory=TimelineIntermediateFormatModel,
-        title="Timeline Attributes",
-    )
-    plate: PlateFormatModel = SettingsField(
-        default_factory=PlateFormatModel,
-        title="Plate Attributes",
+        title="Name",
+        section="Representation Attributes",
     )
     tags: list[str] = SettingsField(
         default_factory=list,
         title="Tags",
         enum_resolver=representation_tags_enum,
         description="Currently only partly supporting reviewable workflow.",
-        section="Representation attributes",
     )
     custom_tags: list[str] = SettingsField(
         default_factory=list,
@@ -328,6 +311,85 @@ class ProductResourcesPresetModel(BaseSettingsModel):
     )
 
 
+class EditorialPKGModel(BaseSettingsModel):
+    output_defs: TimelineIntermediateFormatModel = SettingsField(
+        default_factory=TimelineIntermediateFormatModel,
+    )
+    shared: ProductTypeSharedModel = SettingsField(
+        default_factory=ProductTypeSharedModel,
+    )
+
+
+class PlateModel(BaseSettingsModel):
+    output_defs: PlateFormatModel = SettingsField(
+        default_factory=PlateFormatModel,
+        title="Plate Attributes",
+    )
+    shared: ProductTypeSharedModel = SettingsField(
+        default_factory=ProductTypeSharedModel,
+        title="Shared Attributes"
+    )
+
+
+class ProductResourcesPresetModel(BaseSettingsModel):
+    """Product Resources Preset."""
+    name: str = SettingsField(
+        "",
+        title="Profile Name",
+        description=(
+            "The name of the profile. If left empty, "
+            "a default name based on selected product base type will be assigned on save. "
+            "No further logic is connected to this."
+        )
+    )
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task Types",
+        enum_resolver=task_types_enum,
+        section="Profile Filtering",
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task Names"
+    )
+    product_base_type: str = SettingsField(
+        "editorial_pkg",
+        title="Product Base Type",
+        enum_resolver=_product_base_types_enum,
+        conditional_enum=True
+    )
+    integrate_clip_source: bool = SettingsField(
+        False,
+        title="Integrate Clip Source",
+        description=(
+            "When enabled integrate the timeline item's media pool item as additional representation."
+        )
+    )
+
+    # conditional properties based on product_base_type
+    editorial_pkg: list[EditorialPKGModel] = SettingsField(
+        default_factory=list,
+        title="Output Definitions",
+        description="Configures Resolve render settings for each representation to be exported."
+    )
+    plate: list[PlateModel] = SettingsField(
+        default_factory=list,
+        title="Output Definitions",
+        description="Configures Resolve render settings for each representation to be exported."
+    )
+
+    @validator("editorial_pkg", "plate")
+    def validate_unique_outputs(cls, values):
+        # ensure_unique_names unfortunately is hardcoded to use `name` as field key
+        names = []
+        for val in values:
+            if val.shared.repre_name in names:
+                raise ValueError(f"Duplicate representation name: {val.shared.repre_name}")
+            names.append(val.shared.repre_name)
+
+        return values
+
+
 class ExtractProductResourcesModel(BaseSettingsModel):
     """Extract Product Resources.
     """
@@ -339,6 +401,18 @@ class ExtractProductResourcesModel(BaseSettingsModel):
             "resource extraction."
         )
     )
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+        plate_profiles = [profile for profile in self.profiles if profile.product_base_type == "plate"]
+        editorial_pkg_profiles = [profile for profile in self.profiles if profile.product_base_type == "editorial_pkg"]
+        for idx, profile in enumerate(plate_profiles):
+            if not profile.name:
+                profile.name = f"Plate Profile #{idx + 1}"
+        for idx, profile in enumerate(editorial_pkg_profiles):
+            if not profile.name:
+                profile.name = f"Editorial PKG Profile #{idx + 1}"
 
     @validator("profiles")
     def validate_unique_outputs(cls, value):
@@ -540,29 +614,69 @@ DEFAULT_VALUES = {
         "ExtractProductResources": {
             "profiles": [
                 {
-                    "name": "timeline_reviewable",
-                    "task_types": [],
-                    "task_names": [],
-                    "product_base_type": "editorial_pkg",
-                    "editorial_pkg": {
-                        "preset_type": "builtin_preset",
-                    },
-                    "tags": ["review", "delete"],
-                    "custom_tags": []
-                },
-                {
-                    "name": "plate_exr_dwaa",
+                    "name": "Plate Profile #1",
                     "task_types": [],
                     "task_names": [],
                     "product_base_type": "plate",
-                    "plate": {
-                        "preset_type": "builtin_preset",
-                        "with_handles": True,
-                    },
-                    "tags": ["passing"],
-                    "custom_tags": []
-                }
+                    "editorial_pkg": [],
+                    "plate": [
+                        {
+                            "settings": {
+                                "preset_type": "builtin_preset",
+                                "builtin_preset": {
+                                    "format": "EXR",
+                                    "preset_path": "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml",
+                                    "codec": "RGB half (DWAA)",
+                                },
+                                "custom_preset": {
+                                    "format": "QuickTime",
+                                    "preset_path": "",
+                                    "codec": "H.264",
+                                },
+                                "with_handles": True,
+                            },
+                            "shared": {
+                                "repre_name": "exr",
+                                "tags": [],
+                                "custom_tags": [],
+                                "colorspace": "",
+                            },
+                        }
+                    ],
+                },
+                {
+                    "name": "Editorial PKG Profile #1",
+                    "task_types": [],
+                    "task_names": [],
+                    "product_base_type": "editorial_pkg",
+                    "editorial_pkg": [
+                        {
+                            "settings": {
+                                "export_otio": True,
+                                "otio_rootless": True,
+                                "preset_type": "builtin_preset",
+                                "builtin_preset": {
+                                    "format": "QuickTime",
+                                    "preset_path": "{ayon_render_presets}/timeline/QuickTime_H264.xml",
+                                    "codec": "H.264",
+                                },
+                                "custom_preset": {
+                                    "format": "QuickTime",
+                                    "preset_path": "",
+                                    "codec": "H.264",
+                                },
+                            },
+                            "shared": {
+                                "repre_name": "mov",
+                                "tags": ["passing"],
+                                "custom_tags": [],
+                                "colorspace": "",
+                            },
+                        }
+                    ],
+                    "plate": [],
+                },
             ]
         }
-    }
+    },
 }

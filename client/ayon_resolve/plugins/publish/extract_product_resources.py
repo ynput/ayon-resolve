@@ -1,10 +1,16 @@
 import os
+from typing import Any
 from pathlib import Path
 from pprint import pformat
 
 import pyblish.api
 from ayon_core.lib import StringTemplate, filter_profiles
-from ayon_core.pipeline import Anatomy, get_current_project_name, publish
+from ayon_core.pipeline import (
+    Anatomy,
+    get_current_project_name,
+    publish,
+    PublishError,
+)
 from ayon_core.pipeline.context_tools import get_current_task_entity
 from ayon_resolve.api import rendering
 from ayon_resolve.api.lib import (
@@ -48,39 +54,39 @@ class ExtractProductResources(
 
     def process(self, instance):
         instance.data.setdefault("representations", [])
+        integrate_clip_source, all_output_settings = self.get_settings(instance)
 
-        settings = self.get_settings(instance)
-        preset_path = Path(self.resolve_preset_path(settings["preset_path"]))
-        product_base_type = instance.data["productBaseType"]
+        if not integrate_clip_source:
+            instance.data["representations"] = []
 
-        # set rendering logger to inherit from publisher's logger
-        rendering.log = self.log
+        for settings in all_output_settings:
+            preset_path = Path(self.resolve_preset_path(settings["preset_path"]))
+            product_base_type = instance.data["productBaseType"]
 
-        if product_base_type == "editorial_pkg":
-            self._process_editorial_pkg(instance, settings, preset_path)
-        elif product_base_type == "plate":
-            self._process_plate(instance, settings, preset_path)
-        else:
-            self.log.warning(
-                "ExtractProductResources: unhandled product base type '%s', skipping.", product_base_type
-            )
+            # set rendering logger to inherit from publisher's logger
+            rendering.log = self.log
 
-    def get_settings(self, instance):
+            if product_base_type == "editorial_pkg":
+                self._process_editorial_pkg(instance, settings, preset_path)
+            elif product_base_type == "plate":
+                self._process_plate(instance, settings, preset_path)
+            else:
+                self.log.warning(
+                    "ExtractProductResources: unhandled product base type '%s', skipping.", product_base_type
+                )
+                return
+
+    def get_settings(self, instance) -> list[dict[str, Any]]:
         """Return normalised render settings for *instance*.
 
         Looks up ``resolve → publish → ExtractProductResources → profiles``,
         then profile-matches on task type / task name / product_base_type.
 
-        Returns a flat dict with keys:
+        Returns a list of flat dicts with keys:
             ``file_format``, ``codec``, ``preset_path``,
             and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
         """
         entity = get_current_task_entity()
-        if not entity:
-            self.log.warning("No current task entity — using default settings.")
-            product_base_type = instance.data["productBaseType"]
-            return self.get_default_settings(product_base_type)
-
         task_type = entity.get("taskType")
         task_name = entity.get("taskName")
         product_base_type = instance.data["productBaseType"]
@@ -95,53 +101,39 @@ class ExtractProductResources(
         )
 
         if not profile:
-            self.log.debug(
-                "No preset matched for family='%s', task_type='%s', task_name='%s'. Using defaults.", product_base_type, task_type, task_name
+            raise PublishError(
+                f"No matching preset found for family='{product_base_type}'. "
+                "Please visit your server settings and add a matching preset for this family."
             )
-            return self.get_default_settings(product_base_type)
 
         self.log.debug(f"Matched preset: {profile.get('name')}")
-        return self._normalize_preset(profile, product_base_type)
 
-    def _normalize_preset(self, preset, product_base_type):
+        result = []
+        for preset in profile.get(product_base_type, []):
+            normalized = self._normalize_preset(preset)
+            result.append(normalized)
+
+        return (profile["integrate_clip_source"], result)
+
+    def _normalize_preset(self, preset):
         """Flatten the nested preset structure into a render-ready dict."""
-        sub = preset.get(product_base_type, {})
-        preset_type = sub.get("preset_type")
-        fmt = sub.get(preset_type, {})
+        preset_type = preset["output_defs"]["preset_type"]
+        fmt = preset["output_defs"][preset_type]
 
         normalized = {
-            "name":        preset["name"],
+            "name":        preset["shared"]["repre_name"],
             "file_format": fmt.get("format"),
             "codec":       fmt.get("codec"),
             "preset_path": fmt.get("preset_path"),
-            "with_handles": sub.get("with_handles"),
-            "tags":        preset["tags"],
-            "custom_tags": preset["custom_tags"],
+            "with_handles": preset["output_defs"].get("with_handles"),
+            "tags":        preset["shared"]["tags"],
+            "custom_tags": preset["shared"]["custom_tags"],
+            "export_otio": preset["output_defs"].get("export_otio"),
+            "otio_rootless": preset["output_defs"].get("otio_rootless"),
+            "colorspace": preset["shared"].get("colorspace"),
         }
-        if product_base_type == "editorial_pkg":
-            normalized["export_otio"] = sub.get("export_otio")
-            normalized["otio_rootless"] = sub.get("otio_rootless")
+        self.log.debug(f"{normalized = }")
         return normalized
-
-    def get_default_settings(self, product_base_type="editorial_pkg"):
-        """Return hard-coded defaults when no matching preset is found."""
-        if product_base_type == "plate":
-            return {
-                "file_format": "EXR",
-                "codec":       "RGB half (DWAA)",
-                "preset_path": (
-                    "{ayon_render_presets}/clip/EXR_RGB_half_(DWAA).xml"
-                ),
-            }
-        return {
-            "file_format":   "QuickTime",
-            "codec":         "H.264",
-            "preset_path":   (
-                "{ayon_render_presets}/timeline/QuickTime_H264.xml"
-            ),
-            "export_otio": True,
-            "otio_rootless": True,
-        }
 
     def resolve_preset_path(self, preset_path):
         """Resolve the path to a render preset file.
@@ -302,18 +294,16 @@ class ExtractProductResources(
 
         frame_start = instance.data["frameStart"]
 
-        with_handles = settings.get("with_handles", False)
-
         folder_slug = instance.data["folderPath"].lstrip("/").replace("/", "_")
         clip_name = timeline_item.GetName()
         staging_dir = (
-            Path(self.staging_dir(instance)) / f"{folder_slug}_{clip_name}"
+            Path(self.staging_dir(instance)) / f"{folder_slug}_{clip_name}_{settings['name']}"
         )
         staging_dir.mkdir(parents=True, exist_ok=True)
         self.log.info("Staging directory: %s", staging_dir)
 
         preset_data = {}
-        if with_handles:
+        if settings["with_handles"]:
             preset_data.update({
                 "NumFramesOfHandles": max(available_head, available_tail)
             })

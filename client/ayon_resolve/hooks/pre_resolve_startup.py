@@ -31,7 +31,7 @@ class PreLaunchResolveStartup(PreLaunchHook):
             if not is_studio and major_version >= 21:
                 raise RuntimeError(
                     f"AYON is not supported in {resolve_version} "
-                    "Only the studio version supports python external scripting: \n"
+                    "Only the Studio version supports Python external scripting:\n"
                     "https://www.reddit.com/r/davinciresolve/comments/1wafb08/davinci_resolve_211_release_notes/",
                 )
 

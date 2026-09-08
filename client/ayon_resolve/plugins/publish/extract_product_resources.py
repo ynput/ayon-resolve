@@ -113,6 +113,11 @@ class ExtractProductResources(
             normalized = self._normalize_preset(preset)
             result.append(normalized)
 
+        if not result:
+            raise PublishError(
+                f"No matching output definitions found for preset='{profile}'. "
+            )
+
         return (profile["integrate_clip_source"], result)
 
     def _normalize_preset(self, preset):
@@ -259,6 +264,11 @@ class ExtractProductResources(
                 "stagingDir": str(rendered.parent),
             })
 
+        # ensure valid name
+        if not representation["name"]:
+            self.log.warning("Could not find representation name from settings, using extension")
+            representation["name"] = representation["ext"]
+
         # attach colorspace to the representation
         if settings.get("colorspace"):
             colorspace = settings["colorspace"]
@@ -362,6 +372,11 @@ class ExtractProductResources(
                 "ext":        rendered.suffix.lstrip(".").lower(),
                 "files":      rendered.name,
             })
+
+        # ensure valid name
+        if not representation["name"]:
+            self.log.warning("Could not find representation name from settings, using extension")
+            representation["name"] = representation["ext"]
 
         # attach colorspace to the representation
         if settings.get("colorspace"):

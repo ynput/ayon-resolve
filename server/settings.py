@@ -621,7 +621,7 @@ DEFAULT_VALUES = {
                     "editorial_pkg": [],
                     "plate": [
                         {
-                            "settings": {
+                            "output_defs": {
                                 "preset_type": "builtin_preset",
                                 "builtin_preset": {
                                     "format": "EXR",
@@ -651,7 +651,7 @@ DEFAULT_VALUES = {
                     "product_base_type": "editorial_pkg",
                     "editorial_pkg": [
                         {
-                            "settings": {
+                            "output_defs": {
                                 "export_otio": True,
                                 "otio_rootless": True,
                                 "preset_type": "builtin_preset",

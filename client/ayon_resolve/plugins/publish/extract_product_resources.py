@@ -113,6 +113,11 @@ class ExtractProductResources(
             normalized = self._normalize_preset(preset)
             result.append(normalized)
 
+        if not result:
+            raise PublishError(
+                f"No matching output definitions found for preset='{profile}'. "
+            )
+
         return (profile["integrate_clip_source"], result)
 
     def _normalize_preset(self, preset):

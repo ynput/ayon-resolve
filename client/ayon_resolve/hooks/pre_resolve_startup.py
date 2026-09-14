@@ -63,7 +63,7 @@ class PreLaunchResolveStartup(PreLaunchHook):
     def execute(self):
         # Detect current Resolve version and license flavor.
         resolve_version = self._query_resolve_version()
-        if resolve_version and self._is_unsupported_free(resolve_version):
+        if resolve_version and not self._is_supported_version(resolve_version):
             raise RuntimeError(
                 f"AYON is not supported in {resolve_version}. "
                 "Only the studio version supports python external scripting:\n"

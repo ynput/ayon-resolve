@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import json
 
 from ayon_applications import PreLaunchHook, LaunchTypes
 from ayon_core import lib
@@ -28,18 +29,22 @@ class PreLaunchResolveStartup(PreLaunchHook):
 
         exec_mtime = os.path.getmtime(exec_file)
         cache_dir = lib.get_addons_resources_dir("ayon_resolve")
-        cache_file = os.path.join(cache_dir, "cached_version")
+        cache_file = os.path.join(cache_dir, "cached_versions.json")
 
-        # Return the cached version if it matches the current executable.
+        # Load the cache mapping each executable path to its mtime/version.
         try:
             with open(cache_file) as f:
-                mtime, version = f.read().split("|")
-            if float(mtime) == exec_mtime:
-                return version
-
+                cache = json.load(f)
         # Missing, unreadable or corrupted cache, force recompute.
         except (OSError, ValueError):
-            pass
+            cache = {}
+        if not isinstance(cache, dict):
+            cache = {}
+
+        # Return the cached version if it matches the current executable.
+        entry = cache.get(exec_file)
+        if isinstance(entry, dict) and entry.get("mtime") == exec_mtime:
+            return entry.get("version")
 
         # e.g. "DaVinci Resolve Studio Version 21.1.0.0014"
         output = lib.run_subprocess(self.launch_context.launch_args + ["-v"])
@@ -47,9 +52,10 @@ class PreLaunchResolveStartup(PreLaunchHook):
             return None
         version = output.split("\n")[0]
 
+        cache[exec_file] = {"mtime": exec_mtime, "version": version}
         os.makedirs(cache_dir, exist_ok=True)
         with open(cache_file, "w") as f:
-            f.write(f"{exec_mtime}|{version}")
+            json.dump(cache, f, indent=4)
         return version
 
     @staticmethod

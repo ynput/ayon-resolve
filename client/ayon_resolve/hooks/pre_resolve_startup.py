@@ -44,18 +44,32 @@ class PreLaunchResolveStartup(PreLaunchHook):
         # Return the cached version if it matches the current executable.
         entry = cache.get(exec_file)
         if isinstance(entry, dict) and entry.get("mtime") == exec_mtime:
-            return entry.get("version")
+            cached_version = entry.get("version")
+            if isinstance(cached_version, str):
+                return cached_version
 
         # e.g. "DaVinci Resolve Studio Version 21.1.0.0014"
-        output = lib.run_subprocess(self.launch_context.launch_args + ["-v"])
+        try:
+            output = lib.run_subprocess([exec_file, "-v"])
+        except (OSError, RuntimeError):
+            self.log.warning(
+                "Could not determine Resolve version.", exc_info=True
+            )
+            return None
         if not output:
             return None
         version = output.split("\n")[0]
 
         cache[exec_file] = {"mtime": exec_mtime, "version": version}
-        os.makedirs(cache_dir, exist_ok=True)
-        with open(cache_file, "w") as f:
-            json.dump(cache, f, indent=4)
+        try:
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(cache_file, "w") as f:
+                json.dump(cache, f, indent=4)
+        except OSError:
+            self.log.warning(
+                f"Could not persist Resolve version cache to {cache_file}.",
+                exc_info=True,
+            )
         return version
 
     @staticmethod

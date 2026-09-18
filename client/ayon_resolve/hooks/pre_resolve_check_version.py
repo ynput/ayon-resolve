@@ -66,7 +66,7 @@ class PreLaunchResolveCheckVersion(PreLaunchHook):
 
     def _should_run_resolve_check_version(self) -> bool:
         resolve_settings = self.data["project_settings"]["resolve"]
-        return resolve_settings["check_compatible_ayon_version_on_start"]
+        return resolve_settings["check_compatible_version_on_start"]
 
     def execute(self):
         if not self._should_run_resolve_check_version():

@@ -445,7 +445,7 @@ class ProjectDatabaseOverrideModel(BaseSettingsModel):
 
 
 class ResolveSettings(BaseSettingsModel):
-    check_compatible_ayon_version_on_start: bool = SettingsField(
+    check_compatible_version_on_start: bool = SettingsField(
         True, title="Check compatible Resolve version with AYON menu on start."
     )
     launch_ayon_menu_on_start: bool = SettingsField(
@@ -488,7 +488,7 @@ class ResolveSettings(BaseSettingsModel):
 
 
 DEFAULT_VALUES = {
-    "check_compatible_ayon_version_on_start": True,
+    "check_compatible_version_on_start": True,
     "launch_ayon_menu_on_start": False,
     "report_fps_resolution": False,
     "rename_db_project_on_increment": True,

@@ -446,7 +446,12 @@ class ProjectDatabaseOverrideModel(BaseSettingsModel):
 
 class ResolveSettings(BaseSettingsModel):
     check_compatible_version_on_start: bool = SettingsField(
-        True, title="Check compatible Resolve version with AYON menu on start."
+        True, 
+        title="Check Resolve license version compatibility on start",
+        description=(
+            "Resolve 21 dropped the external python support in the free version."
+            " This validates yo are running Studio licensed build when using Resolve 21+
+        )
     )
     launch_ayon_menu_on_start: bool = SettingsField(
         False, title="Launch AYON menu on start of Resolve"

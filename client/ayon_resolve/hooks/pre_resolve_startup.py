@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os
 
 from ayon_applications import PreLaunchHook, LaunchTypes
+
 from ayon_resolve import RESOLVE_ADDON_ROOT
 
 

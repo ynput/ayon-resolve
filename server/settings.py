@@ -446,11 +446,11 @@ class ProjectDatabaseOverrideModel(BaseSettingsModel):
 
 class ResolveSettings(BaseSettingsModel):
     check_compatible_version_on_start: bool = SettingsField(
-        True, 
+        True,
         title="Check Resolve license version compatibility on start",
         description=(
-            "Resolve 21 dropped the external python support in the free version."
-            " This validates yo are running Studio licensed build when using Resolve 21+
+            "Resolve 21 dropped the external python support in the free version. "
+            "This validates you are running Studio licensed build when using Resolve 21+."
         )
     )
     launch_ayon_menu_on_start: bool = SettingsField(

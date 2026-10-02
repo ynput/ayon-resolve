@@ -20,7 +20,6 @@ SHARED_DATA_KEY = "ayon.resolve.instances"
 class ClipLoader:
 
     active_bin = None
-    data = {}
 
     def __init__(self, loader_obj, context, **options):
         """ Initialize object
@@ -33,6 +32,7 @@ class ClipLoader:
 
         """
         self.__dict__.update(loader_obj.__dict__)
+        self.data = {}
         self.context = context
         self.active_project = lib.get_current_resolve_project()
 
@@ -104,6 +104,10 @@ class ClipLoader:
 
         self.data["timeline_basename"] = "timeline_{}_{}".format(
             product_name, representation_name)
+
+        # video track name, the same for all versions of product
+        # representation, so multiselection stays organized
+        self.data["track_name"] = "_".join([product_name, representation_name])
 
         # solve project bin structure path
         hierarchy = "Loader{}".format(folder_path)
@@ -181,8 +185,17 @@ class ClipLoader:
         # get timeline in
         timeline_start = self.active_timeline.GetStartFrame()
         if self.sequential_load:
-            # set timeline start frame
+            # place after the last item of the product track, if any
             timeline_in = int(timeline_start)
+            track_index = lib.get_video_track_index_by_name(
+                self.active_timeline, self.data["track_name"]
+            )
+            if track_index:
+                track_end = lib.get_track_end_frame(
+                    self.active_timeline, track_index
+                )
+                if track_end is not None:
+                    timeline_in = max(timeline_in, track_end)
         else:
             # set timeline start frame + original clip in frame
             timeline_in = int(
@@ -195,6 +208,7 @@ class ClipLoader:
             timeline_in,
             source_in,
             source_out,
+            track_name=self.data["track_name"],
         )
 
         print("Loading clips: `{}`".format(self.data["clip_name"]))

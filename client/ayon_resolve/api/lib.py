@@ -384,6 +384,9 @@ def create_timeline_item(
         }
 
         if source_start:
+            # Note: specifying a startFrame or endFrame will fail to place the
+            # timeline item if the item does not have that frame, e.g. a static
+            # representation on version that does have frame start and end.
             clip_data["startFrame"] = source_start
         if source_end:
             clip_data["endFrame"] = source_end
@@ -394,19 +397,23 @@ def create_timeline_item(
             clip_data["recordFrame"] = timeline_in
 
         # add to timeline
-        output_timeline_item = media_pool.AppendToTimeline([clip_data])[0]
+        appended_items = media_pool.AppendToTimeline([clip_data])
+        if appended_items:
+            output_timeline_item = appended_items[0]
 
-        # Adding the item may fail whilst Resolve will still return a
-        # TimelineItem instance - however all `Get*` calls return None
-        # Hence, we check whether the result is valid
-        if output_timeline_item.GetDuration() is None:
-            output_timeline_item = None
+            # Adding the item may fail whilst Resolve will still return a
+            # TimelineItem instance - however all `Get*` calls return None
+            # Hence, we check whether the result is valid
+            if output_timeline_item.GetDuration() is None:
+                output_timeline_item = None
 
     assert output_timeline_item, AssertionError((
         "Clip name '{}' wasn't created on the timeline: '{}' \n\n"
-        "Please check if correct track position is activated, \n"
-        "or if a clip is not already at the timeline in \n"
+        "Please check if correct track position is activated, "
+        "or if a clip is not already at the timeline in "
         "position: '{}' out: '{}'. \n\n"
+        "This may also happen if the loaded media does not have frame start, "
+        "end or timecode specified in the clip data.\n\n"
         "Clip data: {}"
     ).format(
         clip_name, timeline.GetName(), timecode_in, timecode_out, clip_data

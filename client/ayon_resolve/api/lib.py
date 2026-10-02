@@ -473,9 +473,10 @@ def create_timeline_item(
         source_end is not None
     ]):
         fps = timeline.GetSetting("timelineFrameRate")
-        duration = source_end - source_start
+        # number of frames, `source_end` is the last used frame (inclusive)
+        duration = source_end - source_start + 1
         timecode_in = frames_to_timecode(timeline_in, fps)
-        timecode_out = frames_to_timecode(timeline_in + duration, fps)
+        timecode_out = frames_to_timecode(timeline_in + duration - 1, fps)
     else:
         timecode_in = None
         timecode_out = None
@@ -484,7 +485,7 @@ def create_timeline_item(
     if track_name:
         record_range = (None, None)
         if timecode_in:
-            record_range = (timeline_in, timeline_in + duration + 1)
+            record_range = (timeline_in, timeline_in + duration)
         track_index = get_or_create_video_track(
             timeline, track_name, *record_range
         )
@@ -496,10 +497,12 @@ def create_timeline_item(
             "mediaPoolItem": media_pool_item,
         }
 
-        if source_start:
+        if source_start is not None:
             clip_data["startFrame"] = source_start
-        if source_end:
-            clip_data["endFrame"] = source_end
+        if source_end is not None:
+            # `endFrame` of AppendToTimeline is exclusive, while
+            # `source_end` is the last used frame
+            clip_data["endFrame"] = source_end + 1
         if timecode_in:
             # Note: specifying a recordFrame will fail to place the timeline
             #  item if there's already an existing clip at that time on the
@@ -518,6 +521,26 @@ def create_timeline_item(
         # Hence, we check whether the result is valid
         if output_timeline_item.GetDuration() is None:
             output_timeline_item = None
+        else:
+            duration = (
+                source_end - source_start + 1
+                if timecode_in
+                else None
+            )
+            media_properties = media_pool_item.GetClipProperty
+            print(
+                f"Placed '{clip_name}': requested record={timeline_in} "
+                f"source={source_start}-{source_end} "
+                f"({duration} frames) | actual start="
+                f"{output_timeline_item.GetStart()} "
+                f"end={output_timeline_item.GetEnd()} "
+                f"duration={output_timeline_item.GetDuration()} "
+                f"left offset={output_timeline_item.GetLeftOffset()} | "
+                f"media Start={media_properties('Start')} "
+                f"End={media_properties('End')} "
+                f"Frames={media_properties('Frames')}"
+            )
+
 
     assert output_timeline_item, AssertionError((
         "Clip name '{}' wasn't created on the timeline: '{}' \n\n"

@@ -17,6 +17,54 @@ from . import lib, constants
 SHARED_DATA_KEY = "ayon.resolve.instances"
 
 
+def get_source_range(start, frames, version_attributes, with_handles=False):
+    """Get inclusive source in and out frame to place on the timeline.
+
+    The out frame is computed from the media `Frames` count instead of
+    Resolve's `End` clip property, which is not reliable for all media
+    types, so the last frame could be missing on the timeline.
+
+    Args:
+        start (int): first frame of the media (`Start` clip property)
+        frames (int): number of media frames (`Frames` clip property)
+        version_attributes (dict): version attributes
+        with_handles (bool): keep the handles of the media
+
+    Returns:
+        tuple[int, int]: first and last frame (both inclusive)
+    """
+    source_in = start
+    source_out = start + frames - 1
+
+    # Trim clip start if slate is present
+    if "slate" in version_attributes.get("families", []):
+        source_in += 1
+        frames -= 1
+
+    if with_handles:
+        return source_in, source_out
+
+    # Load file without the handles of the source media
+    frame_start = version_attributes.get("frameStart")
+    frame_end = version_attributes.get("frameEnd")
+    if frame_start is None or frame_end is None:
+        return source_in, source_out
+
+    # The version data usually stores the frame range + handles of the
+    # media; however certain representations may be shorter because they
+    # exclude those handles intentionally. If the media is shorter than
+    # the frame range in the database we assume it is without handles.
+    handle_start = version_attributes.get("handleStart", 0)
+    handle_end = version_attributes.get("handleEnd", 0)
+    database_frame_duration = int(
+        (frame_end + handle_end) - (frame_start - handle_start) + 1
+    )
+    if frames >= database_frame_duration:
+        source_in += handle_start
+        source_out -= handle_end
+    return source_in, source_out
+
+
 class ClipLoader:
 
     active_bin = None
@@ -142,45 +190,12 @@ class ClipLoader:
             self.active_bin
         )
         _clip_property = media_pool_item.GetClipProperty
-        source_in = int(_clip_property("Start"))
-        source_out = int(_clip_property("End"))
-        source_duration = int(_clip_property("Frames"))
-
-        # Trim clip start if slate is present
-        if "slate" in self.data["versionAttributes"]["families"]:
-            source_in += 1
-            source_duration = source_out - source_in + 1
-
-        if not self.with_handles:
-            # Load file without the handles of the source media
-            # We remove the handles from the source in and source out
-            # so that the handles are excluded in the timeline
-
-            # get version data frame data from db
-            version_attributes = self.data["versionAttributes"]
-            frame_start = version_attributes.get("frameStart")
-            frame_end = version_attributes.get("frameEnd")
-
-            # The version data usually stored the frame range + handles of the
-            # media however certain representations may be shorter because they
-            # exclude those handles intentionally. Unfortunately the
-            # representation does not store that in the database currently;
-            # so we should compensate for those cases. If the media is shorter
-            # than the frame range specified in the database we assume it is
-            # without handles and thus we do not need to remove the handles
-            # from source and out
-            if frame_start is not None and frame_end is not None:
-                # Version has frame range data, so we can compare media length
-                handle_start = version_attributes.get("handleStart", 0)
-                handle_end = version_attributes.get("handleEnd", 0)
-                frame_start_handle = frame_start - handle_start
-                frame_end_handle = frame_end + handle_end
-                database_frame_duration = int(
-                    frame_end_handle - frame_start_handle + 1
-                )
-                if source_duration >= database_frame_duration:
-                    source_in += handle_start
-                    source_out -= handle_end
+        source_in, source_out = get_source_range(
+            int(_clip_property("Start")),
+            int(_clip_property("Frames")),
+            self.data["versionAttributes"],
+            with_handles=self.with_handles,
+        )
 
         # get timeline in
         timeline_start = self.active_timeline.GetStartFrame()

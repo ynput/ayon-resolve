@@ -23,8 +23,9 @@ from ayon_resolve.api import lib, constants
 from ayon_resolve.api.pipeline import AVALON_CONTAINER_ID
 
 
-FRAME_SPLITTER = "__frame_splitter__"
-RESOLVE_AUDIO_EXTENSIONS = {".wav", ".aif", ".aiff", ".mp3", ".flac", ".aac", ".m4a", ".ac3"}
+RESOLVE_AUDIO_EXTENSIONS = {
+    ".wav", ".aif", ".aiff", ".mp3", ".flac", ".aac", ".m4a", ".ac3"
+}
 
 
 class MetadataEntry(TypedDict):
@@ -475,22 +476,12 @@ class LoadMedia(LoaderPlugin):
 
         # Change frame in representation context to get path with frame
         #   splitter.
-        representation["context"]["frame"] = FRAME_SPLITTER
+        frame_padding = len(first_frame)
+        representation["context"]["frame"] = f"%0{frame_padding}d"
         frame_repre_path = get_representation_path_with_anatomy(
             representation, anatomy
         )
-        frame_repre_path = Path(frame_repre_path)
-        repre_dir, repre_filename = (
-            frame_repre_path.parent, frame_repre_path.name)
-        # Get sequence prefix and suffix
-        file_prefix, file_suffix = repre_filename.split(FRAME_SPLITTER)
-        # Get frame number from path as string to get frame padding
-        frame_str = str(repre_path)[len(file_prefix):][:len(file_suffix)]
-        frame_padding = len(frame_str)
-
-        file_name = f"{file_prefix}%0{frame_padding}d{file_suffix}"
-
-        abs_filepath = Path(repre_dir, file_name)
+        abs_filepath = Path(frame_repre_path)
 
         start_index = int(first_frame)
         end_index = int(int(first_frame) + len(repre_files) - 1)

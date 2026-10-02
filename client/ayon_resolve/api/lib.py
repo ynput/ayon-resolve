@@ -305,9 +305,8 @@ def create_media_pool_item(files: list,
 
     # add media to media-pool
     media_pool_items = media_pool.ImportMedia(files)
-
     if not media_pool_items:
-        return False
+        raise RuntimeError(f"Failed to import media: {files}")
 
     # return only first found
     return media_pool_items.pop()

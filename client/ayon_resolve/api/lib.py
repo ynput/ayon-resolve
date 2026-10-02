@@ -377,6 +377,7 @@ def create_timeline_item(
         timecode_out = None
 
     # if timeline was used then switch it to current timeline
+    output_timeline_item = None
     with maintain_current_timeline(timeline):
         # Add input mediaPoolItem to clip data
         clip_data = {

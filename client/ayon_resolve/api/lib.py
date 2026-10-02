@@ -408,17 +408,17 @@ def create_timeline_item(
             if output_timeline_item.GetDuration() is None:
                 output_timeline_item = None
 
-    assert output_timeline_item, AssertionError((
-        "Clip name '{}' wasn't created on the timeline: '{}' \n\n"
-        "Please check if correct track position is activated, "
-        "or if a clip is not already at the timeline in "
-        "position: '{}' out: '{}'. \n\n"
-        "This may also happen if the loaded media does not have frame start, "
-        "end or timecode specified in the clip data.\n\n"
-        "Clip data: {}"
-    ).format(
-        clip_name, timeline.GetName(), timecode_in, timecode_out, clip_data
-    ))
+    if not output_timeline_item:
+        raise RuntimeError(
+            f"Clip name '{clip_name}' wasn't created on the timeline: "
+            f"'{timeline.GetName()}' \n\n"
+            "Please check if correct track position is activated, "
+            "or if a clip is not already at the timeline in "
+            f"position: '{timecode_in}' out: '{timecode_out}'. \n\n"
+            "This may also happen if the loaded media does not have frame "
+            "start, end or timecode specified in the clip data.\n\n"
+            f"Clip data: {clip_data}"
+        )
     return output_timeline_item
 
 

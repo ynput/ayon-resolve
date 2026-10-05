@@ -387,7 +387,7 @@ def is_track_range_free(
     """
     items = timeline.GetItemListInTrack(track_type, track_index) or []
     return not any(
-        int(item.GetStart()) < end and int(item.GetEnd()) > start
+        int(item.GetStart()) <= end and int(item.GetEnd()) >= start
         for item in items
     )
 

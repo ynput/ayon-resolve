@@ -1,3 +1,5 @@
+import re
+import copy
 import json
 import contextlib
 from pathlib import Path
@@ -23,8 +25,9 @@ from ayon_resolve.api import lib, constants
 from ayon_resolve.api.pipeline import AVALON_CONTAINER_ID
 
 
-FRAME_SPLITTER = "__frame_splitter__"
-RESOLVE_AUDIO_EXTENSIONS = {".wav", ".aif", ".aiff", ".mp3", ".flac", ".aac", ".m4a", ".ac3"}
+RESOLVE_AUDIO_EXTENSIONS = {
+    ".wav", ".aif", ".aiff", ".mp3", ".flac", ".aac", ".m4a", ".ac3"
+}
 
 
 class MetadataEntry(TypedDict):
@@ -274,7 +277,12 @@ class LoadMedia(LoaderPlugin):
             if is_sequence
             else media_pool.ImportMedia([file_info["FilePath"]])
         )
-        assert len(items) == 1, "Must import only one media item"
+        if not items or len(items) != 1:
+            names = [item.GetName() for item in items or []]
+            raise RuntimeError(
+                "Must import only one media item, but Resolve returned"
+                f" {len(names)} for {file_info}: {names}"
+            )
 
         result = items[0]
 
@@ -473,27 +481,29 @@ class LoadMedia(LoaderPlugin):
             for file in representation["files"]
         ]
 
-        # Change frame in representation context to get path with frame
-        #   splitter.
-        representation["context"]["frame"] = FRAME_SPLITTER
-        frame_repre_path = get_representation_path_with_anatomy(
-            representation, anatomy
+        # Get path with printf-style frame token, e.g. 'file.%06d.exr'.
+        frame_padding = len(first_frame)
+        frame_repre = copy.deepcopy(representation)
+        frame_repre["attrib"]["template"] = re.sub(
+            r"\{frame:[^}]*\}", "{frame}", frame_repre["attrib"]["template"]
         )
-        frame_repre_path = Path(frame_repre_path)
-        repre_dir, repre_filename = (
-            frame_repre_path.parent, frame_repre_path.name)
-        # Get sequence prefix and suffix
-        file_prefix, file_suffix = repre_filename.split(FRAME_SPLITTER)
-        # Get frame number from path as string to get frame padding
-        frame_str = str(repre_path)[len(file_prefix):][:len(file_suffix)]
-        frame_padding = len(frame_str)
+        frame_repre["context"]["frame"] = f"%0{frame_padding}d"
+        abs_filepath = Path(
+            get_representation_path_with_anatomy(frame_repre, anatomy)
+        )
 
-        file_name = f"{file_prefix}%0{frame_padding}d{file_suffix}"
+        # Skip slate frames, they are at the start of the sequence and may
+        #   differ in resolution which makes Resolve split the sequence into
+        #   multiple media items.
+        slate_frames = representation.get("data", {}).get("slateFrames", 0)
+        if slate_frames >= len(repre_files):
+            raise RuntimeError(
+                f"Representation has {slate_frames} slate frame(s) but only"
+                f" {len(repre_files)} file(s). Nothing to import."
+            )
 
-        abs_filepath = Path(repre_dir, file_name)
-
-        start_index = int(first_frame)
-        end_index = int(int(first_frame) + len(repre_files) - 1)
+        start_index = int(first_frame) + slate_frames
+        end_index = int(first_frame) + len(repre_files) - 1
 
         # See Resolve API, to import for example clip "file_[001-100].dpx":
         # ImportMedia([{"FilePath":"file_%03d.dpx",

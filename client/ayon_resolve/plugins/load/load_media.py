@@ -1,4 +1,5 @@
 import re
+import copy
 import json
 import contextlib
 from pathlib import Path
@@ -480,23 +481,16 @@ class LoadMedia(LoaderPlugin):
             for file in representation["files"]
         ]
 
-        # Replace the frame number in the first file path with printf-style
-        #   frame token. The path template can't be used for this because it
-        #   pads the frame value, e.g. '{frame:0>6}' turns '%06d' into
-        #   '00%06d'. The files also may have different padding than the
-        #   template.
+        # Get path with printf-style frame token, e.g. 'file.%06d.exr'.
         frame_padding = len(first_frame)
-        abs_filepath, replaced = re.subn(
-            rf"{re.escape(first_frame)}(\.[^./\\]+)$",
-            rf"%0{frame_padding}d\1",
-            repre_files[0]
+        frame_repre = copy.deepcopy(representation)
+        frame_repre["attrib"]["template"] = re.sub(
+            r"\{frame:[^}]*\}", "{frame}", frame_repre["attrib"]["template"]
         )
-        if not replaced:
-            raise RuntimeError(
-                f"Frame '{first_frame}' not found at the end of the first"
-                f" file name of the representation: {repre_files[0]}"
-            )
-        abs_filepath = Path(abs_filepath)
+        frame_repre["context"]["frame"] = f"%0{frame_padding}d"
+        abs_filepath = Path(
+            get_representation_path_with_anatomy(frame_repre, anatomy)
+        )
 
         # Skip slate frames, they are at the start of the sequence and may
         #   differ in resolution which makes Resolve split the sequence into

@@ -1,3 +1,4 @@
+import re
 import json
 import contextlib
 from pathlib import Path
@@ -275,7 +276,12 @@ class LoadMedia(LoaderPlugin):
             if is_sequence
             else media_pool.ImportMedia([file_info["FilePath"]])
         )
-        assert len(items) == 1, "Must import only one media item"
+        if not items or len(items) != 1:
+            names = [item.GetName() for item in items or []]
+            raise RuntimeError(
+                "Must import only one media item, but Resolve returned"
+                f" {len(names)} for {file_info}: {names}"
+            )
 
         result = items[0]
 
@@ -474,17 +480,36 @@ class LoadMedia(LoaderPlugin):
             for file in representation["files"]
         ]
 
-        # Change frame in representation context to get path with frame
-        #   splitter.
+        # Replace the frame number in the first file path with printf-style
+        #   frame token. The path template can't be used for this because it
+        #   pads the frame value, e.g. '{frame:0>6}' turns '%06d' into
+        #   '00%06d'. The files also may have different padding than the
+        #   template.
         frame_padding = len(first_frame)
-        representation["context"]["frame"] = f"%0{frame_padding}d"
-        frame_repre_path = get_representation_path_with_anatomy(
-            representation, anatomy
+        abs_filepath, replaced = re.subn(
+            rf"{re.escape(first_frame)}(\.[^./\\]+)$",
+            rf"%0{frame_padding}d\1",
+            repre_files[0]
         )
-        abs_filepath = Path(frame_repre_path)
+        if not replaced:
+            raise RuntimeError(
+                f"Frame '{first_frame}' not found at the end of the first"
+                f" file name of the representation: {repre_files[0]}"
+            )
+        abs_filepath = Path(abs_filepath)
 
-        start_index = int(first_frame)
-        end_index = int(int(first_frame) + len(repre_files) - 1)
+        # Skip slate frames, they are at the start of the sequence and may
+        #   differ in resolution which makes Resolve split the sequence into
+        #   multiple media items.
+        slate_frames = representation.get("data", {}).get("slateFrames", 0)
+        if slate_frames >= len(repre_files):
+            raise RuntimeError(
+                f"Representation has {slate_frames} slate frame(s) but only"
+                f" {len(repre_files)} file(s). Nothing to import."
+            )
+
+        start_index = int(first_frame) + slate_frames
+        end_index = int(first_frame) + len(repre_files) - 1
 
         # See Resolve API, to import for example clip "file_[001-100].dpx":
         # ImportMedia([{"FilePath":"file_%03d.dpx",

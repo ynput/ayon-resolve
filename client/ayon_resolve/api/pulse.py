@@ -42,5 +42,15 @@ class PulseThread(QtCore.QThread):
             # the method is still getting resolved. (Optimization)
             if app.Test is None:
                 self.no_host_response.emit()
+                return
 
             self.msleep(interval)
+
+    def stop(self):
+        """Stop the thread and block until it has finished.
+
+        Qt aborts the whole process when a running QThread is deleted, which
+        happens when the parent widget gets garbage collected on exit.
+        """
+        self.requestInterruption()
+        self.wait()

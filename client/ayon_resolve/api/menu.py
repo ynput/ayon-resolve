@@ -240,6 +240,8 @@ def launch_ayon_menu():
     # Force close current process if Resolve is closed
     pulse = PulseThread(parent=ayon_menu)
     pulse.no_host_response.connect(app.quit)
+    # Stop the thread before its parent menu is deleted on exit
+    app.aboutToQuit.connect(pulse.stop)
     pulse.start()
 
     sys.exit(app.exec_())

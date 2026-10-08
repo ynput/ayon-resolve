@@ -402,20 +402,25 @@ class ExtractProductResourcesModel(BaseSettingsModel):
         )
     )
 
-    def __init__(self, **data):
-        super().__init__(**data)
-
-        plate_profiles = [profile for profile in self.profiles if profile.product_base_type == "plate"]
-        editorial_pkg_profiles = [profile for profile in self.profiles if profile.product_base_type == "editorial_pkg"]
-        for idx, profile in enumerate(plate_profiles):
-            if not profile.name:
-                profile.name = f"Plate Profile #{idx + 1}"
-        for idx, profile in enumerate(editorial_pkg_profiles):
-            if not profile.name:
-                profile.name = f"Editorial PKG Profile #{idx + 1}"
-
     @validator("profiles")
-    def validate_unique_outputs(cls, value):
+    def validate_profile_names(cls, value):
+        # Assign a default name to unnamed profiles using the first free
+        # number for its product base type, e.g. 'Plate Profile #2'
+        labels = {
+            "plate": "Plate Profile",
+            "editorial_pkg": "Editorial PKG Profile",
+        }
+        used_names = {profile.name for profile in value if profile.name}
+        for profile in value:
+            label = labels.get(profile.product_base_type)
+            if profile.name or label is None:
+                continue
+            idx = 1
+            while f"{label} #{idx}" in used_names:
+                idx += 1
+            profile.name = f"{label} #{idx}"
+            used_names.add(profile.name)
+
         ensure_unique_names(value)
         return value
 

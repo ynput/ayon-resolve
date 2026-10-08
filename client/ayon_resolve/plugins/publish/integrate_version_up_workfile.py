@@ -2,11 +2,11 @@ import os
 
 import pyblish.api
 
+from ayon_core.host import IWorkfileHost
+from ayon_core.pipeline import registered_host, OptionalPyblishPluginMixin
+from ayon_core.pipeline.publish import get_errored_plugins_from_context
 from ayon_core.host.interfaces import SaveWorkfileOptionalData
 from ayon_core.pipeline.workfile import save_next_version
-from ayon_core.pipeline.publish import (
-    OptionalPyblishPluginMixin,
-)
 
 
 class IntegrateVersionUpWorkfile(pyblish.api.ContextPlugin,
@@ -20,14 +20,19 @@ class IntegrateVersionUpWorkfile(pyblish.api.ContextPlugin,
     optional = True
     active = True
 
-    def process(self, context):
+    def process(self, context: pyblish.api.Context):
         if not self.is_active(context.data):
-            self.log.debug("Project workfile version up was skipped")
             return
 
-        path = context.data["currentFile"]
+        errored_plugins = get_errored_plugins_from_context(context)
+        if errored_plugins:
+            raise RuntimeError(
+                "Skipping incrementing current file because publishing failed."
+            )
 
-        current_filename = os.path.basename(path)
+        current_filepath: str = context.data["currentFile"]
+        host: IWorkfileHost = registered_host()
+        current_filename = os.path.basename(current_filepath)
         save_next_version(
             description=(
                 f"Incremented by publishing from {current_filename}"
@@ -39,4 +44,5 @@ class IntegrateVersionUpWorkfile(pyblish.api.ContextPlugin,
                 anatomy=context.data["anatomy"],
             )
         )
-        self.log.info("Project workfile was versioned up")
+        new_scene_path = host.get_current_workfile()
+        self.log.info(f"Incremented workfile to: {new_scene_path}")

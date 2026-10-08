@@ -379,15 +379,15 @@ class ProductResourcesPresetModel(BaseSettingsModel):
     )
 
     @validator("editorial_pkg", "plate")
-    def validate_unique_outputs(cls, values):
+    def validate_unique_outputs(cls, value):
         # ensure_unique_names unfortunately is hardcoded to use `name` as field key
         names = []
-        for val in values:
+        for val in value:
             if val.shared.repre_name in names:
                 raise ValueError(f"Duplicate representation name: {val.shared.repre_name}")
             names.append(val.shared.repre_name)
 
-        return values
+        return value
 
 
 class ExtractProductResourcesModel(BaseSettingsModel):

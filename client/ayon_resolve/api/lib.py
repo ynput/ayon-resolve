@@ -385,10 +385,10 @@ def is_track_range_free(
         bool: True if the range is not used by any item.
     """
     items = timeline.GetItemListInTrack(track_type, track_index) or []
-    return not any(
-        int(item.GetStart()) <= end and int(item.GetEnd()) >= start
-        for item in items
-    )
+    for item in items:
+        if int(item.GetStart()) > end or int(item.GetEnd()) < start:
+            return False
+    return True
 
 
 def get_or_create_video_track(

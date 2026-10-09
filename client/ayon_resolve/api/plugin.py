@@ -107,7 +107,7 @@ class ClipLoader:
 
         # video track name, the same for all versions of product
         # representation, so multiselection stays organized
-        self.data["track_name"] = "_".join([product_name, representation_name])
+        self.data["track_name"] = f"{product_name}_{representation_name}"
 
         # solve project bin structure path
         hierarchy = "Loader{}".format(folder_path)

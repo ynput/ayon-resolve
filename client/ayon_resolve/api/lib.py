@@ -351,11 +351,12 @@ def get_video_track_index_by_name(timeline: object, name: str) -> int:
     for track_index in range(1, int(timeline.GetTrackCount("video")) + 1):
         if timeline.GetTrackName("video", track_index) == name:
             return track_index
+    return None
 
 
 def get_track_end_frame(
         timeline: object, track_index: int, track_type: str = "video"
-) -> int:
+) -> int | None:
     """Return the first timeline frame after the last item of the track.
 
     Returns:
@@ -394,8 +395,8 @@ def is_track_range_free(
 def get_or_create_video_track(
         timeline: object,
         name: str,
-        start: int = None,
-        end: int = None
+        start: int | None = None,
+        end: int | None = None
 ) -> int:
     """Get video track by name, create it if missing.
 
@@ -432,18 +433,20 @@ def get_or_create_video_track(
         if timeline.GetIsTrackLocked("video", track_index):
             continue
 
-        if not check_range or is_track_range_free(
-                timeline, track_index, start, end):
-            return track_index
+        if check_range and not is_track_range_free(
+            timeline, track_index, start, end
+        ):
+            continue
+        return track_index
 
 
 def create_timeline_item(
-        media_pool_item: object,
-        timeline: object = None,
-        timeline_in: int = None,
-        source_start: int = None,
-        source_end: int = None,
-        track_name: str = None,
+    media_pool_item: object,
+    timeline: object | None = None,
+    timeline_in: int | None = None,
+    source_start: int | None = None,
+    source_end: int | None = None,
+    track_name: str | None = None,
 ) -> object:
     """
     Add media pool item to current or defined timeline.

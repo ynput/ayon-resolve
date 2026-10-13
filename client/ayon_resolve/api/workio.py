@@ -105,9 +105,17 @@ def save_file(filepath):
                     f"'{current_wf.stem}' to '{incoming_wf.stem}'. "
                     "A project with that name may already exist."
                 )
-            exported = _export_project(
-                project_manager, incoming_wf.stem, incoming_wf.as_posix()
-            )
+            try:
+                exported = _export_project(
+                    project_manager, incoming_wf.stem, incoming_wf.as_posix()
+                )
+            except Exception:
+                if not resolve_project.SetName(current_wf.stem):
+                    log.error(
+                        "Failed to restore Resolve project name to '%s'.",
+                        current_wf.stem,
+                    )
+                raise
             log.info(f"Incremented workfile with local rename to {incoming_wf.as_posix()}: {exported}")
         else:
             # increment without local renaming but reimport

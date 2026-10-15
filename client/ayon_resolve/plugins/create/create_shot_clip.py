@@ -346,7 +346,7 @@ OTIO file.
                     "Resolves API exposes no functionality to retrieve "
                     "the currently selected timeline items."
                 ),
-                default=True
+                default=self.presets.get("use_selection", True),
             ),
 
             # hierarchyData

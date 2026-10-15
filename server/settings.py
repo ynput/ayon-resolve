@@ -104,6 +104,16 @@ def representation_tags_enum():
 
 
 class CreateShotClipModels(BaseSettingsModel):
+    use_selection: bool = SettingsField(
+        True,
+        title="Use only clips with Chocolate clip color",
+        description=(
+            "Default state of the matching toggle in the publisher. "
+            "When disabled, all clips on the current timeline are "
+            "considered, whatever their clip color."
+        ),
+        section="Clip Selection"
+    )
     hierarchy: str = SettingsField(
         "{folder}/{sequence}",
         title="Shot parent hierarchy",
@@ -578,6 +588,7 @@ DEFAULT_VALUES = {
     "rename_db_project_on_increment": True,
     "create": {
         "CreateShotClip": {
+            "use_selection": True,
             "hierarchy": "{folder}/{sequence}",
             "clipRename": True,
             "clipName": "{track}{sequence}{shot}",

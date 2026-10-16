@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import os
 import json
@@ -336,12 +338,117 @@ def get_media_pool_item(filepath, root: object = None) -> object:
     return None
 
 
+def get_video_track_index_by_name(timeline: object, name: str) -> int:
+    """Return index of the first video track with given name.
+
+    Args:
+        timeline (resolve.Timeline): resolve's object
+        name (str): track name
+
+    Returns:
+        Optional[int]: 1-based track index, None if there is no such track.
+    """
+    for track_index in range(1, int(timeline.GetTrackCount("video")) + 1):
+        if timeline.GetTrackName("video", track_index) == name:
+            return track_index
+    return None
+
+
+def get_track_end_frame(
+        timeline: object, track_index: int, track_type: str = "video"
+) -> int | None:
+    """Return the first timeline frame after the last item of the track.
+
+    Returns:
+        Optional[int]: None if the track has no items.
+    """
+    items = timeline.GetItemListInTrack(track_type, track_index) or []
+    return max((int(item.GetEnd()) for item in items), default=None)
+
+
+def is_track_range_free(
+        timeline: object,
+        track_index: int,
+        start: int,
+        end: int,
+        track_type: str = "video"
+) -> bool:
+    """Check that no item of the track overlaps with `start` - `end` range.
+
+    Args:
+        timeline (resolve.Timeline): resolve's object
+        track_index (int): 1-based track index
+        start (int): first timeline frame of the range
+        end (int): timeline frame after the last frame of the range
+        track_type (str): resolve's track type
+
+    Returns:
+        bool: True if the range is not used by any item.
+    """
+    # item `GetEnd` and `end` are exclusive, so an item ending at `start`
+    # is right before the range and does not overlap
+    items = timeline.GetItemListInTrack(track_type, track_index) or []
+    return not any(
+        int(item.GetStart()) < end and int(item.GetEnd()) > start
+        for item in items
+    )
+
+
+def get_or_create_video_track(
+        timeline: object,
+        name: str,
+        start: int | None = None,
+        end: int | None = None
+) -> int:
+    """Get video track by name, create it if missing.
+
+    Existing track is used only if it is unlocked and, when `start` and `end`
+    are given, free in that range. Otherwise the next numbered track
+    (`<name>_2`, `<name>_3`, ...) is tried or created.
+
+    Args:
+        timeline (resolve.Timeline): resolve's object
+        name (str): base track name
+        start (Optional[int]): first timeline frame required to be free
+        end (Optional[int]): timeline frame after the last required frame
+
+    Returns:
+        int: 1-based track index
+    """
+    check_range = start is not None and end is not None
+    suffix = 1
+    while True:
+        track_name = name if suffix == 1 else f"{name}_{suffix}"
+        suffix += 1
+
+        track_index = get_video_track_index_by_name(timeline, track_name)
+        if track_index is None:
+            if not timeline.AddTrack("video"):
+                raise RuntimeError(
+                    f"Failed to add video track '{track_name}' to timeline "
+                    f"'{timeline.GetName()}'"
+                )
+            track_index = int(timeline.GetTrackCount("video"))
+            timeline.SetTrackName("video", track_index, track_name)
+            return track_index
+
+        if timeline.GetIsTrackLocked("video", track_index):
+            continue
+
+        if check_range and not is_track_range_free(
+            timeline, track_index, start, end
+        ):
+            continue
+        return track_index
+
+
 def create_timeline_item(
-        media_pool_item: object,
-        timeline: object = None,
-        timeline_in: int = None,
-        source_start: int = None,
-        source_end: int = None,
+    media_pool_item: object,
+    timeline: object | None = None,
+    timeline_in: int | None = None,
+    source_start: int | None = None,
+    source_end: int | None = None,
+    track_name: str | None = None,
 ) -> object:
     """
     Add media pool item to current or defined timeline.
@@ -352,6 +459,9 @@ def create_timeline_item(
         timeline_in (Optional[int]): timeline input frame (sequence frame)
         source_start (Optional[int]): media source input frame (sequence frame)
         source_end (Optional[int]): media source output frame (sequence frame)
+        track_name (Optional[str]): video track to add the item to. Track is
+            created if it does not exist or is not free in item's range.
+            Default video track is used if not set.
 
     Returns:
         object: resolve.TimelineItem
@@ -369,12 +479,22 @@ def create_timeline_item(
         source_end is not None
     ]):
         fps = timeline.GetSetting("timelineFrameRate")
-        duration = source_end - source_start
+        # number of frames, `source_end` is the last used frame (inclusive)
+        duration = source_end - source_start + 1
         timecode_in = frames_to_timecode(timeline_in, fps)
-        timecode_out = frames_to_timecode(timeline_in + duration, fps)
+        timecode_out = frames_to_timecode(timeline_in + duration - 1, fps)
     else:
         timecode_in = None
         timecode_out = None
+
+    track_index = None
+    if track_name:
+        record_range = (None, None)
+        if timecode_in:
+            record_range = (timeline_in, timeline_in + duration)
+        track_index = get_or_create_video_track(
+            timeline, track_name, *record_range
+        )
 
     # if timeline was used then switch it to current timeline
     output_timeline_item = None
@@ -384,18 +504,26 @@ def create_timeline_item(
             "mediaPoolItem": media_pool_item,
         }
 
-        if source_start:
+        # Movie media starts at frame 0, so do not test for truthiness.
+        # Resolve ignores `endFrame` without `startFrame`.
+        if source_start is not None:
             # Note: specifying a startFrame or endFrame will fail to place the
             # timeline item if the item does not have that frame, e.g. a static
             # representation on version that does have frame start and end.
             clip_data["startFrame"] = source_start
-        if source_end:
-            clip_data["endFrame"] = source_end
+        if source_end is not None:
+            # `endFrame` of AppendToTimeline is exclusive, while
+            # `source_end` is the last used frame
+            clip_data["endFrame"] = source_end + 1
         if timecode_in:
             # Note: specifying a recordFrame will fail to place the timeline
             #  item if there's already an existing clip at that time on the
             #  active track.
             clip_data["recordFrame"] = timeline_in
+        if track_index:
+            clip_data["trackIndex"] = track_index
+            # video only, audio would need its own track index
+            clip_data["mediaType"] = 1
 
         # add to timeline
         appended_items = media_pool.AppendToTimeline([clip_data])

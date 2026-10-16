@@ -5,6 +5,7 @@ from pprint import pformat
 
 import pyblish.api
 from ayon_core.lib import StringTemplate, filter_profiles
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import (
     Anatomy,
     get_current_project_name,
@@ -25,6 +26,11 @@ from ayon_resolve.api.rendering import (
     set_render_preset_from_file,
 )
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
+
+# Source media extensions (without leading dot) which can be integrated as is
+SOURCE_MEDIA_EXTENSIONS = {
+    ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
+}
 
 
 class ExtractProductResources(
@@ -76,13 +82,18 @@ class ExtractProductResources(
                 )
                 return
 
-    def get_settings(self, instance) -> list[dict[str, Any]]:
+    def get_settings(self, instance) -> tuple[bool, list[dict[str, Any]]]:
         """Return normalised render settings for *instance*.
 
         Looks up ``resolve → publish → ExtractProductResources → profiles``,
         then profile-matches on task type / task name / product_base_type.
 
-        Returns a list of flat dicts with keys:
+        When no profile matches but the instance already carries source clip
+        media that is an image sequence or a video file, the source
+        representations are kept and no render settings are returned.
+
+        Returns a tuple of ``integrate_clip_source`` flag and a list of flat
+        dicts with keys:
             ``file_format``, ``codec``, ``preset_path``,
             and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
         """
@@ -101,6 +112,14 @@ class ExtractProductResources(
         )
 
         if not profile:
+            if self._has_supported_source_media(instance):
+                self.log.info(
+                    "No matching preset found for family='%s'. Source clip "
+                    "media is an image or video file, integrating it as is.",
+                    product_base_type,
+                )
+                return True, []
+
             raise PublishError(
                 f"No matching preset found for family='{product_base_type}'. "
                 "Please visit your server settings and add a matching preset for this family."
@@ -119,6 +138,20 @@ class ExtractProductResources(
             )
 
         return (profile["integrate_clip_source"], result)
+
+    @staticmethod
+    def _has_supported_source_media(instance) -> bool:
+        """Whether all collected source representations are image or video.
+
+        Source clip representations are collected by ``CollectOTIOProductResources``
+        in core, so they are available on the instance before extraction.
+        """
+        representations = instance.data.get("representations") or []
+        return bool(representations) and all(
+            (repre.get("ext") or "").lstrip(".").lower()
+            in SOURCE_MEDIA_EXTENSIONS
+            for repre in representations
+        )
 
     def _normalize_preset(self, preset):
         """Flatten the nested preset structure into a render-ready dict."""

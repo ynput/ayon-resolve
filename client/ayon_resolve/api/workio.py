@@ -33,12 +33,30 @@ def has_unsaved_changes():
     return False
 
 
+def _export_project(project_manager, project_name, filepath):
+    """Export ``project_name`` to ``filepath`` or raise on failure."""
+    exported = project_manager.ExportProject(project_name, filepath)
+    if not exported:
+        raise RuntimeError(
+            f"Failed to export Resolve project '{project_name}' "
+            f"to '{filepath}'."
+        )
+    return exported
+
+
 def save_file(filepath):
+    """Save and export a Resolve workfile.
+
+    Raises:
+        RuntimeError: If saving, exporting or the project database override
+            fails. Callers such as ``save_next_version`` rely on the host
+            save raising instead of returning ``False``.
+    """
     project_manager = get_project_manager()
     project_saved = project_manager.SaveProject()
     if not project_saved:
         log.error("Failed to save current project!")
-        return False
+        raise RuntimeError("Failed to save current Resolve project.")
 
     resolve_project = get_current_resolve_project()
     incoming_wf = Path(filepath)
@@ -56,32 +74,71 @@ def save_file(filepath):
             project_name, overrides
         )
         if not override_is_valid:
-            return False
+            raise RuntimeError(
+                "Failed to save Resolve workfile: invalid project "
+                "database override."
+            )
 
     rename_db_project = settings["resolve"].get("rename_db_project_on_increment", True)
     if "Untitled Project" in current_wf.stem:
         # saving initial workfile from currently opened project
-        project_manager.CreateProject(incoming_wf.stem)
-        project_manager.SaveProject()
-        exported = project_manager.ExportProject(incoming_wf.stem, incoming_wf.as_posix())
+        new_project = project_manager.CreateProject(incoming_wf.stem)
+        if not new_project:
+            raise RuntimeError(
+                f"Failed to create new Resolve project '{incoming_wf.stem}'."
+            )
+        if not project_manager.SaveProject():
+            raise RuntimeError(
+                f"Failed to save new Resolve project '{incoming_wf.stem}'."
+            )
+        exported = _export_project(
+            project_manager, incoming_wf.stem, incoming_wf.as_posix()
+        )
         log.info(f"New project {incoming_wf.stem} exported: {exported}")
-    if current_wf.stem != incoming_wf.stem:
+    elif current_wf.stem != incoming_wf.stem:
         # workfile shall be incremented
         if rename_db_project:
             # increment with local renaming
-            resolve_project.SetName(incoming_wf.stem)
-            exported = project_manager.ExportProject(incoming_wf.stem, incoming_wf.as_posix())
+            if not resolve_project.SetName(incoming_wf.stem):
+                raise RuntimeError(
+                    f"Failed to rename Resolve project from "
+                    f"'{current_wf.stem}' to '{incoming_wf.stem}'. "
+                    "A project with that name may already exist."
+                )
+            try:
+                exported = _export_project(
+                    project_manager, incoming_wf.stem, incoming_wf.as_posix()
+                )
+            except Exception:
+                if not resolve_project.SetName(current_wf.stem):
+                    log.error(
+                        "Failed to restore Resolve project name to '%s'.",
+                        current_wf.stem,
+                    )
+                raise
             log.info(f"Incremented workfile with local rename to {incoming_wf.as_posix()}: {exported}")
         else:
             # increment without local renaming but reimport
-            exported = project_manager.ExportProject(current_wf.stem, current_wf.as_posix())
-            exported = project_manager.ExportProject(current_wf.stem, incoming_wf.as_posix())
-            project_manager.ImportProject(incoming_wf.as_posix())
-            project_manager.LoadProject(incoming_wf.stem)
+            _export_project(
+                project_manager, current_wf.stem, current_wf.as_posix()
+            )
+            exported = _export_project(
+                project_manager, current_wf.stem, incoming_wf.as_posix()
+            )
+            if not project_manager.ImportProject(incoming_wf.as_posix()):
+                raise RuntimeError(
+                    f"Failed to import Resolve project from '{incoming_wf.as_posix()}'."
+                )
+            if project_manager.LoadProject(incoming_wf.stem) is None:
+                raise RuntimeError(
+                    f"Failed to load Resolve project '{incoming_wf.stem}'."
+                )
             log.info(f"Incremented workfile with reimport to {incoming_wf.as_posix()}: {exported}")
     else:
         # workfile export without increment
-        exported = project_manager.ExportProject(incoming_wf.stem, incoming_wf.as_posix())
+        exported = _export_project(
+            project_manager, incoming_wf.stem, incoming_wf.as_posix()
+        )
         log.info(f"Project exported without increment to {incoming_wf.as_posix()}: {exported}")
 
 

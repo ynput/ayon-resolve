@@ -504,12 +504,14 @@ def create_timeline_item(
             "mediaPoolItem": media_pool_item,
         }
 
-        if source_start:
+        # Movie media starts at frame 0, so do not test for truthiness.
+        # Resolve ignores `endFrame` without `startFrame`.
+        if source_start is not None:
             # Note: specifying a startFrame or endFrame will fail to place the
             # timeline item if the item does not have that frame, e.g. a static
             # representation on version that does have frame start and end.
             clip_data["startFrame"] = source_start
-        if source_end:
+        if source_end is not None:
             # `endFrame` of AppendToTimeline is exclusive, while
             # `source_end` is the last used frame
             clip_data["endFrame"] = source_end + 1

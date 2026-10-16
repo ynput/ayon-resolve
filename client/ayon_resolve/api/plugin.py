@@ -165,22 +165,19 @@ class ClipLoader:
             # media however certain representations may be shorter because they
             # exclude those handles intentionally. Unfortunately the
             # representation does not store that in the database currently;
-            # so we should compensate for those cases. If the media is shorter
-            # than the frame range specified in the database we assume it is
-            # without handles and thus we do not need to remove the handles
-            # from source and out
+            # so we should compensate for those cases. If the media is too
+            # short to contain the start handle and the frame range we assume
+            # it is without handles and thus we do not need to remove the
+            # handles from source and out.
+            # The end handle is not required, reviews can miss a tail frame,
+            # so the out frame is taken from the frame range duration.
             if frame_start is not None and frame_end is not None:
                 # Version has frame range data, so we can compare media length
                 handle_start = version_attributes.get("handleStart", 0)
-                handle_end = version_attributes.get("handleEnd", 0)
-                frame_start_handle = frame_start - handle_start
-                frame_end_handle = frame_end + handle_end
-                database_frame_duration = int(
-                    frame_end_handle - frame_start_handle + 1
-                )
-                if source_duration >= database_frame_duration:
+                frame_duration = int(frame_end - frame_start + 1)
+                if source_duration >= handle_start + frame_duration:
                     source_in += handle_start
-                    source_out -= handle_end
+                    source_out = source_in + frame_duration - 1
 
         # get timeline in
         timeline_start = self.active_timeline.GetStartFrame()

@@ -385,11 +385,13 @@ def is_track_range_free(
     Returns:
         bool: True if the range is not used by any item.
     """
+    # item `GetEnd` and `end` are exclusive, so an item ending at `start`
+    # is right before the range and does not overlap
     items = timeline.GetItemListInTrack(track_type, track_index) or []
-    for item in items:
-        if int(item.GetStart()) > end or int(item.GetEnd()) < start:
-            return False
-    return True
+    return not any(
+        int(item.GetStart()) < end and int(item.GetEnd()) > start
+        for item in items
+    )
 
 
 def get_or_create_video_track(
@@ -477,9 +479,10 @@ def create_timeline_item(
         source_end is not None
     ]):
         fps = timeline.GetSetting("timelineFrameRate")
-        duration = source_end - source_start
+        # number of frames, `source_end` is the last used frame (inclusive)
+        duration = source_end - source_start + 1
         timecode_in = frames_to_timecode(timeline_in, fps)
-        timecode_out = frames_to_timecode(timeline_in + duration, fps)
+        timecode_out = frames_to_timecode(timeline_in + duration - 1, fps)
     else:
         timecode_in = None
         timecode_out = None
@@ -488,7 +491,7 @@ def create_timeline_item(
     if track_name:
         record_range = (None, None)
         if timecode_in:
-            record_range = (timeline_in, timeline_in + duration + 1)
+            record_range = (timeline_in, timeline_in + duration)
         track_index = get_or_create_video_track(
             timeline, track_name, *record_range
         )
@@ -507,7 +510,9 @@ def create_timeline_item(
             # representation on version that does have frame start and end.
             clip_data["startFrame"] = source_start
         if source_end:
-            clip_data["endFrame"] = source_end
+            # `endFrame` of AppendToTimeline is exclusive, while
+            # `source_end` is the last used frame
+            clip_data["endFrame"] = source_end + 1
         if timecode_in:
             # Note: specifying a recordFrame will fail to place the timeline
             #  item if there's already an existing clip at that time on the

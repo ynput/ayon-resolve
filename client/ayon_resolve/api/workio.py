@@ -15,9 +15,14 @@ from ayon_core.pipeline.context_tools import get_current_project_name
 from .lib import (
     get_project_manager,
     get_current_resolve_project,
-    set_project_manager_to_folder_name
+    set_project_manager_to_folder_name,
+    _convert_resolve_list_type,
 )
-from .menu import DatabaseMisconfigurationWarning, ProjectImportChooser
+from .menu import (
+    DatabaseMisconfigurationWarning,
+    ProjectFolderMismatchWarning,
+    ProjectImportChooser,
+)
 
 
 log = Logger.get_logger(__name__)
@@ -59,6 +64,22 @@ def save_file(filepath):
             return False
 
     rename_db_project = settings["resolve"].get("rename_db_project_on_increment", True)
+    if (
+        "Untitled Project" not in current_wf.stem
+        and not _is_project_in_current_folder(project_manager, resolve_project)
+    ):
+        # 'ExportProject' finds projects by name in the current folder only
+        folder_name = project_manager.GetCurrentFolder()
+        ProjectFolderMismatchWarning(
+            resolve_project.GetName(), folder_name
+        ).exec_()
+        raise RuntimeError(
+            f"Resolve project '{resolve_project.GetName()}' is not in the"
+            f" current Project Manager folder '{folder_name}'."
+            " Open a workfile of this context or start a new project"
+            " before saving."
+        )
+
     if "Untitled Project" in current_wf.stem:
         # saving initial workfile from currently opened project
         project_manager.CreateProject(incoming_wf.stem)
@@ -187,6 +208,14 @@ def handle_local_vs_exported_project(settings, project_name, file_path):
             project_manager.SaveProject()
             project_manager.CloseProject(proj_bkp_name)
             project_manager.ImportProject(file_path)
+
+
+def _is_project_in_current_folder(project_manager, resolve_project):
+    """Check the open project is in the Project Manager's current folder."""
+    project_names = project_manager.GetProjectListInCurrentFolder() or []
+    if isinstance(project_names, dict):
+        project_names = _convert_resolve_list_type(project_names)
+    return resolve_project.GetName() in project_names
 
 
 def handle_project_db_override(project_name, settings) -> bool:

@@ -189,6 +189,40 @@ class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):
         self.setDetailedText(report)
 
 
+class ProjectFolderMismatchWarning(QtWidgets.QMessageBox):
+    def __init__(self, resolve_project_name, folder_name, parent=None):
+        _app = QtWidgets.QApplication.instance()
+        if not _app:
+            _app = QtWidgets.QApplication([])
+        super().__init__(parent)
+
+        self.parent = parent
+        self.resolve_project_name = resolve_project_name
+        self.folder_name = folder_name
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        stylesheet = load_stylesheet()
+        self.setStyleSheet(stylesheet)
+
+        self.setWindowTitle("Workfile Not Saved")
+        self.setIcon(QtWidgets.QMessageBox.Warning)
+        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
+
+        self.setWindowFlags(
+            self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint
+        )
+
+        self.setText(
+            f"The open Resolve project '{self.resolve_project_name}' is not "
+            f"in the Project Manager folder '{self.folder_name}' used for "
+            "this AYON context, so it can't be saved as a workfile here.\n\n"
+            "Open a workfile of this context, or start a new Resolve "
+            "project, then save again."
+        )
+
+
 class ProjectImportChooser(QtWidgets.QMessageBox):
     def __init__(self, datemod_drp, datemod_dbp, parent=None):
         _app = QtWidgets.QApplication.instance()

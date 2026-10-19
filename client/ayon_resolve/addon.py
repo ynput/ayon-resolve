@@ -11,6 +11,12 @@ class ResolveAddon(AYONAddon, IHostAddon):
     version = __version__
     host_name = "resolve"
 
+    def add_implementation_envs(self, env, _app):
+        # Resolve ships a legacy PySide2 which
+        # conflicts with AYON self-required PySide6.
+        # Force QtPy to look for pyside6 and not pyside2.
+        env["QT_API"]= "pyside6"
+
     def get_launch_hook_paths(self, app):
         if app.host_name != self.host_name:
             return []

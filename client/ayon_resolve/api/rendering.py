@@ -36,6 +36,38 @@ _IMAGE_SEQUENCE_EXTS = frozenset({
 })
 
 
+def _collect_rendered_files(
+    target_render_directory: Path,
+    pattern: str = "*",
+) -> list[Path]:
+    """Return sorted rendered files matching *pattern* in the directory.
+
+    Searches *target_render_directory* recursively, so both flat and nested
+    (one or more levels of sub-folders) layouts are handled.
+
+    Hidden files and folders (name starting with ``.``) are skipped. macOS
+    writes an AppleDouble ``._<name>`` twin for every file, and ``.DS_Store``
+    files, when rendering to a share without Apple metadata support. These
+    are not part of the render output.
+
+    Args:
+        target_render_directory (Path): Directory where rendered files are.
+        pattern (str): Glob pattern for file names.
+
+    Returns:
+        list[Path]: Sorted list of rendered file paths.
+    """
+    return sorted(
+        path
+        for path in target_render_directory.rglob(pattern)
+        if path.is_file()
+        and not any(
+            part.startswith(".")
+            for part in path.relative_to(target_render_directory).parts
+        )
+    )
+
+
 def add_timeline_to_render(
     bmr_project,
     target_render_directory
@@ -283,13 +315,7 @@ def render_clip_to_intermediate_file(
             log.info(f"Deleting clip render job: {job_id}")
             bmr_project.DeleteRenderJob(job_id)
 
-    # Collect all rendered files, handling two layouts:
-    #   1. Flat:   target_render_directory/*.<ext>
-    #   2. Nested: target_render_directory/**/*.<ext>
-    #              (files may live inside one or more levels of sub-folders)
-    rendered = sorted(
-        f for f in target_render_directory.rglob("*") if f.is_file()
-    )
+    rendered = _collect_rendered_files(target_render_directory)
     if not rendered:
         msg = f"No rendered files found in '{target_render_directory}'."
         raise RuntimeError(msg)
@@ -403,12 +429,8 @@ def render_timeline_intermediate_file(
         if not render_single_timeline(timeline, target_render_directory):
             raise RuntimeError("Unable to render timeline.")
 
-    # Collect all files matching the format extension, handling two layouts:
-    #   1. Flat:   target_render_directory/*.{format_extension}
-    #   2. Nested: target_render_directory/**/*.{format_extension}
-    #              (files may live inside one or more levels of sub-folders)
-    rendered_files = sorted(
-        target_render_directory.rglob(f"*.{format_extension}")
+    rendered_files = _collect_rendered_files(
+        target_render_directory, f"*.{format_extension}"
     )
     if not rendered_files:
         msg = (

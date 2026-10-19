@@ -8,6 +8,10 @@ from ayon_core.tools.utils import host_tools
 from ayon_core.pipeline import registered_host
 from ayon_core.style import load_stylesheet
 from ayon_core.resources import get_ayon_icon_filepath
+from ayon_core.tools.console_interpreter.ui.window import (
+    ConsoleInterpreterWindow
+)
+from ayon_core.tools.console_interpreter import InterpreterController
 
 from .pulse import PulseThread
 
@@ -36,6 +40,7 @@ class AYONMenu(QtWidgets.QWidget):
         super(AYONMenu, self).__init__(*args, **kwargs)
 
         self.setObjectName(f"{MENU_LABEL}Menu")
+        self._console = None
 
         icon_path = get_ayon_icon_filepath()
         icon = QtGui.QIcon(icon_path)
@@ -58,6 +63,7 @@ class AYONMenu(QtWidgets.QWidget):
         load_btn = QtWidgets.QPushButton("Load ...", self)
         inventory_btn = QtWidgets.QPushButton("Manage...", self)
         libload_btn = QtWidgets.QPushButton("Library...", self)
+        console_btn = QtWidgets.QPushButton("Console...", self)
 
         # set_colorspace_btn = QtWidgets.QPushButton(
         #     "Set colorspace from presets", self
@@ -80,6 +86,7 @@ class AYONMenu(QtWidgets.QWidget):
         layout.addWidget(load_btn)
         layout.addWidget(publish_btn)
         layout.addWidget(inventory_btn)
+        layout.addWidget(console_btn)
 
         layout.addSpacing(15)
 
@@ -93,6 +100,7 @@ class AYONMenu(QtWidgets.QWidget):
         load_btn.clicked.connect(self.on_load_clicked)
         inventory_btn.clicked.connect(self.on_inventory_clicked)
         libload_btn.clicked.connect(self.on_libload_clicked)
+        console_btn.clicked.connect(self._show_console)
 
         # set_colorspace_btn.clicked.connect(self.on_set_colorspace_clicked)
         # reset_resolution_btn.clicked.connect(self.on_set_resolution_clicked)
@@ -144,6 +152,29 @@ class AYONMenu(QtWidgets.QWidget):
 
     def on_set_resolution_clicked(self):
         print("Clicked Set Resolution")
+
+    def _show_console(self):
+        if self._console is not None:
+            if self._console.isVisible():
+                # Closing also saves the scripts directly.
+                # Thus we prefer to close instead of hide here
+                self._console.close()
+                return
+            else:
+                self._console.show()
+                self._console.raise_()
+                return
+        controller = InterpreterController(name="resolve")
+        widget = ConsoleInterpreterWindow(controller, parent=self)
+        widget.setWindowTitle("Python Script Editor - Davinci Resolve")
+        widget.setWindowFlags(widget.windowFlags() |
+                              QtCore.Qt.Dialog |
+                              QtCore.Qt.WindowMinimizeButtonHint)
+        widget.show()
+        widget.raise_()
+
+        self._console = widget
+
 
 
 class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):

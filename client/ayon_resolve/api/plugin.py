@@ -20,7 +20,6 @@ SHARED_DATA_KEY = "ayon.resolve.instances"
 class ClipLoader:
 
     active_bin = None
-    data = {}
 
     def __init__(self, loader_obj, context, **options):
         """ Initialize object
@@ -33,6 +32,7 @@ class ClipLoader:
 
         """
         self.__dict__.update(loader_obj.__dict__)
+        self.data = {}
         self.context = context
         self.active_project = lib.get_current_resolve_project()
 
@@ -105,6 +105,10 @@ class ClipLoader:
         self.data["timeline_basename"] = "timeline_{}_{}".format(
             product_name, representation_name)
 
+        # video track name, the same for all versions of product
+        # representation, so multiselection stays organized
+        self.data["track_name"] = f"{product_name}_{representation_name}"
+
         # solve project bin structure path
         hierarchy = "Loader{}".format(folder_path)
 
@@ -161,28 +165,34 @@ class ClipLoader:
             # media however certain representations may be shorter because they
             # exclude those handles intentionally. Unfortunately the
             # representation does not store that in the database currently;
-            # so we should compensate for those cases. If the media is shorter
-            # than the frame range specified in the database we assume it is
-            # without handles and thus we do not need to remove the handles
-            # from source and out
+            # so we should compensate for those cases. If the media is too
+            # short to contain the start handle and the frame range we assume
+            # it is without handles and thus we do not need to remove the
+            # handles from source and out.
+            # The end handle is not required, reviews can miss a tail frame,
+            # so the out frame is taken from the frame range duration.
             if frame_start is not None and frame_end is not None:
                 # Version has frame range data, so we can compare media length
                 handle_start = version_attributes.get("handleStart", 0)
-                handle_end = version_attributes.get("handleEnd", 0)
-                frame_start_handle = frame_start - handle_start
-                frame_end_handle = frame_end + handle_end
-                database_frame_duration = int(
-                    frame_end_handle - frame_start_handle + 1
-                )
-                if source_duration >= database_frame_duration:
+                frame_duration = int(frame_end - frame_start + 1)
+                if source_duration >= handle_start + frame_duration:
                     source_in += handle_start
-                    source_out -= handle_end
+                    source_out = source_in + frame_duration - 1
 
         # get timeline in
         timeline_start = self.active_timeline.GetStartFrame()
         if self.sequential_load:
-            # set timeline start frame
+            # place after the last item of the product track, if any
             timeline_in = int(timeline_start)
+            track_index = lib.get_video_track_index_by_name(
+                self.active_timeline, self.data["track_name"]
+            )
+            if track_index:
+                track_end = lib.get_track_end_frame(
+                    self.active_timeline, track_index
+                )
+                if track_end is not None:
+                    timeline_in = max(timeline_in, track_end)
         else:
             # set timeline start frame + original clip in frame
             timeline_in = int(
@@ -195,6 +205,7 @@ class ClipLoader:
             timeline_in,
             source_in,
             source_out,
+            track_name=self.data["track_name"],
         )
 
         print("Loading clips: `{}`".format(self.data["clip_name"]))

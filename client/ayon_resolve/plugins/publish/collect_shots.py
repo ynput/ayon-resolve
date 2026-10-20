@@ -33,11 +33,6 @@ class CollectShot(pyblish.api.InstancePlugin):
         context = instance.context
         instance_id = instance.data["instance_id"]
 
-        # Inject folderPath and other creator_attributes to ensure
-        # new shots/hierarchy are properly handled.
-        creator_attributes = instance.data['creator_attributes']
-        instance.data.update(creator_attributes)
-
         # Inject/Distribute instance shot data as editorialSharedData
         # to make it available for clip/plate/audio products
         # in sub-collectors.
@@ -60,6 +55,17 @@ class CollectShot(pyblish.api.InstancePlugin):
         instance.data["integrate"] = False  # no representation for shot
         track_item = instance.data["transientData"]["track_item"]
 
+        # Compute fps from creator attribute.
+        creator_attributes = instance.data["creator_attributes"]
+        if creator_attributes["fps"] == "from_selection":
+            creator_attributes["fps"] = instance.context.data["fps"]
+
+        # Inject folderPath and other creator_attributes to ensure
+        # new shots/hierarchy are properly handled.
+        # Done before the handles adjustment so the creator handles
+        # do not override the adjusted ones.
+        instance.data.update(creator_attributes)
+
         # Adjust handles - use track item handles if they are shorter
         # than expected instance handles.
         available_start = int(track_item.GetLeftOffset())
@@ -67,11 +73,23 @@ class CollectShot(pyblish.api.InstancePlugin):
         self.log.info(
             "Available handles: start=%s, end=%s",
             available_start, available_end)
+        requested_start = instance.data["handleStart"]
+        requested_end = instance.data["handleEnd"]
+        handle_start = min(requested_start, available_start)
+        handle_end = min(requested_end, available_end)
+        if handle_start < requested_start:
+            self.log.warning(
+                "Head handle of '%s' reduced from %s to %s frames,"
+                " not enough media before the clip.",
+                instance.name, requested_start, handle_start)
+        if handle_end < requested_end:
+            self.log.warning(
+                "Tail handle of '%s' reduced from %s to %s frames,"
+                " not enough media after the clip.",
+                instance.name, requested_end, handle_end)
         instance.data.update({
-            "handleStart": min(
-                instance.data["handleStart"], int(available_start)),
-            "handleEnd": min(
-                instance.data["handleEnd"], int(available_end)),
+            "handleStart": handle_start,
+            "handleEnd": handle_end,
         })
 
         # Adjust instance data from parent otio timeline.
@@ -82,17 +100,12 @@ class CollectShot(pyblish.api.InstancePlugin):
         if not otio_clip:
             raise PublishError("Could not retrieve otioClip for shot %r", instance)
 
-        # Compute fps from creator attribute.
-        if instance.data['creator_attributes']["fps"] == "from_selection":
-            instance.data['creator_attributes']["fps"] = instance.context.data["fps"]
-
         # Retrieve AyonData marker for associated clip.
         instance.data["otioClip"] = otio_clip
         creator_id = instance.data["creator_identifier"]
         inst_data = marker.metadata["resolve_sub_products"].get(creator_id, {})
 
         # Overwrite settings with clip metadata is "useSourceResolution"
-        creator_attributes = instance.data["creator_attributes"]
         overwrite_clip_metadata = creator_attributes.get("useSourceResolution", False)
         if overwrite_clip_metadata:
             clip_metadata = inst_data["clip_source_resolution"]

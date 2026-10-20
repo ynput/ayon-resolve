@@ -176,7 +176,6 @@ class AYONMenu(QtWidgets.QWidget):
         self._console = widget
 
 
-
 class DatabaseMisconfigurationWarning(QtWidgets.QMessageBox):
     def __init__(self, requested_db, available_dbs, parent=None):
         _app = QtWidgets.QApplication.instance()

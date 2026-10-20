@@ -40,9 +40,12 @@ class PreLaunchResolveSetup(PreLaunchHook):
 
         Never raises: any failure is logged and treated as "not found".
         """
+        python_search_path = os.pathsep.join(
+            [python3_home_str, os.path.join(python3_home_str, "bin")]
+        )
         python_exe = (
-            shutil.which("python3", path=python3_home_str)
-            or shutil.which("python", path=python3_home_str)
+            shutil.which("python3", path=python_search_path)
+            or shutil.which("python", path=python_search_path)
         )
         if not python_exe:
             self.log.info(

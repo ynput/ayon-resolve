@@ -73,11 +73,23 @@ class CollectShot(pyblish.api.InstancePlugin):
         self.log.info(
             "Available handles: start=%s, end=%s",
             available_start, available_end)
+        requested_start = instance.data["handleStart"]
+        requested_end = instance.data["handleEnd"]
+        handle_start = min(requested_start, available_start)
+        handle_end = min(requested_end, available_end)
+        if handle_start < requested_start:
+            self.log.warning(
+                "Head handle of '%s' reduced from %s to %s frames,"
+                " not enough media before the clip.",
+                instance.name, requested_start, handle_start)
+        if handle_end < requested_end:
+            self.log.warning(
+                "Tail handle of '%s' reduced from %s to %s frames,"
+                " not enough media after the clip.",
+                instance.name, requested_end, handle_end)
         instance.data.update({
-            "handleStart": min(
-                instance.data["handleStart"], int(available_start)),
-            "handleEnd": min(
-                instance.data["handleEnd"], int(available_end)),
+            "handleStart": handle_start,
+            "handleEnd": handle_end,
         })
 
         # Adjust instance data from parent otio timeline.

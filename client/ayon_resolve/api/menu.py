@@ -155,15 +155,9 @@ class AYONMenu(QtWidgets.QWidget):
 
     def _show_console(self):
         if self._console is not None:
-            if self._console.isVisible():
-                # Closing also saves the scripts directly.
-                # Thus we prefer to close instead of hide here
-                self._console.close()
-                return
-            else:
-                self._console.show()
-                self._console.raise_()
-                return
+            self._console.show()
+            self._console.raise_()
+            return
         controller = InterpreterController(name="resolve")
         widget = ConsoleInterpreterWindow(controller, parent=self)
         widget.setWindowTitle("Python Script Editor - Davinci Resolve")

@@ -86,11 +86,14 @@ class AYONMenu(QtWidgets.QWidget):
         layout.addWidget(load_btn)
         layout.addWidget(publish_btn)
         layout.addWidget(inventory_btn)
-        layout.addWidget(console_btn)
 
         layout.addSpacing(15)
 
         layout.addWidget(libload_btn)
+
+        layout.addSpacing(15)
+
+        layout.addWidget(console_btn)
 
         save_current_btn.clicked.connect(self.on_save_current_clicked)
         save_current_btn.setShortcut(QtGui.QKeySequence.Save)

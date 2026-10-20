@@ -134,7 +134,9 @@ class AYONMenu(QtWidgets.QWidget):
 
     def on_libload_clicked(self):
         print("Clicked Library")
-        host_tools.show_library_loader()
+        # Newer ayon-core has no module-level 'show_library_loader'. In every
+        # core version it was only an alias of the Loader without context.
+        host_tools.show_loader()
 
     def on_rename_clicked(self):
         print("Clicked Rename")

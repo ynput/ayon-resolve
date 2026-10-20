@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import platform
+import shutil
+import subprocess
 from ayon_applications import PreLaunchHook, LaunchTypes
 from ayon_resolve.utils import setup
 
@@ -32,6 +34,44 @@ class PreLaunchResolveSetup(PreLaunchHook):
 
     app_groups = {"resolve"}
     launch_types = {LaunchTypes.local}
+
+    def _resolve_python_has_pyside6(self, python3_home_str):
+        """Check if Resolve's Python can find PySide6.
+
+        Never raises: any failure is logged and treated as "not found".
+        """
+        python_search_path = os.pathsep.join(
+            [python3_home_str, os.path.join(python3_home_str, "bin")]
+        )
+        python_exe = (
+            shutil.which("python3", path=python_search_path)
+            or shutil.which("python", path=python_search_path)
+        )
+        if not python_exe:
+            self.log.info(
+                f"No Python executable found in `{python3_home_str}`, "
+                "skipping PySide6 detection."
+            )
+            return False
+
+        script = (
+            "import importlib.util, sys;"
+            "sys.exit(0 if importlib.util.find_spec('PySide6') else 1)"
+        )
+        try:
+            subprocess.run(
+                [python_exe, "-c", script],
+                env=self.launch_context.env,
+                capture_output=True,
+                timeout=30,
+                check=True,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            self.log.info(
+                f"PySide6 not detected in Resolve Python ({python_exe}): {exc}"
+            )
+            return False
+        return True
 
     def execute(self):
         current_platform = platform.system().lower()
@@ -111,6 +151,14 @@ class PreLaunchResolveSetup(PreLaunchHook):
         ] = f"{python3_home_str}{os.pathsep}{env_path}"
 
         self.log.debug(f"PATH: {self.launch_context.env['PATH']}")
+
+        # Resolve python env might contain a legacy PySide2 that AYON used to
+        # self-require in previous versions. Force QtPy to use PySide6 if
+        # Resolve's Python can import it. Set here because `QT_API` is
+        # dropped from the environment before the hooks run.
+        if self._resolve_python_has_pyside6(python3_home_str):
+            self.log.info("PySide6 found in Resolve Python, setting QT_API.")
+            self.launch_context.env["QT_API"] = "pyside6"
 
         resolve_utility_scripts_dirs = {
             "windows": (

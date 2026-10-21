@@ -50,6 +50,27 @@ def _convert_ExtractProductResources_0_6_3(
             profile[base_type] = [profile_entry] if profile_entry else []
 
 
+def _convert_ExtractProductResources_0_6_6(overrides: dict[str, Any]):
+    """Rename profile `integrate_clip_source` to `keep_original_representation`.
+
+    0.6.6 is the latest version using the old name. The conversion is keyed on
+    the old name being present, so it is safe to run on any version.
+    """
+    extract_product_profiles = (
+        overrides
+        .get("publish", {})
+        .get("ExtractProductResources", {})
+        .get("profiles")
+    )
+    if not extract_product_profiles:
+        return
+
+    for profile in extract_product_profiles:
+        if "integrate_clip_source" in profile:
+            profile["keep_original_representation"] = profile.pop(
+                "integrate_clip_source")
+
+
 def convert_settings_overrides(
     source_version: str,
     overrides: dict[str, Any],
@@ -58,4 +79,5 @@ def convert_settings_overrides(
 
     _convert_ayon_menu_0_4_1(overrides)
     _convert_ExtractProductResources_0_6_3(version, overrides)
+    _convert_ExtractProductResources_0_6_6(overrides)
     return overrides

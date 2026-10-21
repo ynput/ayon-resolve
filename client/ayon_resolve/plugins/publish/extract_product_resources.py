@@ -5,7 +5,6 @@ from pprint import pformat
 
 import pyblish.api
 from ayon_core.lib import StringTemplate, filter_profiles
-from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import (
     Anatomy,
     get_current_project_name,
@@ -27,11 +26,6 @@ from ayon_resolve.api.rendering import (
 )
 from ayon_resolve.utils import RESOLVE_ADDON_ROOT
 
-# Source media extensions (without leading dot) which can be integrated as is
-SOURCE_MEDIA_EXTENSIONS = {
-    ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
-}
-
 
 class ExtractProductResources(
     publish.Extractor,
@@ -49,6 +43,12 @@ class ExtractProductResources(
     Settings are resolved per-instance from
     ``resolve → publish → ExtractProductResources → profiles``, matched on task
     type / task name and ``product_base_type``.
+
+    The representation collected from the clip's source media is replaced by
+    the rendered outputs unless the profile has
+    ``keep_original_representation`` enabled. Without a matching profile, or
+    without output definitions, nothing is rendered and the original is kept.
+    The plugin fails when the instance ends up with no representations.
     """
 
     label = "Extract Product Resources"
@@ -60,9 +60,14 @@ class ExtractProductResources(
 
     def process(self, instance):
         instance.data.setdefault("representations", [])
-        integrate_clip_source, all_output_settings = self.get_settings(instance)
+        profile, all_output_settings = self.get_settings(instance)
 
-        if not integrate_clip_source:
+        # Drop the original representation only when rendered outputs are
+        # going to take its place.
+        keep_original = (
+            profile["keep_original_representation"] if profile else True
+        )
+        if all_output_settings and not keep_original:
             instance.data["representations"] = []
 
         for settings in all_output_settings:
@@ -82,18 +87,24 @@ class ExtractProductResources(
                 )
                 return
 
-    def get_settings(self, instance) -> tuple[bool, list[dict[str, Any]]]:
-        """Return normalised render settings for *instance*.
+        if not instance.data["representations"]:
+            raise PublishError(
+                self._get_no_representations_message(
+                    instance, profile, bool(all_output_settings)
+                )
+            )
+
+    def get_settings(
+        self, instance
+    ) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+        """Return the matching profile and normalised render settings.
 
         Looks up ``resolve → publish → ExtractProductResources → profiles``,
         then profile-matches on task type / task name / product_base_type.
 
-        When no profile matches but the instance already carries source clip
-        media that is an image sequence or a video file, the source
-        representations are kept and no render settings are returned.
-
-        Returns a tuple of ``integrate_clip_source`` flag and a list of flat
-        dicts with keys:
+        Returns a tuple of the matched profile (``None`` when no profile
+        matches) and a list of flat dicts, one per output definition, with
+        keys:
             ``file_format``, ``codec``, ``preset_path``,
             and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
         """
@@ -112,18 +123,12 @@ class ExtractProductResources(
         )
 
         if not profile:
-            if self._has_supported_source_media(instance):
-                self.log.info(
-                    "No matching preset found for family='%s'. Source clip "
-                    "media is an image or video file, integrating it as is.",
-                    product_base_type,
-                )
-                return True, []
-
-            raise PublishError(
-                f"No matching preset found for family='{product_base_type}'. "
-                "Please visit your server settings and add a matching preset for this family."
+            self.log.info(
+                "No matching profile found for task type '%s', task name '%s' "
+                "and product base type '%s'. Nothing will be rendered.",
+                task_type, task_name, product_base_type,
             )
+            return None, []
 
         self.log.debug(f"Matched preset: {profile.get('name')}")
 
@@ -133,24 +138,61 @@ class ExtractProductResources(
             result.append(normalized)
 
         if not result:
-            raise PublishError(
-                f"No matching output definitions found for preset='{profile}'. "
+            self.log.info(
+                "Profile '%s' has no output definitions. Nothing will be "
+                "rendered.", profile.get("name"),
             )
 
-        return (profile["integrate_clip_source"], result)
+        return profile, result
 
-    @staticmethod
-    def _has_supported_source_media(instance) -> bool:
-        """Whether all collected source representations are image or video.
+    def _get_no_representations_message(
+        self, instance, profile, has_outputs
+    ) -> str:
+        """Explain why the instance ended up without any representation."""
+        product_base_type = instance.data["productBaseType"]
+        label = instance.data.get("label") or instance.name
+        has_source_media = product_base_type != "editorial_pkg"
 
-        Source clip representations are collected by ``CollectOTIOProductResources``
-        in core, so they are available on the instance before extraction.
-        """
-        representations = instance.data.get("representations") or []
-        return bool(representations) and all(
-            (repre.get("ext") or "").lstrip(".").lower()
-            in SOURCE_MEDIA_EXTENSIONS
-            for repre in representations
+        if not profile:
+            entity = get_current_task_entity()
+            reason = (
+                "No profile matches task type "
+                f"'{entity.get('taskType')}', task name "
+                f"'{entity.get('taskName')}' and product base type "
+                f"'{product_base_type}'."
+            )
+        elif not has_outputs:
+            reason = f"Profile '{profile.get('name')}' has no output definitions."
+        else:
+            reason = (
+                f"Profile '{profile.get('name')}' did not produce any "
+                "representation, check the warnings above."
+            )
+
+        if not has_outputs:
+            if has_source_media:
+                # nothing was rendered, so the clip's source media was the
+                # only candidate to publish
+                reason += (
+                    " The clip has no source media to publish as is,"
+                    " is its media offline?"
+                )
+            solution = (
+                "add a profile matching the task and product base type with "
+                "at least one output definition"
+            )
+            if has_source_media:
+                solution += (
+                    ", or enable 'Publish clip's original media' to publish "
+                    "clips with online media as is"
+                )
+        else:
+            solution = "review the output definitions of the profile"
+
+        return (
+            f"No representations to integrate for {product_base_type} "
+            f"'{label}'. {reason} Please check the 'Extract Product "
+            f"Resources' settings in the Resolve addon settings: {solution}."
         )
 
     def _normalize_preset(self, preset):

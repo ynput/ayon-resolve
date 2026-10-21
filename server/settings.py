@@ -368,11 +368,14 @@ class ProductResourcesPresetModel(BaseSettingsModel):
         enum_resolver=_product_base_types_enum,
         conditional_enum=True
     )
-    integrate_clip_source: bool = SettingsField(
+    keep_original_representation: bool = SettingsField(
         False,
-        title="Integrate Clip Source",
+        title="Publish clip's original media",
         description=(
-            "When enabled integrate the timeline item's media pool item as additional representation."
+            "When enabled the timeline item's original media is published as "
+            "additional representation next to the rendered outputs. "
+            "Without a matching profile or output definitions nothing is "
+            "rendered and the original media is always published."
         )
     )
 

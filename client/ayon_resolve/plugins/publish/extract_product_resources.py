@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import Any
 from pathlib import Path
@@ -153,36 +155,48 @@ class ExtractProductResources(
         product_base_type = instance.data["productBaseType"]
         label = instance.data.get("label") or instance.name
 
+        settings_hint = (
+            "in the 'Extract Product Resources' settings of the Resolve addon"
+        )
         if not profile:
             entity = get_current_task_entity()
             reason = (
                 "No profile matches task type "
                 f"'{entity.get('taskType')}', task name "
                 f"'{entity.get('taskName')}' and product base type "
-                f"'{product_base_type}'."
+                f"'{product_base_type}', so nothing is rendered."
+            )
+            solution = (
+                "Please add a profile matching the task and product base "
+                f"type with at least one output definition {settings_hint}."
             )
             if product_base_type != "editorial_pkg":
                 # nothing was rendered, so the clip's source media was the
                 # only candidate to publish
                 reason += (
                     " The clip has no source media to publish as is,"
-                    " is its media offline?"
+                    " is it offline?"
                 )
-            solution = (
-                "add a profile matching the task and product base type with "
-                "at least one output definition"
-            )
+                solution = (
+                    "Depending on what should be published, either bring the "
+                    "clip's media online to publish it as is, or add a "
+                    "profile matching the task and product base type with at "
+                    f"least one output definition {settings_hint} to render "
+                    "it."
+                )
         else:
             reason = (
                 f"Profile '{profile.get('name')}' did not produce any "
                 "representation, check the warnings above."
             )
-            solution = "review the output definitions of the profile"
+            solution = (
+                "Please review the output definitions of this profile "
+                f"{settings_hint}."
+            )
 
         return (
             f"No representations to integrate for {product_base_type} "
-            f"'{label}'. {reason} Please check the 'Extract Product "
-            f"Resources' settings in the Resolve addon settings: {solution}."
+            f"'{label}'. {reason} {solution}"
         )
 
     def _normalize_preset(self, preset):

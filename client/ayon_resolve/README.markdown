@@ -1,9 +1,9 @@
 ## Basic setup
 
--   Actually supported version is up to v19
--   install Python 3.6.2 (latest tested v17) or up to 3.9.13 (latest tested on v19)
--   pip install PySide2:
-    -   Python 3.9.*: open terminal and go to python.exe directory, then `python -m pip install PySide2`
+-   Actually supported version is up to v21
+-   install Python 3.6.2 (latest tested v17) or up to 3.9.13 (latest tested on v21)
+-   pip install PySide6:
+    -   Python 3.9.*: open terminal and go to python.exe directory, then `python -m pip install PySide6`
 -   pip install OpenTimelineIO:
     -   Python 3.9.*: open terminal and go to python.exe directory, then  `python -m pip install OpenTimelineIO`
     -   Python 3.6: open terminal and go to python.exe directory, then `python -m pip install git+https://github.com/PixarAnimationStudios/OpenTimelineIO.git@5aa24fbe89d615448876948fe4b4900455c9a3e8` and move built files from `./Lib/site-packages/opentimelineio/cxx-libs/bin and lib` to `./Lib/site-packages/opentimelineio/`. I was building it on Win10 machine with Visual Studio Community 2019 and

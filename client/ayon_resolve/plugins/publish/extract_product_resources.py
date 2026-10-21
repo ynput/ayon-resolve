@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import Any
 from pathlib import Path
@@ -43,6 +45,13 @@ class ExtractProductResources(
     Settings are resolved per-instance from
     ``resolve → publish → ExtractProductResources → profiles``, matched on task
     type / task name and ``product_base_type``.
+
+    The representation collected from the clip's source media is replaced by
+    the rendered outputs unless the profile has
+    ``keep_original_representation`` enabled. Without a matching profile
+    nothing is rendered and the original is kept. A matching profile must have
+    output definitions. The plugin fails when the instance ends up with no
+    representations.
     """
 
     label = "Extract Product Resources"
@@ -54,9 +63,11 @@ class ExtractProductResources(
 
     def process(self, instance):
         instance.data.setdefault("representations", [])
-        integrate_clip_source, all_output_settings = self.get_settings(instance)
+        profile, all_output_settings = self.get_settings(instance)
 
-        if not integrate_clip_source:
+        # Drop the original representation when rendered outputs take its
+        # place. Without a profile nothing is rendered, so it is kept.
+        if profile and not profile["keep_original_representation"]:
             instance.data["representations"] = []
 
         for settings in all_output_settings:
@@ -76,15 +87,27 @@ class ExtractProductResources(
                 )
                 return
 
-    def get_settings(self, instance) -> list[dict[str, Any]]:
-        """Return normalised render settings for *instance*.
+        if not instance.data["representations"]:
+            raise PublishError(
+                self._get_no_representations_message(instance, profile)
+            )
+
+    def get_settings(
+        self, instance
+    ) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+        """Return the matching profile and normalised render settings.
 
         Looks up ``resolve → publish → ExtractProductResources → profiles``,
         then profile-matches on task type / task name / product_base_type.
 
-        Returns a list of flat dicts with keys:
+        Returns a tuple of the matched profile and a list of flat dicts, one
+        per output definition, with keys:
             ``file_format``, ``codec``, ``preset_path``,
             and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
+        When no profile matches, ``(None, [])`` is returned.
+
+        Raises:
+            PublishError: If the matching profile has no output definitions.
         """
         entity = get_current_task_entity()
         task_type = entity.get("taskType")
@@ -101,10 +124,12 @@ class ExtractProductResources(
         )
 
         if not profile:
-            raise PublishError(
-                f"No matching preset found for family='{product_base_type}'. "
-                "Please visit your server settings and add a matching preset for this family."
+            self.log.info(
+                "No matching profile found for task type '%s', task name '%s' "
+                "and product base type '%s'. Nothing will be rendered.",
+                task_type, task_name, product_base_type,
             )
+            return None, []
 
         self.log.debug(f"Matched preset: {profile.get('name')}")
 
@@ -115,10 +140,64 @@ class ExtractProductResources(
 
         if not result:
             raise PublishError(
-                f"No matching output definitions found for preset='{profile}'. "
+                f"No output definitions found in profile "
+                f"'{profile.get('name')}' matching task type '{task_type}', "
+                f"task name '{task_name}' and product base type "
+                f"'{product_base_type}'. Please add at least one output "
+                "definition to this profile in the 'Extract Product "
+                "Resources' settings of the Resolve addon."
             )
 
-        return (profile["integrate_clip_source"], result)
+        return profile, result
+
+    def _get_no_representations_message(self, instance, profile) -> str:
+        """Explain why the instance ended up without any representation."""
+        product_base_type = instance.data["productBaseType"]
+        label = instance.data.get("label") or instance.name
+
+        settings_hint = (
+            "in the 'Extract Product Resources' settings of the Resolve addon"
+        )
+        if not profile:
+            entity = get_current_task_entity()
+            reason = (
+                "No profile matches task type "
+                f"'{entity.get('taskType')}', task name "
+                f"'{entity.get('taskName')}' and product base type "
+                f"'{product_base_type}', so nothing is rendered."
+            )
+            solution = (
+                "Please add a profile matching the task and product base "
+                f"type with at least one output definition {settings_hint}."
+            )
+            if product_base_type != "editorial_pkg":
+                # nothing was rendered, so the clip's source media was the
+                # only candidate to publish
+                reason += (
+                    " The clip has no source media to publish as is,"
+                    " is it offline?"
+                )
+                solution = (
+                    "Depending on what should be published, either bring the "
+                    "clip's media online to publish it as is, or add a "
+                    "profile matching the task and product base type with at "
+                    f"least one output definition {settings_hint} to render "
+                    "it."
+                )
+        else:
+            reason = (
+                f"Profile '{profile.get('name')}' did not produce any "
+                "representation, check the warnings above."
+            )
+            solution = (
+                "Please review the output definitions of this profile "
+                f"{settings_hint}."
+            )
+
+        return (
+            f"No representations to integrate for {product_base_type} "
+            f"'{label}'. {reason} {solution}"
+        )
 
     def _normalize_preset(self, preset):
         """Flatten the nested preset structure into a render-ready dict."""

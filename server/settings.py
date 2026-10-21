@@ -374,8 +374,8 @@ class ProductResourcesPresetModel(BaseSettingsModel):
         description=(
             "When enabled the timeline item's original media is published as "
             "additional representation next to the rendered outputs. "
-            "Without a matching profile or output definitions nothing is "
-            "rendered and the original media is always published."
+            "Without a matching profile nothing is rendered and the original "
+            "media is always published."
         )
     )
 

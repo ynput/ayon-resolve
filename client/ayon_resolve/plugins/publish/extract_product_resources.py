@@ -46,9 +46,10 @@ class ExtractProductResources(
 
     The representation collected from the clip's source media is replaced by
     the rendered outputs unless the profile has
-    ``keep_original_representation`` enabled. Without a matching profile, or
-    without output definitions, nothing is rendered and the original is kept.
-    The plugin fails when the instance ends up with no representations.
+    ``keep_original_representation`` enabled. Without a matching profile
+    nothing is rendered and the original is kept. A matching profile must have
+    output definitions. The plugin fails when the instance ends up with no
+    representations.
     """
 
     label = "Extract Product Resources"
@@ -62,12 +63,9 @@ class ExtractProductResources(
         instance.data.setdefault("representations", [])
         profile, all_output_settings = self.get_settings(instance)
 
-        # Drop the original representation only when rendered outputs are
-        # going to take its place.
-        keep_original = (
-            profile["keep_original_representation"] if profile else True
-        )
-        if all_output_settings and not keep_original:
+        # Drop the original representation when rendered outputs take its
+        # place. Without a profile nothing is rendered, so it is kept.
+        if profile and not profile["keep_original_representation"]:
             instance.data["representations"] = []
 
         for settings in all_output_settings:
@@ -89,9 +87,7 @@ class ExtractProductResources(
 
         if not instance.data["representations"]:
             raise PublishError(
-                self._get_no_representations_message(
-                    instance, profile, bool(all_output_settings)
-                )
+                self._get_no_representations_message(instance, profile)
             )
 
     def get_settings(
@@ -102,11 +98,14 @@ class ExtractProductResources(
         Looks up ``resolve → publish → ExtractProductResources → profiles``,
         then profile-matches on task type / task name / product_base_type.
 
-        Returns a tuple of the matched profile (``None`` when no profile
-        matches) and a list of flat dicts, one per output definition, with
-        keys:
+        Returns a tuple of the matched profile and a list of flat dicts, one
+        per output definition, with keys:
             ``file_format``, ``codec``, ``preset_path``,
             and for *editorial_pkg* only: ``export_otio``, ``otio_rootless``.
+        When no profile matches, ``(None, [])`` is returned.
+
+        Raises:
+            PublishError: If the matching profile has no output definitions.
         """
         entity = get_current_task_entity()
         task_type = entity.get("taskType")
@@ -138,20 +137,21 @@ class ExtractProductResources(
             result.append(normalized)
 
         if not result:
-            self.log.info(
-                "Profile '%s' has no output definitions. Nothing will be "
-                "rendered.", profile.get("name"),
+            raise PublishError(
+                f"No output definitions found in profile "
+                f"'{profile.get('name')}' matching task type '{task_type}', "
+                f"task name '{task_name}' and product base type "
+                f"'{product_base_type}'. Please add at least one output "
+                "definition to this profile in the 'Extract Product "
+                "Resources' settings of the Resolve addon."
             )
 
         return profile, result
 
-    def _get_no_representations_message(
-        self, instance, profile, has_outputs
-    ) -> str:
+    def _get_no_representations_message(self, instance, profile) -> str:
         """Explain why the instance ended up without any representation."""
         product_base_type = instance.data["productBaseType"]
         label = instance.data.get("label") or instance.name
-        has_source_media = product_base_type != "editorial_pkg"
 
         if not profile:
             entity = get_current_task_entity()
@@ -161,16 +161,7 @@ class ExtractProductResources(
                 f"'{entity.get('taskName')}' and product base type "
                 f"'{product_base_type}'."
             )
-        elif not has_outputs:
-            reason = f"Profile '{profile.get('name')}' has no output definitions."
-        else:
-            reason = (
-                f"Profile '{profile.get('name')}' did not produce any "
-                "representation, check the warnings above."
-            )
-
-        if not has_outputs:
-            if has_source_media:
+            if product_base_type != "editorial_pkg":
                 # nothing was rendered, so the clip's source media was the
                 # only candidate to publish
                 reason += (
@@ -181,12 +172,11 @@ class ExtractProductResources(
                 "add a profile matching the task and product base type with "
                 "at least one output definition"
             )
-            if has_source_media:
-                solution += (
-                    ", or enable 'Publish clip's original media' to publish "
-                    "clips with online media as is"
-                )
         else:
+            reason = (
+                f"Profile '{profile.get('name')}' did not produce any "
+                "representation, check the warnings above."
+            )
             solution = "review the output definitions of the profile"
 
         return (

@@ -438,7 +438,23 @@ class ExtractProductResourcesModel(BaseSettingsModel):
         return value
 
 
+class CreateEditorialPackageModel(BaseSettingsModel):
+    review: bool = SettingsField(
+        True,
+        title="Make intermediate media reviewable",
+        description=(
+            "Default state of the matching toggle when creating an "
+            "Editorial Package in the publisher. Artists can still change "
+            "it per instance."
+        ),
+    )
+
+
 class CreatorPluginsModel(BaseSettingsModel):
+    CreateEditorialPackage: CreateEditorialPackageModel = SettingsField(
+        default_factory=CreateEditorialPackageModel,
+        title="Create Editorial Package"
+    )
     CreateShotClip: CreateShotClipModels = SettingsField(
         default_factory=CreateShotClipModels,
         title="Create Shot Clip"
@@ -590,6 +606,9 @@ DEFAULT_VALUES = {
     "report_fps_resolution": False,
     "rename_db_project_on_increment": True,
     "create": {
+        "CreateEditorialPackage": {
+            "review": True
+        },
         "CreateShotClip": {
             "use_selection": True,
             "hierarchy": "{folder}/{sequence}",

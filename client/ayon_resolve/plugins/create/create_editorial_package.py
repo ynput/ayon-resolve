@@ -8,16 +8,6 @@ from ayon_resolve.api import lib, constants
 from ayon_resolve.api.plugin import ResolveCreator, get_editorial_publish_data
 
 
-_CREATE_ATTR_DEFS = [
-    BoolDef(
-        "review",
-        label="Make intermediate media reviewable",
-        tooltip="Make editorial package intermediate media reviewable.",
-        default=False,
-    )
-]
-
-
 class CreateEditorialPackage(ResolveCreator):
     """Create Editorial Package."""
 
@@ -28,6 +18,26 @@ class CreateEditorialPackage(ResolveCreator):
     icon = "camera"
     defaults = ["Main"]
 
+    presets = {}
+
+    def apply_settings(self, project_settings):
+        self.presets = (
+            project_settings
+            [self.settings_category]
+            ["create"]
+            .get(self.__class__.__name__)
+        ) or {}
+
+    def _get_attr_defs(self):
+        return [
+            BoolDef(
+                "review",
+                label="Make intermediate media reviewable",
+                tooltip="Make editorial package intermediate media reviewable.",
+                default=self.presets.get("review", True),
+            )
+        ]
+
     def get_pre_create_attr_defs(self):
         """Plugin attribute definitions needed for creation.
 
@@ -35,7 +45,7 @@ class CreateEditorialPackage(ResolveCreator):
             list[AbstractAttrDef]: Attribute definitions that can be tweaked
                 for created instance.
         """
-        return _CREATE_ATTR_DEFS
+        return self._get_attr_defs()
 
     def get_attr_defs_for_instance(self, instance):
         """Get attribute definitions for an instance.
@@ -48,7 +58,7 @@ class CreateEditorialPackage(ResolveCreator):
             list[AbstractAttrDef]: Attribute definitions that can be tweaked
                 for created instance.
         """
-        return _CREATE_ATTR_DEFS
+        return self._get_attr_defs()
 
     def create(self, product_name, instance_data, pre_create_data):
         """Create a new editorial_pkg instance.

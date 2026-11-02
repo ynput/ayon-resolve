@@ -137,16 +137,6 @@ def maintain_page_by_name(page_name):
         bmdvr.OpenPage(current_page)
 
 
-def get_version():
-    """Get current resolve version.
-
-    Returns:
-        str: version string
-    """
-    from . import bmdvr
-    return bmdvr.GetVersion()
-
-
 def get_project_manager():
     """Get project manager object.
 

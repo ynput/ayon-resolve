@@ -448,6 +448,11 @@ class CreateEditorialPackageModel(BaseSettingsModel):
             "it per instance."
         ),
     )
+    clear_marks: bool = SettingsField(
+        True,
+        title="Clear Marks",
+        description="Clears In/Out marks before rendering the timeline."
+    )
 
 
 class CreatorPluginsModel(BaseSettingsModel):
@@ -607,7 +612,8 @@ DEFAULT_VALUES = {
     "rename_db_project_on_increment": True,
     "create": {
         "CreateEditorialPackage": {
-            "review": True
+            "review": True,
+            "clear_marks": True
         },
         "CreateShotClip": {
             "use_selection": True,

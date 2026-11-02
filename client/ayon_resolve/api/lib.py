@@ -79,6 +79,7 @@ def maintain_current_timeline(to_timeline: object,
     """
     project = get_current_resolve_project()
     working_timeline = from_timeline or project.GetCurrentTimeline()
+    working_in_out = working_timeline.GetMarkInOut()
 
     # search timeline withing project timelines in case the
     # to_timeline is MediaPoolItem
@@ -105,6 +106,11 @@ def maintain_current_timeline(to_timeline: object,
     finally:
         # put the original working timeline to context
         project.SetCurrentTimeline(working_timeline)
+        if any(k in working_in_out.get("video", {}) for k in ["in", "out"]):
+            working_timeline.SetMarkInOut(
+                working_in_out["video"].get("in", None),
+                working_in_out["video"].get("out", None)
+            )
 
 
 @contextlib.contextmanager
@@ -129,6 +135,16 @@ def maintain_page_by_name(page_name):
         yield
     finally:
         bmdvr.OpenPage(current_page)
+
+
+def get_version():
+    """Get current resolve version.
+
+    Returns:
+        str: version string
+    """
+    from . import bmdvr
+    return bmdvr.GetVersion()
 
 
 def get_project_manager():

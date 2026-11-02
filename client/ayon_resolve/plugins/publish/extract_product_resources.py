@@ -306,6 +306,8 @@ class ExtractProductResources(
         self.log.info("Staging directory: %s", staging_dir)
 
         with maintain_current_timeline(timeline_mp_item) as timeline:
+            if instance.data.get("creator_settings", {}).get("clear_marks", False):
+                timeline.ClearMarkInOut()
             self.log.info(f"Rendering timeline: {timeline.GetName()}")
             rendered = render_timeline_intermediate_file(
                 timeline,

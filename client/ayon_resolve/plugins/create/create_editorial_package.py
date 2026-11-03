@@ -35,6 +35,12 @@ class CreateEditorialPackage(ResolveCreator):
                 label="Make intermediate media reviewable",
                 tooltip="Make editorial package intermediate media reviewable.",
                 default=self.presets.get("review", True),
+            ),
+            BoolDef(
+                "clear_marks",
+                label="Clear Marks",
+                tooltip="Clear In/Out marks before rendering the timeline.",
+                default=self.presets.get("clear_marks", True),
             )
         ]
 

@@ -94,15 +94,6 @@ def _product_base_types_enum():
     ]
 
 
-def representation_tags_enum():
-    return [
-        {"value": "review", "label": "Extract review processing"},
-        {"value": "delete", "label": "Delete - as intermediate"},
-        {"value": "passing", "label": "Skip Extract Review"},
-        {"value": "webreview", "label": "Upload as reviewable"},
-    ]
-
-
 class CreateShotClipModels(BaseSettingsModel):
     use_selection: bool = SettingsField(
         True,
@@ -305,7 +296,6 @@ class ProductTypeSharedModel(BaseSettingsModel):
     tags: list[str] = SettingsField(
         default_factory=list,
         title="Tags",
-        enum_resolver=representation_tags_enum,
         description="Currently only partly supporting reviewable workflow.",
     )
     custom_tags: list[str] = SettingsField(

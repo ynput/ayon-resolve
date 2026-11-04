@@ -117,7 +117,7 @@ class PreLaunchResolveSetup(PreLaunchHook):
             f"setting RESOLVE_SCRIPT_LIB variable to {resolve_script_lib}"
         )
 
-        # TODO: add OTIO installation from `openpype/requirements.py`
+        # OTIO is installed by `InstallOpenTimelineIOToResolve` hook
         # making sure python <3.9.* is installed at provided path
         python3_home = Path(
             self.launch_context.env.get("RESOLVE_PYTHON3_HOME", "")

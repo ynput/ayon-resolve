@@ -536,6 +536,22 @@ class ProjectDatabaseOverrideModel(BaseSettingsModel):
     )
 
 
+class InstallOpenTimelineIOToResolveModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        default=True,
+        title="Enable"
+    )
+
+
+class ResolveHooksModel(BaseSettingsModel):
+    _layout = "expanded"
+    InstallOpenTimelineIOToResolve: InstallOpenTimelineIOToResolveModel = \
+        SettingsField(
+            default_factory=InstallOpenTimelineIOToResolveModel,
+            title="Install OpenTimelineIO to Resolve"
+        )
+
+
 class ResolveSettings(BaseSettingsModel):
     check_compatible_version_on_start: bool = SettingsField(
         True,
@@ -570,6 +586,10 @@ class ResolveSettings(BaseSettingsModel):
         default_factory=ResolveImageIOModel,
         title="Color Management (ImageIO)"
     )
+    hooks: ResolveHooksModel = SettingsField(
+        default_factory=ResolveHooksModel,
+        title="Hooks"
+    )
     create: CreatorPluginsModel = SettingsField(
         default_factory=CreatorPluginsModel,
         title="Creator plugins",
@@ -589,6 +609,11 @@ DEFAULT_VALUES = {
     "launch_ayon_menu_on_start": False,
     "report_fps_resolution": False,
     "rename_db_project_on_increment": True,
+    "hooks": {
+        "InstallOpenTimelineIOToResolve": {
+            "enabled": True
+        }
+    },
     "create": {
         "CreateShotClip": {
             "use_selection": True,

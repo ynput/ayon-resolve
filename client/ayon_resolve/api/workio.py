@@ -350,7 +350,3 @@ def get_local_database_root() -> Path:
     else:
         raise NotImplementedError(f"Database path for platform {sys.platform} is not implemented yet.")
     return result
-
-
-def work_root(session):
-    return os.path.normpath(session["AYON_WORKDIR"]).replace("\\", "/")

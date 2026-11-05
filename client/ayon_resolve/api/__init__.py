@@ -64,7 +64,6 @@ from .workio import (
     current_file,
     has_unsaved_changes,
     file_extensions,
-    work_root
 )
 
 from .testing_utils import TestGUI
@@ -142,7 +141,6 @@ __all__ = [
     "current_file",
     "has_unsaved_changes",
     "file_extensions",
-    "work_root",
 
     "TestGUI"
 ]

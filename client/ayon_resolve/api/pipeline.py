@@ -41,7 +41,6 @@ from .workio import (
     save_file,
     file_extensions,
     has_unsaved_changes,
-    work_root,
     current_file
 )
 
@@ -119,9 +118,6 @@ class ResolveHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     def save_workfile(self, filepath=None):
         self._show_ayon_settings_confirmation_windows()
         return save_file(filepath)
-
-    def work_root(self, session):
-        return work_root(session)
 
     def get_current_workfile(self):
         return current_file()

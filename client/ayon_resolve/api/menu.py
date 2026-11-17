@@ -62,7 +62,6 @@ class AYONMenu(QtWidgets.QWidget):
         publish_btn = QtWidgets.QPushButton("Publish...", self)
         load_btn = QtWidgets.QPushButton("Load ...", self)
         inventory_btn = QtWidgets.QPushButton("Manage...", self)
-        libload_btn = QtWidgets.QPushButton("Library...", self)
         console_btn = QtWidgets.QPushButton("Console...", self)
 
         # set_colorspace_btn = QtWidgets.QPushButton(
@@ -89,10 +88,6 @@ class AYONMenu(QtWidgets.QWidget):
 
         layout.addSpacing(15)
 
-        layout.addWidget(libload_btn)
-
-        layout.addSpacing(15)
-
         layout.addWidget(console_btn)
 
         save_current_btn.clicked.connect(self.on_save_current_clicked)
@@ -102,7 +97,6 @@ class AYONMenu(QtWidgets.QWidget):
         publish_btn.clicked.connect(self.on_publish_clicked)
         load_btn.clicked.connect(self.on_load_clicked)
         inventory_btn.clicked.connect(self.on_inventory_clicked)
-        libload_btn.clicked.connect(self.on_libload_clicked)
         console_btn.clicked.connect(self._show_console)
 
         # set_colorspace_btn.clicked.connect(self.on_set_colorspace_clicked)
@@ -142,12 +136,6 @@ class AYONMenu(QtWidgets.QWidget):
     def on_inventory_clicked(self):
         print("Clicked Inventory")
         host_tools.show_scene_inventory()
-
-    def on_libload_clicked(self):
-        print("Clicked Library")
-        # Newer ayon-core has no module-level 'show_library_loader'. In every
-        # core version it was only an alias of the Loader without context.
-        host_tools.show_loader()
 
     def on_rename_clicked(self):
         print("Clicked Rename")

@@ -39,6 +39,21 @@ class PreLaunchResolveSetup(PreLaunchHook):
     app_groups = {"resolve"}
     launch_types = {LaunchTypes.local}
 
+    @staticmethod
+    def _is_python3_install(folder):
+        """Folder holds `bin/python3` and its standard library (macOS, Linux).
+
+        The standard library check rules out shared prefixes like
+        `/opt/homebrew`, which have `bin/python3` but no `lib/python3.x`.
+        `lib*` covers `lib64` (Fedora), `python3*` a zipped library.
+        """
+        if not (folder / "bin" / "python3").exists():
+            return False
+        return any(
+            (path / "os.py").is_file() or path.suffix == ".zip"
+            for path in folder.glob("lib*/python3*")
+        )
+
     def _get_python3_home(self, current_platform):
         """Return the Python 3 install folder from `RESOLVE_PYTHON3_HOME`.
 
@@ -74,8 +89,9 @@ class PreLaunchResolveSetup(PreLaunchHook):
             return python3_home
 
         if (
-            not (python3_home / "bin" / "python3").exists()
+            not self._is_python3_install(python3_home)
             and (python3_home / "python3").exists()
+            and self._is_python3_install(python3_home.parent)
         ):
             self.log.warning(
                 f"`RESOLVE_PYTHON3_HOME` points at a `bin` folder "
@@ -84,11 +100,12 @@ class PreLaunchResolveSetup(PreLaunchHook):
             )
             python3_home = python3_home.parent
 
-        if not (python3_home / "bin" / "python3").exists():
+        if not self._is_python3_install(python3_home):
             raise ApplicationLaunchFailed(
-                f"No `bin/python3` found in `{python3_home}`. Resolve would "
-                "fall back to its own Python, which cannot load AYON.\n\n"
-                f"{expected}"
+                f"No Python 3 install found in `{python3_home}` "
+                "(`bin/python3` and its standard library in `lib`). "
+                "Resolve would fall back to its own Python, which cannot "
+                f"load AYON.\n\n{expected}"
             )
         return python3_home
 

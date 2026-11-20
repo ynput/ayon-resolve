@@ -15,7 +15,7 @@
     -   Windows: the folder that holds `python.exe`, e.g. `C:/Program Files/Python39`
     -   macOS: the folder that holds `bin` and `lib`, e.g. `/Library/Frameworks/Python.framework/Versions/3.9`
     -   Linux: the folder that holds `bin` and `lib`, e.g. `/opt/python/3.9`
-    -   on macOS and Linux Resolve needs `<RESOLVE_PYTHON3_HOME>/bin/python3`. Without it, Resolve 21+ silently uses its own bundled Python, which cannot load AYON, so the launch stops with an error instead. A path to `bin` is changed to its parent folder, with a warning in the launch log.
+    -   on macOS and Linux Resolve needs `<RESOLVE_PYTHON3_HOME>/bin/python3` and its standard library in `lib`. A shared prefix like `/opt/homebrew` is not an install folder. Without them, Resolve 21+ silently uses its own bundled Python, which cannot load AYON, so the launch stops with an error instead. A path to `bin` is changed to its parent folder, with a warning in the launch log.
 
 ## Editorial setup
 

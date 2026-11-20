@@ -1,6 +1,7 @@
 ## Basic setup
 
 -   Actually supported version is up to v21
+-   from Resolve 21.1, Python scripting needs **DaVinci Resolve Studio**; the free edition dropped it
 -   install Python 3.6.2 (latest tested v17) or up to 3.9.13 (latest tested on v21)
 -   pip install PySide6:
     -   Python 3.9.*: open terminal and go to python.exe directory, then `python -m pip install PySide6`
@@ -10,7 +11,11 @@
     ![image](https://user-images.githubusercontent.com/40640033/102792588-ffcb1c80-43a8-11eb-9c6b-bf2114ed578e.png) with installed CMake in PATH.
 -   make sure Resolve Fusion (Fusion Tab/menu/Fusion/Fusion Settings) is set to Python 3.6
     ![image](https://user-images.githubusercontent.com/40640033/102631545-280b0f00-414e-11eb-89fc-98ac268d209d.png)
--   Open AYON **Tray/Admin/Studio settings** > `applications/resolve/environment` and add Python3 path to `RESOLVE_PYTHON3_HOME` platform related.
+-   Open AYON **Tray/Admin/Studio settings** > `applications/resolve/environment` and set `RESOLVE_PYTHON3_HOME` for each platform to the Python 3 **install folder**, not its `bin` folder:
+    -   Windows: the folder that holds `python.exe`, e.g. `C:/Program Files/Python39`
+    -   macOS: the folder that holds `bin` and `lib`, e.g. `/Library/Frameworks/Python.framework/Versions/3.9`
+    -   Linux: the folder that holds `bin` and `lib`, e.g. `/opt/python/3.9`
+    -   on macOS and Linux Resolve needs `<RESOLVE_PYTHON3_HOME>/bin/python3` and its standard library in `lib`. A shared prefix like `/opt/homebrew` is not an install folder. Without them, Resolve 21+ silently uses its own bundled Python, which cannot load AYON, so the launch stops with an error instead. A path to `bin` is changed to its parent folder, with a warning in the launch log.
 
 ## Editorial setup
 

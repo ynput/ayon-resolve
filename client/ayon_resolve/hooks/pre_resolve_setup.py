@@ -88,26 +88,27 @@ class PreLaunchResolveSetup(PreLaunchHook):
         if current_platform == "windows":
             return python3_home
 
-        if (
-            not self._is_python3_install(python3_home)
-            and (python3_home / "python3").exists()
-            and self._is_python3_install(python3_home.parent)
-        ):
+        if self._is_python3_install(python3_home):
+            return python3_home
+
+        # The value is the `bin` folder of a Python install: the folder is
+        # named `bin` and its parent passes the install check (which needs
+        # `<parent>/bin/python3`, so this very folder holds `python3`)
+        parent = python3_home.parent
+        if python3_home.name == "bin" and self._is_python3_install(parent):
             self.log.warning(
                 f"`RESOLVE_PYTHON3_HOME` points at a `bin` folder "
                 f"(`{python3_home}`), using its parent folder instead. "
                 "Please set it to the Python install folder."
             )
-            python3_home = python3_home.parent
+            return parent
 
-        if not self._is_python3_install(python3_home):
-            raise ApplicationLaunchFailed(
-                f"No Python 3 install found in `{python3_home}` "
-                "(`bin/python3` and its standard library in `lib`). "
-                "Resolve would fall back to its own Python, which cannot "
-                f"load AYON.\n\n{expected}"
-            )
-        return python3_home
+        raise ApplicationLaunchFailed(
+            f"No Python 3 install found in `{python3_home}` "
+            "(`bin/python3` and its standard library in `lib`). "
+            "Resolve would fall back to its own Python, which cannot "
+            f"load AYON.\n\n{expected}"
+        )
 
     def _resolve_python_has_pyside6(self, python3_home_str):
         """Check if Resolve's Python can find PySide6.

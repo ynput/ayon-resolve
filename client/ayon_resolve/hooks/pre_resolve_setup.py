@@ -3,7 +3,11 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
-from ayon_applications import PreLaunchHook, LaunchTypes
+from ayon_applications import (
+    PreLaunchHook,
+    LaunchTypes,
+    ApplicationLaunchFailed,
+)
 from ayon_resolve.utils import setup
 
 
@@ -22,7 +26,7 @@ class PreLaunchResolveSetup(PreLaunchHook):
     Additionally it sets up the Python home for Python 3 based on the
     RESOLVE_PYTHON3_HOME in the environment (usually defined in Ayon's
     Application environment for Resolve by the admin). For this it sets
-    PYTHONHOME and PATH variables.
+    PYTHONHOME, PYTHON3HOME and PATH variables.
 
     It also defines:
     - `RESOLVE_UTILITY_SCRIPTS_DIR`: Destination directory for Ayon
@@ -34,6 +38,59 @@ class PreLaunchResolveSetup(PreLaunchHook):
 
     app_groups = {"resolve"}
     launch_types = {LaunchTypes.local}
+
+    def _get_python3_home(self, current_platform):
+        """Return the Python 3 install folder from `RESOLVE_PYTHON3_HOME`.
+
+        On macOS and Linux Resolve runs `<PYTHON3HOME>/bin/python3`. When it
+        is missing, Resolve 21+ silently falls back to its bundled Python,
+        which ignores PYTHONPATH, so AYON never loads. A `bin` folder is
+        the usual mistake, so step up from it.
+
+        Raises:
+            ApplicationLaunchFailed: The folder is not set, does not exist
+                or does not hold a Python 3 interpreter.
+        """
+        expected = (
+            "`RESOLVE_PYTHON3_HOME` must point at the Python 3 install "
+            "folder: the one that holds `python.exe` on Windows, or `bin` "
+            "and `lib` on macOS and Linux (not `bin` itself)."
+        )
+        value = self.launch_context.env.get("RESOLVE_PYTHON3_HOME", "")
+        if not value.strip():
+            raise ApplicationLaunchFailed(
+                "`RESOLVE_PYTHON3_HOME` is not set in the Resolve "
+                f"application environment.\n\n{expected}"
+            )
+
+        python3_home = Path(value.strip()).expanduser()
+        if not python3_home.is_dir():
+            raise ApplicationLaunchFailed(
+                f"Python 3 folder does not exist: `{python3_home}`\n\n"
+                f"{expected}"
+            )
+
+        if current_platform == "windows":
+            return python3_home
+
+        if (
+            not (python3_home / "bin" / "python3").exists()
+            and (python3_home / "python3").exists()
+        ):
+            self.log.warning(
+                f"`RESOLVE_PYTHON3_HOME` points at a `bin` folder "
+                f"(`{python3_home}`), using its parent folder instead. "
+                "Please set it to the Python install folder."
+            )
+            python3_home = python3_home.parent
+
+        if not (python3_home / "bin" / "python3").exists():
+            raise ApplicationLaunchFailed(
+                f"No `bin/python3` found in `{python3_home}`. Resolve would "
+                "fall back to its own Python, which cannot load AYON.\n\n"
+                f"{expected}"
+            )
+        return python3_home
 
     def _resolve_python_has_pyside6(self, python3_home_str):
         """Check if Resolve's Python can find PySide6.
@@ -119,18 +176,11 @@ class PreLaunchResolveSetup(PreLaunchHook):
 
         # TODO: add OTIO installation from `openpype/requirements.py`
         # making sure python <3.9.* is installed at provided path
-        python3_home = Path(
-            self.launch_context.env.get("RESOLVE_PYTHON3_HOME", "")
-        )
-
-        assert python3_home.is_dir(), (
-            "Python 3 is not installed at the provided folder path. Either "
-            "make sure the `environments\resolve.json` is having correctly "
-            "set `RESOLVE_PYTHON3_HOME` or make sure Python 3 is installed "
-            f"in given path. \nRESOLVE_PYTHON3_HOME: `{python3_home}`"
-        )
+        python3_home = self._get_python3_home(current_platform)
         python3_home_str = python3_home.as_posix()
         self.launch_context.env["PYTHONHOME"] = python3_home_str
+        # Resolve reads PYTHON3HOME before PYTHONHOME, keep them in sync
+        self.launch_context.env["PYTHON3HOME"] = python3_home_str
         self.log.info(f"Path to Resolve Python folder: `{python3_home_str}`")
 
         # add to the PYTHONPATH
